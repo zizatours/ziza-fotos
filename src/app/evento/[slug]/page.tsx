@@ -1,22 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/router";
 
-/* FOTOS DEMO */
-const fakePhotos = [
-  "/fotos/1.jpg",
-  "/fotos/2.jpg",
-  "/fotos/3.jpg",
-  "/fotos/4.jpg",
-  "/fotos/5.jpg",
-  "/fotos/6.jpg",
-];
+export default function EventPage() {
+  const router = useRouter();
+  const { slug } = router.query;
 
-export default function EventoPage() {
+  // Ejemplo de datos de evento (conexión futura a Supabase o CMS)
+  const event = {
+    title: "Ziza Tour Enero",
+    city: "Santiago",
+    date: "12 Enero 2025",
+    description: "¡Un evento increíble para toda la familia!",
+    photoUrl: "https://via.placeholder.com/800x400", // Aquí iría la imagen real del evento
+  };
+
   const [file, setFile] = useState<File | null>(null);
-  const [status, setStatus] = useState<
-    "idle" | "ready" | "loading" | "done"
-  >("idle");
+  const [status, setStatus] = useState<"idle" | "ready" | "loading" | "done">("idle");
   const [selected, setSelected] = useState<string[]>([]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,11 +31,12 @@ export default function EventoPage() {
     if (!file) return;
     setStatus("loading");
 
-    // Simulación backend
+    // Simulación del backend
     setTimeout(() => {
       setStatus("done");
     }, 2000);
   };
+
   const togglePhoto = (src: string) => {
     setSelected((prev) =>
       prev.includes(src)
@@ -44,45 +46,35 @@ export default function EventoPage() {
   };
 
   return (
-    <main className="min-h-screen bg-white">
-
-      {/* HERO */}
+    <main className="min-h-screen bg-gradient-to-r from-blue-600 to-purple-600">
+      {/* Hero: imagen del evento */}
       <section
         className="relative h-[60vh] flex items-center justify-center"
         style={{
-          backgroundImage: "url('/evento.jpg')",
+          backgroundImage: `url(${event.photoUrl})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       >
         <div className="absolute inset-0 bg-black/50" />
         <div className="relative text-center text-white px-6 max-w-2xl">
-          <h1 className="text-5xl font-semibold mb-3">
-            Nombre del Evento
-          </h1>
-          <p className="text-lg opacity-90">
-            Sube una selfie y encuentra tus fotos oficiales
-          </p>
+          <h1 className="text-5xl font-semibold mb-3">{event.title}</h1>
+          <p className="text-lg opacity-90">{event.city} - {event.date}</p>
         </div>
       </section>
 
-      {/* INFO EVENTO */}
-      <section className="max-w-3xl mx-auto flex justify-center gap-10 text-sm my-10 text-gray-900">
-        <span>📍 Santiago de Chile</span>
-        <span>📅 12 Oct 2025</span>
+      {/* Información del evento */}
+      <section className="max-w-3xl mx-auto flex justify-center gap-10 text-sm my-10 text-gray-100">
+        <span>📍 {event.city}</span>
+        <span>📅 {event.date}</span>
         <span>📸 Fotos oficiales</span>
       </section>
 
-      {/* UPLOAD / RESULTADOS */}
+      {/* Subir selfie */}
       <section className="max-w-5xl mx-auto px-6 my-16">
-
-        {/* SUBIR SELFIE */}
         {status !== "done" && (
-          <div className="max-w-md mx-auto border border-gray-200 rounded-2xl p-8 text-center">
-            <h2 className="text-2xl font-medium mb-2 text-gray-900">
-              Sube tu selfie
-            </h2>
-
+          <div className="max-w-md mx-auto border border-gray-300 rounded-2xl p-8 text-center shadow-lg bg-white">
+            <h2 className="text-2xl font-medium mb-2 text-gray-900">Sube tu selfie</h2>
             <p className="text-sm text-gray-600 mb-6">
               Usamos reconocimiento facial para mostrarte solo tus fotos
             </p>
@@ -94,7 +86,6 @@ export default function EventoPage() {
               onChange={handleFileChange}
               className="hidden"
             />
-
             <label
               htmlFor="selfie"
               className="block w-full cursor-pointer rounded-full border border-gray-300 py-3 text-sm text-gray-700 hover:bg-gray-100 transition mb-4"
@@ -105,29 +96,20 @@ export default function EventoPage() {
             <button
               onClick={handleSearch}
               disabled={status !== "ready"}
-              className={`w-full py-3 rounded-full text-sm font-medium transition
-                ${
-                  status === "ready"
-                    ? "bg-black text-white hover:bg-gray-900"
-                    : "bg-gray-200 text-gray-500"
-                }`}
+              className={`w-full py-3 rounded-full text-sm font-medium transition 
+                ${status === "ready" ? "bg-black text-white hover:bg-gray-900" : "bg-gray-200 text-gray-500"}`}
             >
               {status === "loading" ? "Buscando…" : "Buscar mis fotos"}
             </button>
 
             {status === "loading" && (
-              <p className="text-sm text-gray-700 mt-4">
-                Analizando tu imagen…
-              </p>
+              <p className="text-sm text-gray-700 mt-4">Analizando tu imagen…</p>
             )}
-
-            <p className="text-xs text-gray-500 mt-6">
-              Tu imagen no se publica ni se guarda
-            </p>
+            <p className="text-xs text-gray-500 mt-6">Tu imagen no se publica ni se guarda</p>
           </div>
         )}
 
-        {/* RESULTADOS */}
+        {/* Resultados */}
         {status === "done" && (
           <>
             <h2 className="text-2xl font-medium text-gray-900 mb-6 text-center">
@@ -142,19 +124,14 @@ export default function EventoPage() {
                   <div
                     key={i}
                     onClick={() => togglePhoto(src)}
-                    className={`relative rounded-xl overflow-hidden border cursor-pointer transition
-                      ${
-                        isSelected
-                          ? "border-black ring-2 ring-black"
-                          : "border-gray-200 hover:shadow-md"
-                      }`}
+                    className={`relative rounded-xl overflow-hidden border cursor-pointer transition-all
+                      ${isSelected ? "border-black ring-2 ring-black" : "border-gray-200 hover:shadow-md"}`}
                   >
                     <img
                       src={src}
                       alt="Foto del evento"
                       className="w-full h-64 object-cover"
                     />
-
                     {isSelected && (
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                         <span className="text-white text-3xl font-bold">✓</span>
@@ -174,20 +151,14 @@ export default function EventoPage() {
               <button
                 disabled={selected.length === 0}
                 className={`px-8 py-3 rounded-full text-sm font-medium transition
-                  ${
-                    selected.length > 0
-                      ? "bg-black text-white hover:bg-gray-900"
-                      : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                  }`}
+                  ${selected.length > 0 ? "bg-black text-white hover:bg-gray-900" : "bg-gray-200 text-gray-500 cursor-not-allowed"}`}
               >
                 Comprar fotos seleccionadas
               </button>
             </div>
           </>
         )}
-
       </section>
-
     </main>
   );
 }
