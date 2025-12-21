@@ -1,3 +1,7 @@
+"use client"; // Esto es necesario para habilitar interactividad
+
+import React from "react";
+
 export default function HomePage() {
   // Definimos algunos eventos de ejemplo
   const events = [
@@ -19,7 +23,6 @@ export default function HomePage() {
 
       <section className="max-w-6xl mx-auto px-6 pb-24">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-          {/* Agregar las cards de los eventos */}
           {events.map((event) => (
             <div
               key={event.id}
