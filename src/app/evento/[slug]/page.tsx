@@ -3,6 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
 
+const fakePhotos = [
+  "/fotos/1.jpg",
+  "/fotos/2.jpg",
+  "/fotos/3.jpg",
+  "/fotos/4.jpg",
+  "/fotos/5.jpg",
+  "/fotos/6.jpg",
+];
+
 export default function EventPage() {
   const router = useRouter();
   const { slug } = router.query;
