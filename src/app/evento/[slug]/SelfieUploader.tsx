@@ -83,7 +83,6 @@ export default function SelfieUploader() {
                   setStatusText('Comparando con las fotos del evento…')
 
                   const data = await res.json()
-                  console.log('COMPARE RESPONSE:', data)
 
                   setMatches(data.matches || [])
                   setResults(true)
@@ -142,72 +141,6 @@ export default function SelfieUploader() {
           )}
         </>
       )}
-
-      {/* --- ADMIN (temporal) --- */}
-      <div className="mt-10 pt-6 border-t text-left">
-        <p className="text-sm font-medium mb-2">
-          Admin: Indexar foto del evento (temporal)
-        </p>
-
-        <p className="text-xs text-gray-500 mb-3">
-          Esto es solo para pruebas: subes una foto del evento y el backend guardará
-          las caras detectadas en Supabase (tabla event_faces).
-        </p>
-
-        <label className="block w-full border rounded-full py-3 text-gray-700 cursor-pointer mb-3 text-center">
-          Seleccionar foto del evento
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              if (e.target.files?.[0]) {
-                setAdminFileName(e.target.files[0].name)
-                adminFileRef.current = e.target.files[0]
-                setAdminStatus('')
-              }
-            }}
-          />
-        </label>
-
-        {adminFileName && (
-          <button
-            onClick={async () => {
-              if (!adminFileRef.current) return
-
-              setAdminStatus('Indexando...')
-
-              const formData = new FormData()
-              formData.append('file', adminFileRef.current)
-
-              const res = await fetch('/api/event/index-faces', {
-                method: 'POST',
-                body: formData,
-              })
-
-              const data = await res.json()
-              console.log('INDEX FACES RESPONSE:', data)
-
-              if (!res.ok) {
-                setAdminStatus(`Error: ${data?.error ?? 'falló'}`)
-                return
-              }
-
-              setAdminStatus(`Listo ✅ Caras detectadas: ${data?.facesDetected ?? 0}`)
-            }}
-            className="w-full bg-black text-white rounded-full py-3"
-          >
-            Indexar esta foto
-          </button>
-        )}
-
-        {adminStatus && (
-          <p className="text-sm text-gray-600 mt-3">
-            {adminStatus}
-          </p>
-        )}
-      </div>
-      {/* --- FIN ADMIN --- */}
 
       <p className="text-xs text-gray-400 mt-6">
         Tu selfie se usa solo para encontrar tus fotos.
