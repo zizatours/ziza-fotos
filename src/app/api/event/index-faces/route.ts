@@ -15,13 +15,6 @@ const client = new RekognitionClient({
 
 export async function POST(req: Request) {
   try {
-    // 🔴 TEST DURO: insert inmediato (backend-test)
-    await supabase.from('event_faces').insert({
-      event_slug: 'backend-test',
-      image_url: null,
-      bounding_box: { test: true },
-      confidence: 1,
-    })
 
     // 🔴 luego seguimos con la foto real
     const formData = await req.formData()
