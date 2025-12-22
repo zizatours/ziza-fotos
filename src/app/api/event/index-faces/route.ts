@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     const response = await client.send(command)
 
     const eventSlug = 'evento-demo'
-    const imageUrl = null
+    const imageUrl = 'https://lhnmkonbpehcysbbwfdf.supabase.co/storage/v1/object/public/event-photos/varias%20personas.jpg'
 
     if (response.FaceDetails?.length) {
       const rows = response.FaceDetails.map(face => ({
