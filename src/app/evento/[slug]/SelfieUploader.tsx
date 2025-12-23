@@ -14,13 +14,21 @@ export default function SelfieUploader() {
   const fileRef = useRef<File | null>(null)
   const [searching, setSearching] = useState(false)
   const [results, setResults] = useState(false)
-  const [selected, setSelected] = useState<string[]>([])
   const [adminFileName, setAdminFileName] = useState<string | null>(null)
   const adminFileRef = useRef<File | null>(null)
   const [adminStatus, setAdminStatus] = useState<string>('')
   const [matches, setMatches] = useState<any[]>([])
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [selected, setSelected] = useState<string[]>([])
   const [statusText, setStatusText] = useState<string | null>(null)
+
+  const toggleSelect = (url: string) => {
+    setSelected(prev =>
+      prev.includes(url)
+        ? prev.filter(u => u !== url)
+        : [...prev, url]
+    )
+  }
 
   const togglePhoto = (url: string) => {
     setSelected(prev =>
@@ -148,28 +156,51 @@ export default function SelfieUploader() {
           )}
           
           {matches.length > 0 && (
-            <ul className="text-left text-sm">
-              {matches.length > 0 && (
-                <div className="grid grid-cols-2 gap-4">
-                  {matches.map((m, i) => (
-                    <div
-                      key={i}
-                      className="border rounded-lg overflow-hidden shadow-sm"
-                    >
-                      <img
-                        src={m.image_url}
-                        alt="Foto del evento"
-                        className="w-full h-40 object-cover"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </ul>
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                {matches.map((m, i) => (
+                  <div
+                    key={i}
+                    onClick={() => toggleSelect(m.image_url)}
+                    className={`border rounded-lg overflow-hidden shadow-sm cursor-pointer ${
+                      selected.includes(m.image_url)
+                        ? 'ring-4 ring-black'
+                        : ''
+                    }`}
+                  >
+                    <img
+                      src={m.image_url}
+                      alt="Foto del evento"
+                      className="w-full h-40 object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-sm text-gray-600 my-4">
+                {selected.length} fotos seleccionadas
+              </p>
+
+              <button
+                disabled={selected.length === 0}
+                onClick={() => {
+                  selected.forEach((url) => {
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = ''
+                    document.body.appendChild(a)
+                    a.click()
+                    document.body.removeChild(a)
+                  })
+                }}
+                className="w-full bg-black text-white rounded-full py-3 disabled:opacity-40"
+              >
+                Descargar selección
+              </button>
+            </>
           )}
         </>
       )}
-
       <p className="text-xs text-gray-400 mt-6">
         Tu selfie se usa solo para encontrar tus fotos.
         No se publica ni se guarda.
