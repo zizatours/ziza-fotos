@@ -184,10 +184,42 @@ export default function SelfieUploader() {
                           'repeating-linear-gradient(-45deg, rgba(255,255,255,0.6) 0, rgba(255,255,255,0.6) 1px, transparent 1px, transparent 200px)',
                       }}
                     >
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-white text-2xl font-bold rotate-[-30deg] select-none">
-                          ZIZA FOTOS
-                        </span>
+                      {/* Marca de agua repetida (solo visual) */}
+                      <div
+                        className="pointer-events-none absolute inset-0 opacity-25"
+                        style={{
+                          backgroundImage: `
+                            repeating-linear-gradient(
+                              -30deg,
+                              rgba(255,255,255,0.4) 0,
+                              rgba(255,255,255,0.4) 1px,
+                              transparent 1px,
+                              transparent 180px
+                            )
+                          `,
+                        }}
+                      >
+                        <div
+                          className="absolute inset-0"
+                          style={{
+                            backgroundImage: `
+                              repeating-linear-gradient(
+                                -30deg,
+                                transparent 0,
+                                transparent 120px,
+                                rgba(255,255,255,0.6) 120px,
+                                rgba(255,255,255,0.6) 121px,
+                                transparent 121px,
+                                transparent 240px
+                              )
+                            `,
+                          }}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-white text-xl font-bold rotate-[-30deg] select-none">
+                            ZIZA FOTOS
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
