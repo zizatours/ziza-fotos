@@ -201,43 +201,18 @@ export default function SelfieUploader() {
                 disabled={selected.length === 0}
                 onClick={async () => {
                   for (const url of selected) {
-                    const img = new Image()
-                    img.crossOrigin = 'anonymous'
-                    img.src = url
+                    const res = await fetch(url)
+                    const blob = await res.blob()
 
-                    await new Promise((resolve) => {
-                      img.onload = resolve
-                    })
-
-                    const canvas = document.createElement('canvas')
-                    canvas.width = img.width
-                    canvas.height = img.height
-                    const ctx = canvas.getContext('2d')!
-
-                    // Dibujar foto
-                    ctx.drawImage(img, 0, 0)
-
-                    // Config watermark
-                    ctx.globalAlpha = 0.15
-                    ctx.fillStyle = '#ffffff'
-                    ctx.font = 'bold 48px sans-serif'
-                    ctx.rotate((-45 * Math.PI) / 180)
-
-                    const text = 'ZIZA FOTOS'
-                    const step = 300
-
-                    for (let x = -canvas.height; x < canvas.width * 2; x += step) {
-                      for (let y = -canvas.height; y < canvas.height * 2; y += step) {
-                        ctx.fillText(text, x, y)
-                      }
-                    }
-
-                    // Descargar
+                    const blobUrl = URL.createObjectURL(blob)
                     const a = document.createElement('a')
-                    a.download = 'imagen.jpg'
+                    a.href = blobUrl
+                    a.download = 'imagen-evento.jpg'
                     document.body.appendChild(a)
                     a.click()
                     document.body.removeChild(a)
+
+                    URL.revokeObjectURL(blobUrl)
                   }
                 }}
                 className="w-full bg-black text-white rounded-full py-3 disabled:opacity-40"
