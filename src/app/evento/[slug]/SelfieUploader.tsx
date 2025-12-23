@@ -161,18 +161,34 @@ export default function SelfieUploader() {
                 {matches.map((m, i) => (
                   <div
                     key={i}
-                    className={`border rounded-lg overflow-hidden shadow-sm ${
+                    className={`relative border rounded-lg overflow-hidden shadow-sm ${
                       selected.includes(m.image_url)
                         ? 'ring-4 ring-black'
                         : ''
                     }`}
                   >
+                    {/* Imagen real */}
                     <img
                       src={m.image_url}
                       alt="Foto del evento"
                       className="w-full h-40 object-cover cursor-pointer"
                       onClick={() => toggleSelect(m.image_url)}
                     />
+
+                    {/* Marca de agua (solo visual) */}
+                    <div
+                      className="pointer-events-none absolute inset-0 opacity-20"
+                      style={{
+                        backgroundImage:
+                          'repeating-linear-gradient(-45deg, rgba(255,255,255,0.6) 0, rgba(255,255,255,0.6) 1px, transparent 1px, transparent 200px)',
+                      }}
+                    >
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-white text-2xl font-bold rotate-[-30deg] select-none">
+                          ZIZA FOTOS
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
