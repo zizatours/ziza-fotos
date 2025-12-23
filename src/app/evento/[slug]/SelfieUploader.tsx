@@ -161,8 +161,7 @@ export default function SelfieUploader() {
                 {matches.map((m, i) => (
                   <div
                     key={i}
-                    onClick={() => toggleSelect(m.image_url)}
-                    className={`border rounded-lg overflow-hidden shadow-sm cursor-pointer ${
+                    className={`border rounded-lg overflow-hidden shadow-sm ${
                       selected.includes(m.image_url)
                         ? 'ring-4 ring-black'
                         : ''
@@ -171,7 +170,8 @@ export default function SelfieUploader() {
                     <img
                       src={m.image_url}
                       alt="Foto del evento"
-                      className="w-full h-40 object-cover"
+                      className="w-full h-40 object-cover cursor-pointer"
+                      onClick={() => toggleSelect(m.image_url)}
                     />
                   </div>
                 ))}
