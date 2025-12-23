@@ -177,14 +177,13 @@ export default function SelfieUploader() {
                     />
 
                     {/* Marca de agua repetida (solo visual) */}
-                    <div className="pointer-events-none absolute inset-0 opacity-30">
-                      <div className="grid grid-cols-3 grid-rows-3 w-full h-full">
-                        {Array.from({ length: 9 }).map((_, i) => (
-                          <div
-                            key={i}
-                            className="flex items-center justify-center text-white text-sm font-bold rotate-[-30deg] select-none"
-                          >
-                            ZIZA FOTOS
+                    <div className="pointer-events-none absolute inset-0">
+                      <div className="absolute inset-0 grid grid-cols-3 grid-rows-4 opacity-35">
+                        {Array.from({ length: 12 }).map((_, idx) => (
+                          <div key={idx} className="flex items-center justify-center">
+                            <span className="text-white text-xs font-semibold rotate-[-30deg] select-none drop-shadow-sm">
+                              ZIZA FOTOS
+                            </span>
                           </div>
                         ))}
                       </div>
