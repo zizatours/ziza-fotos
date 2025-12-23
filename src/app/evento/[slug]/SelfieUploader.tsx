@@ -176,50 +176,17 @@ export default function SelfieUploader() {
                       onClick={() => toggleSelect(m.image_url)}
                     />
 
-                    {/* Marca de agua (solo visual) */}
-                    <div
-                      className="pointer-events-none absolute inset-0 opacity-20"
-                      style={{
-                        backgroundImage:
-                          'repeating-linear-gradient(-45deg, rgba(255,255,255,0.6) 0, rgba(255,255,255,0.6) 1px, transparent 1px, transparent 200px)',
-                      }}
-                    >
-                      {/* Marca de agua repetida (solo visual) */}
-                      <div
-                        className="pointer-events-none absolute inset-0 opacity-25"
-                        style={{
-                          backgroundImage: `
-                            repeating-linear-gradient(
-                              -30deg,
-                              rgba(255,255,255,0.4) 0,
-                              rgba(255,255,255,0.4) 1px,
-                              transparent 1px,
-                              transparent 180px
-                            )
-                          `,
-                        }}
-                      >
-                        <div
-                          className="absolute inset-0"
-                          style={{
-                            backgroundImage: `
-                              repeating-linear-gradient(
-                                -30deg,
-                                transparent 0,
-                                transparent 120px,
-                                rgba(255,255,255,0.6) 120px,
-                                rgba(255,255,255,0.6) 121px,
-                                transparent 121px,
-                                transparent 240px
-                              )
-                            `,
-                          }}
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-white text-xl font-bold rotate-[-30deg] select-none">
+                    {/* Marca de agua repetida (solo visual) */}
+                    <div className="pointer-events-none absolute inset-0 opacity-30">
+                      <div className="grid grid-cols-3 grid-rows-3 w-full h-full">
+                        {Array.from({ length: 9 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center justify-center text-white text-sm font-bold rotate-[-30deg] select-none"
+                          >
                             ZIZA FOTOS
-                          </span>
-                        </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
