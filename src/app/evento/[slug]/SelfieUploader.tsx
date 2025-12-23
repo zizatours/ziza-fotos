@@ -84,7 +84,24 @@ export default function SelfieUploader() {
 
                   const data = await res.json()
 
-                  setMatches(data.matches || [])
+                  const grouped = Object.values(
+                    (data.matches || []).reduce((acc: any, match: any) => {
+                      if (!acc[match.image_url]) {
+                        acc[match.image_url] = {
+                          image_url: match.image_url,
+                          bestSimilarity: match.similarity,
+                        }
+                      } else {
+                        acc[match.image_url].bestSimilarity = Math.max(
+                          acc[match.image_url].bestSimilarity,
+                          match.similarity
+                        )
+                      }
+                      return acc
+                    }, {})
+                  )
+
+                  setMatches(grouped)
                   setResults(true)
                 } catch (err) {
                   setErrorMsg('Ocurrió un error al buscar tus fotos')
@@ -133,9 +150,11 @@ export default function SelfieUploader() {
           {matches.length > 0 && (
             <ul className="text-left text-sm">
               {matches.map((m, i) => (
-                <li key={i} className="mb-2">
-                  Coincidencia {i + 1} — similitud {Math.round(m.similarity)}%
-                </li>
+                <div key={i} className="mb-4">
+                  <p className="text-sm">
+                    Foto encontrada — similitud {Math.round(m.bestSimilarity)}%
+                  </p>
+                </div>
               ))}
             </ul>
           )}
