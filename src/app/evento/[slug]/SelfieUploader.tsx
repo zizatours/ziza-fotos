@@ -76,6 +76,7 @@ export default function SelfieUploader() {
                 setStatusText('Analizando tu selfie…')
                 setErrorMsg(null)
                 setMatches([])
+                setSelected([])
 
                 const formData = new FormData()
                 formData.append('file', fileRef.current)
@@ -200,19 +201,25 @@ export default function SelfieUploader() {
               <button
                 disabled={selected.length === 0}
                 onClick={async () => {
+                  if (!selected.length) return
+
                   for (const url of selected) {
-                    const res = await fetch(url)
-                    const blob = await res.blob()
+                    try {
+                      const res = await fetch(url)
+                      const blob = await res.blob()
 
-                    const blobUrl = URL.createObjectURL(blob)
-                    const a = document.createElement('a')
-                    a.href = blobUrl
-                    a.download = 'imagen-evento.jpg'
-                    document.body.appendChild(a)
-                    a.click()
-                    document.body.removeChild(a)
+                      const blobUrl = URL.createObjectURL(blob)
+                      const a = document.createElement('a')
+                      a.href = blobUrl
+                      a.download = 'imagen-evento.jpg'
+                      document.body.appendChild(a)
+                      a.click()
+                      document.body.removeChild(a)
 
-                    URL.revokeObjectURL(blobUrl)
+                      URL.revokeObjectURL(blobUrl)
+                    } catch (e) {
+                      alert('Error descargando una de las fotos')
+                    }
                   }
                 }}
                 className="w-full bg-black text-white rounded-full py-3 disabled:opacity-40"
