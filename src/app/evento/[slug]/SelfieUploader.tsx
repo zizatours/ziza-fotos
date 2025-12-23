@@ -234,8 +234,7 @@ export default function SelfieUploader() {
 
                     // Descargar
                     const a = document.createElement('a')
-                    a.href = canvas.toDataURL('image/jpeg', 0.95)
-                    a.download = 'foto-ziza.jpg'
+                    a.download = 'imagen.jpg'
                     document.body.appendChild(a)
                     a.click()
                     document.body.removeChild(a)
