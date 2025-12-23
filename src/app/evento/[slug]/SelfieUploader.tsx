@@ -149,13 +149,22 @@ export default function SelfieUploader() {
           
           {matches.length > 0 && (
             <ul className="text-left text-sm">
-              {matches.map((m, i) => (
-                <div key={i} className="mb-4">
-                  <p className="text-sm">
-                    Foto encontrada — similitud {Math.round(m.bestSimilarity)}%
-                  </p>
+              {matches.length > 0 && (
+                <div className="grid grid-cols-2 gap-4">
+                  {matches.map((m, i) => (
+                    <div
+                      key={i}
+                      className="border rounded-lg overflow-hidden shadow-sm"
+                    >
+                      <img
+                        src={m.image_url}
+                        alt="Foto del evento"
+                        className="w-full h-40 object-cover"
+                      />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </ul>
           )}
         </>
