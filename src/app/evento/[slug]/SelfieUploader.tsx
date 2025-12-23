@@ -183,15 +183,47 @@ export default function SelfieUploader() {
 
               <button
                 disabled={selected.length === 0}
-                onClick={() => {
-                  selected.forEach((url) => {
+                onClick={async () => {
+                  for (const url of selected) {
+                    const img = new Image()
+                    img.crossOrigin = 'anonymous'
+                    img.src = url
+
+                    await new Promise((resolve) => {
+                      img.onload = resolve
+                    })
+
+                    const canvas = document.createElement('canvas')
+                    canvas.width = img.width
+                    canvas.height = img.height
+                    const ctx = canvas.getContext('2d')!
+
+                    // Dibujar foto
+                    ctx.drawImage(img, 0, 0)
+
+                    // Config watermark
+                    ctx.globalAlpha = 0.15
+                    ctx.fillStyle = '#ffffff'
+                    ctx.font = 'bold 48px sans-serif'
+                    ctx.rotate((-45 * Math.PI) / 180)
+
+                    const text = 'ZIZA FOTOS'
+                    const step = 300
+
+                    for (let x = -canvas.height; x < canvas.width * 2; x += step) {
+                      for (let y = -canvas.height; y < canvas.height * 2; y += step) {
+                        ctx.fillText(text, x, y)
+                      }
+                    }
+
+                    // Descargar
                     const a = document.createElement('a')
-                    a.href = url
-                    a.download = ''
+                    a.href = canvas.toDataURL('image/jpeg', 0.95)
+                    a.download = 'foto-ziza.jpg'
                     document.body.appendChild(a)
                     a.click()
                     document.body.removeChild(a)
-                  })
+                  }
                 }}
                 className="w-full bg-black text-white rounded-full py-3 disabled:opacity-40"
               >
