@@ -1,0 +1,111 @@
+'use client'
+
+import { useState } from 'react'
+
+export default function AdminPage() {
+  const [password, setPassword] = useState('')
+  const [authed, setAuthed] = useState(false)
+  const [files, setFiles] = useState<FileList | null>(null)
+  const [status, setStatus] = useState('')
+
+  const login = async () => {
+    const res = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    })
+
+    const data = await res.json()
+
+    if (data.ok) {
+      setAuthed(true)
+    } else {
+      alert('Clave incorrecta')
+    }
+  }
+
+  const uploadFiles = async () => {
+    if (!files) return
+
+    setStatus('Subiendo fotos...')
+
+    for (const file of Array.from(files)) {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: formData,
+      })
+    }
+
+    setStatus('Fotos subidas correctamente ✅')
+  }
+
+  if (!authed) {
+    return (
+      <div className="max-w-sm mx-auto mt-32 p-6 border rounded-xl">
+        <h1 className="text-lg font-semibold mb-4">Admin</h1>
+
+        <input
+          type="password"
+          placeholder="Clave admin"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full border px-3 py-2 rounded mb-4"
+        />
+
+        <button
+          onClick={login}
+          className="w-full bg-black text-white py-2 rounded"
+        >
+          Entrar
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-md mx-auto mt-20 p-6 border rounded-xl">
+      <h1 className="text-xl font-semibold mb-4">
+        Admin · Subir fotos del evento
+      </h1>
+
+      <input
+        type="file"
+        multiple
+        accept="image/*"
+        onChange={(e) => setFiles(e.target.files ?? null)}
+      />
+
+      <button
+        onClick={uploadFiles}
+        className="w-full bg-black text-white py-3 rounded-full mt-4"
+      >
+        Subir fotos
+      </button>
+
+      <button
+        onClick={async () => {
+          setStatus('Indexando fotos...')
+          const res = await fetch('/api/admin/index-photos', {
+            method: 'POST',
+          })
+          const data = await res.json()
+          setStatus(
+            data.ok
+              ? `Indexación lista ✅ (${data.indexedPhotos} fotos)`
+              : 'Error indexando fotos'
+          )
+        }}
+        className="w-full border py-3 rounded-full mt-4"
+      >
+        Indexar fotos
+      </button>
+
+      {status && (
+        <p className="text-sm text-gray-600 mt-4">{status}</p>
+      )}
+    </div>
+  )
+}
