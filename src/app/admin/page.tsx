@@ -7,6 +7,7 @@ export default function AdminPage() {
   const [authed, setAuthed] = useState(false)
   const [files, setFiles] = useState<FileList | null>(null)
   const [status, setStatus] = useState('')
+  const [eventTitle, setEventTitle] = useState('')
 
   const login = async () => {
     const res = await fetch('/api/admin/login', {
@@ -67,6 +68,47 @@ export default function AdminPage() {
 
   return (
     <div className="max-w-md mx-auto mt-20 p-6 border rounded-xl">
+      {/* ===== Crear evento ===== */}
+      <div className="mb-8 border-b pb-6">
+        <h2 className="text-lg font-semibold mb-2">
+          Crear evento
+        </h2>
+
+        <input
+          type="text"
+          placeholder="Nombre del evento"
+          value={eventTitle}
+          onChange={(e) => setEventTitle(e.target.value)}
+          className="w-full border px-3 py-2 rounded mb-3"
+        />
+
+        <button
+          onClick={async () => {
+            if (!eventTitle) return
+
+            setStatus('Creando evento...')
+
+            const res = await fetch('/api/admin/create-event', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ title: eventTitle }),
+            })
+
+            const data = await res.json()
+
+            if (data.ok) {
+              setStatus(`Evento creado ✅ (${data.slug})`)
+              setEventTitle('')
+            } else {
+              setStatus('Error creando evento')
+            }
+          }}
+          className="w-full bg-black text-white py-3 rounded-full"
+        >
+          Crear evento
+        </button>
+      </div>
+      {/* ===== Fin crear evento ===== */}
       <h1 className="text-xl font-semibold mb-4">
         Admin · Subir fotos del evento
       </h1>
