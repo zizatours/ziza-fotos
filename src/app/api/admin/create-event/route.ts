@@ -16,24 +16,28 @@ function slugify(text: string) {
 }
 
 export async function POST(req: Request) {
-  const { title } = await req.json()
+  const { name  } = await req.json()
 
-  if (!title) {
+  if (!name) {
     return NextResponse.json(
       { error: 'Title required' },
       { status: 400 }
     )
   }
 
-  const slug = slugify(title)
+  const slug = slugify(name)
 
   const { error } = await supabase.from('events').insert({
-    title,
+    name,
     slug,
   })
 
   if (error) {
-    return NextResponse.json({ error }, { status: 500 })
+    console.error('CREATE EVENT ERROR:', error)
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500 }
+    )
   }
 
   return NextResponse.json({ ok: true, slug })

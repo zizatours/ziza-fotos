@@ -91,7 +91,7 @@ export default function AdminPage() {
             const res = await fetch('/api/admin/create-event', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ title: eventTitle }),
+              body: JSON.stringify({ name: eventTitle }),
             })
 
             const data = await res.json()
