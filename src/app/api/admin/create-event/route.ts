@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   const { error } = await supabase.from('events').insert({
     name: title,
     slug,
-    date: '',
+    date: null,
     location: '',
     image_url: '',
   })
