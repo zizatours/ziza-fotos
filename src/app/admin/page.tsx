@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function AdminPage() {
   const [password, setPassword] = useState('')
@@ -8,6 +8,36 @@ export default function AdminPage() {
   const [files, setFiles] = useState<FileList | null>(null)
   const [status, setStatus] = useState('')
   const [eventTitle, setEventTitle] = useState('')
+  const [events, setEvents] = useState<
+    { id: string; name: string; slug: string }[]
+  >([])
+
+  const [selectedEventSlug, setSelectedEventSlug] = useState('')
+
+  useEffect(() => {
+    const loadEvents = async () => {
+      try {
+        const res = await fetch('/api/admin/list-events', {
+          cache: 'no-store',
+        })
+        const data = await res.json()
+
+        const list = Array.isArray(data)
+          ? data
+          : data.events ?? []
+
+        setEvents(list)
+
+        if (list.length > 0 && !selectedEventSlug) {
+          setSelectedEventSlug(list[0].slug)
+        }
+      } catch (err) {
+        console.error('Error cargando eventos', err)
+      }
+    }
+
+    loadEvents()
+  }, [])
 
   const login = async () => {
     const res = await fetch('/api/admin/login', {
@@ -26,6 +56,11 @@ export default function AdminPage() {
   }
 
   const uploadFiles = async () => {
+    if (!selectedEventSlug) {
+      alert('Selecciona un evento primero')
+      return
+    }
+
     if (!files) return
 
     setStatus('Subiendo fotos...')
@@ -33,6 +68,7 @@ export default function AdminPage() {
     for (const file of Array.from(files)) {
       const formData = new FormData()
       formData.append('file', file)
+      formData.append('event_slug', selectedEventSlug)
 
       await fetch('/api/admin/upload', {
         method: 'POST',
@@ -112,6 +148,24 @@ export default function AdminPage() {
       <h1 className="text-xl font-semibold mb-4">
         Admin · Subir fotos del evento
       </h1>
+      {/* ===== Selección de evento (E4) ===== */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-2">
+          Evento seleccionado
+        </label>
+
+        <select
+          className="w-full border px-3 py-2 rounded"
+          value={selectedEventSlug}
+          onChange={(e) => setSelectedEventSlug(e.target.value)}
+        >
+          {events.map((ev) => (
+            <option key={ev.id} value={ev.slug}>
+              {ev.name} ({ev.slug})
+            </option>
+          ))}
+        </select>
+      </div>
 
       <input
         type="file"
@@ -129,10 +183,21 @@ export default function AdminPage() {
 
       <button
         onClick={async () => {
+          if (!selectedEventSlug) {
+            alert('Selecciona un evento primero')
+            return
+          }
+
           setStatus('Indexando fotos...')
+
           const res = await fetch('/api/admin/index-photos', {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event_slug: selectedEventSlug,
+            }),
           })
+
           const data = await res.json()
           setStatus(
             data.ok

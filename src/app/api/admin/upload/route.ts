@@ -10,22 +10,30 @@ export async function POST(req: Request) {
   const formData = await req.formData()
   const file = formData.get('file') as File | null
 
+  const eventSlug = formData.get('event_slug') as string
+
+  if (!eventSlug) {
+    return Response.json(
+      { error: 'Missing event_slug' },
+      { status: 400 }
+    )
+  }
+
+
   if (!file) {
     return NextResponse.json({ error: 'No file' }, { status: 400 })
   }
 
   const bytes = Buffer.from(await file.arrayBuffer())
 
+  const filePath = `${eventSlug}/${Date.now()}-${file.name}`
+
   const { error } = await supabase.storage
     .from('event-photos')
-    .upload(`evento-demo/${Date.now()}-${file.name}`, bytes, {
+    .upload(filePath, bytes, {
       contentType: file.type,
       upsert: false,
     })
-
-  if (error) {
-    return NextResponse.json({ error }, { status: 500 })
-  }
 
   return NextResponse.json({ ok: true })
 }

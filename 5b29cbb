@@ -1,0 +1,34 @@
+[33m28bc919[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m fix events create: use name column
+[33m63cc61d[m admin create event section
+[33m038859e[m admin create event section
+[33me2346e2[m admin create event section
+[33m905ef8b[m fix controlled input warning in admin file upload
+[33m0f565d5[m repeat watermark overlay on result previews
+[33m707dd35[m fix repeated visible watermark overlay
+[33md7af45b[m repeat watermark overlay on result previews
+[33m9a7d8a5[m fix download onClick
+[33mbd987fd[m remove temp admin index button
+[33m7ccacb8[m download clean image without watermark
+[33m4dc876c[m add visual watermark overlay on thumbnails
+[33m1f36f88[m force download and add watermark
+[33mdb5f02b[m fix photo selection click
+[33mbfb7e23[m add photo selection and download button
+[33m1761028[m show photo thumbnails for matches
+[33m7c2afa4[m group matches by photo
+[33m18a2d86[m remove temp admin index button
+[33m5d36dee[m remove debug logs
+[33m5e3007d[m exclude cms from next build
+[33ma5b03ab[m update project with backend, aws, supabase
+[33m1e773f1[m Fix App Router: eliminar next/router y usar params
+[33m8edc778[m Fix App Router: eliminar next/router y usar params
+[33m7fe5797[m Agrego fakePhotos para resultados del evento
+[33m2f9a188[m Mejorar diseño de la página de evento
+[33mc8dfae5[m Mejorar diseño de la página de evento
+[33m47c61e9[m Mejorar diseño de la página de evento
+[33ma964dc1[m Las cards del inicio navegan al evento
+[33mbde64a9[m Mejora el estilo de la página de inicio
+[33mc826524[m Agrego cards de eventos con interactividad
+[33mf5fd29c[m Agrego cards de eventos al inicio
+[33m8f46a65[m Actualizo page.tsx con inicio real
+[33mde26852[m Proyecto Ziza Fotos limpio
+[33m5b29cbb[m Initial commit from Create Next App

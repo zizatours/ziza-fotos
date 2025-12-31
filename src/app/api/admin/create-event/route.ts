@@ -28,9 +28,13 @@ export async function POST(req: Request) {
   const slug = slugify(title)
 
   const { error } = await supabase.from('events').insert({
-    title,
+    name: title,
     slug,
+    date: '',
+    location: '',
+    image_url: '',
   })
+
 
   if (error) {
     return NextResponse.json({ error }, { status: 500 })
