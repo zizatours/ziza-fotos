@@ -2,6 +2,16 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase-server'
 
+export const dynamic = 'force-dynamic'
+
+export default async function HomePage() {
+  return (
+    <div style={{ background: 'red', padding: 40 }}>
+      <h1>ESTA ES LA HOME</h1>
+    </div>
+  )
+}
+
 type EventRow = {
   id: string
   name: string
