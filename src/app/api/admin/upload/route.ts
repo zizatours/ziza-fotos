@@ -35,5 +35,19 @@ export async function POST(req: Request) {
       upsert: false,
     })
 
+  if (error) {
+    if (error.message.includes('The resource already exists')) {
+      return NextResponse.json(
+        { error: 'La foto ya existe en este evento' },
+        { status: 409 }
+      )
+    }
+
+    return NextResponse.json(
+      { error: 'Error subiendo foto' },
+      { status: 500 }
+    )
+  }
+
   return NextResponse.json({ ok: true })
 }
