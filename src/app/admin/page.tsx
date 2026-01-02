@@ -21,6 +21,7 @@ export default function AdminPage() {
     { id: string; name: string; slug: string }[]
   >([])
   const [selectedEventSlug, setSelectedEventSlug] = useState('')
+  const [loading, setLoading] = useState(false)
 
   // ===== cargar eventos =====
   useEffect(() => {
@@ -227,8 +228,9 @@ export default function AdminPage() {
       {/* ===== Indexar fotos ===== */}
       <button
         onClick={async () => {
-          if (!selectedEventSlug) return
+          if (!selectedEventSlug || loading) return
 
+          setLoading(true)
           setStatus('Indexando fotos...')
 
           const res = await fetch('/api/admin/index-photos', {
@@ -252,10 +254,15 @@ export default function AdminPage() {
           } else {
             setStatus('Error indexando fotos')
           }
+
+          setLoading(false)
         }}
-        className="w-full border py-3 rounded-full mt-4"
+        disabled={loading}
+        className={`w-full border py-3 rounded-full mt-4 ${
+          loading ? 'opacity-50' : ''
+        }`}
       >
-        Indexar fotos
+        {loading ? 'Indexando…' : 'Indexar fotos'}
       </button>
 
       {/* ===== Eliminar evento ===== */}
