@@ -26,7 +26,7 @@ export async function POST(req: Request) {
 
   const bytes = Buffer.from(await file.arrayBuffer())
 
-  const filePath = `${eventSlug}/${Date.now()}-${file.name}`
+  const filePath = `${eventSlug}/${file.name}`
 
   const { error } = await supabase.storage
     .from('event-photos')
