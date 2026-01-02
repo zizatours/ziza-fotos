@@ -20,7 +20,7 @@ const rekognition = new RekognitionClient({
 
 export async function POST(req: Request) {
   // ===============================
-  // PASO 2 — leer event_slug
+  // E6 — leer event_slug
   // ===============================
   const { event_slug } = await req.json()
 
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
   }
 
   // ===============================
-  // PASO 3 — listar SOLO fotos del evento
+  // Listar SOLO fotos del evento
   // ===============================
   const { data: files, error: listError } = await supabase.storage
     .from('event-photos')
@@ -47,10 +47,8 @@ export async function POST(req: Request) {
   }
 
   let indexedPhotos = 0
+  let skippedPhotos = 0
 
-  // ===============================
-  // PASO 4 — indexar SOLO esas fotos
-  // ===============================
   for (const file of files ?? []) {
     if (!file.name) continue
 
@@ -62,9 +60,27 @@ export async function POST(req: Request) {
 
     const imageUrl = publicUrlData.publicUrl
 
+    // ===============================
+    // E6 — VERIFICAR SI YA EXISTE
+    // ===============================
+    const { data: existing } = await supabase
+      .from('event_faces')
+      .select('id')
+      .eq('event_slug', event_slug)
+      .eq('image_url', imageUrl)
+      .limit(1)
+
+    if (existing && existing.length > 0) {
+      skippedPhotos++
+      continue
+    }
+
+    // ===============================
+    // Indexar SOLO fotos nuevas
+    // ===============================
     try {
       const command = new IndexFacesCommand({
-        CollectionId: event_slug, // una colección por evento
+        CollectionId: event_slug,
         Image: {
           S3Object: {
             Bucket: process.env.AWS_S3_BUCKET_NAME!,
@@ -97,5 +113,6 @@ export async function POST(req: Request) {
   return NextResponse.json({
     ok: true,
     indexedPhotos,
+    skippedPhotos,
   })
 }
