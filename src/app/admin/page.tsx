@@ -2,25 +2,27 @@
 
 import { useState, useEffect } from 'react'
 
+// ===== helper: sanear nombres de archivo =====
 const sanitizeFileName = (name: string) =>
   name
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // quita acentos
-    .replace(/[^a-zA-Z0-9._-]/g, '_') // reemplaza raros
-
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9._-]/g, '_')
 
 export default function AdminPage() {
   const [password, setPassword] = useState('')
   const [authed, setAuthed] = useState(false)
+
   const [files, setFiles] = useState<FileList | null>(null)
   const [status, setStatus] = useState('')
+
   const [eventTitle, setEventTitle] = useState('')
   const [events, setEvents] = useState<
     { id: string; name: string; slug: string }[]
   >([])
-
   const [selectedEventSlug, setSelectedEventSlug] = useState('')
 
+  // ===== cargar eventos =====
   useEffect(() => {
     const loadEvents = async () => {
       try {
@@ -28,24 +30,22 @@ export default function AdminPage() {
           cache: 'no-store',
         })
         const data = await res.json()
-
-        const list = Array.isArray(data)
-          ? data
-          : data.events ?? []
+        const list = Array.isArray(data) ? data : data.events ?? []
 
         setEvents(list)
 
         if (list.length > 0 && !selectedEventSlug) {
           setSelectedEventSlug(list[0].slug)
         }
-      } catch (err) {
-        console.error('Error cargando eventos', err)
+      } catch (e) {
+        console.error(e)
       }
     }
 
     loadEvents()
   }, [])
 
+  // ===== login =====
   const login = async () => {
     const res = await fetch('/api/admin/login', {
       method: 'POST',
@@ -55,13 +55,11 @@ export default function AdminPage() {
 
     const data = await res.json()
 
-    if (data.ok) {
-      setAuthed(true)
-    } else {
-      alert('Clave incorrecta')
-    }
+    if (data.ok) setAuthed(true)
+    else alert('Clave incorrecta')
   }
 
+  // ===== subir fotos =====
   const uploadFiles = async () => {
     if (!selectedEventSlug) {
       alert('Selecciona un evento primero')
@@ -79,9 +77,12 @@ export default function AdminPage() {
 
     for (const file of Array.from(files)) {
       const formData = new FormData()
-      const safeFile = new File([file], sanitizeFileName(file.name), {
-        type: file.type,
-      })
+
+      const safeFile = new File(
+        [file],
+        sanitizeFileName(file.name),
+        { type: file.type }
+      )
 
       formData.append('file', safeFile)
       formData.append('event_slug', selectedEventSlug)
@@ -94,15 +95,13 @@ export default function AdminPage() {
 
         const data = await res.json()
 
-        if (res.ok) {
-          uploaded++
-        } else if (res.status === 409) {
-          duplicated++
-        } else {
+        if (res.ok) uploaded++
+        else if (res.status === 409) duplicated++
+        else {
           errors++
           errorFiles.push(file.name)
         }
-      } catch (err) {
+      } catch {
         errors++
         errorFiles.push(file.name)
       }
@@ -119,6 +118,7 @@ export default function AdminPage() {
     setStatus(message)
   }
 
+  // ===== UI =====
   if (!authed) {
     return (
       <div className="max-w-sm mx-auto mt-32 p-6 border rounded-xl">
@@ -172,11 +172,12 @@ export default function AdminPage() {
 
             const data = await res.json()
 
-            if (data.ok) {
+            if (res.ok) {
               setStatus(`Evento creado ✅ (${data.slug})`)
               setEventTitle('')
+              window.location.reload()
             } else {
-              setStatus('Error creando evento')
+              setStatus(data.error || 'Error creando evento')
             }
           }}
           className="w-full bg-black text-white py-3 rounded-full"
@@ -184,11 +185,8 @@ export default function AdminPage() {
           Crear evento
         </button>
       </div>
-      {/* ===== Fin crear evento ===== */}
-      <h1 className="text-xl font-semibold mb-4">
-        Admin · Subir fotos del evento
-      </h1>
-      {/* ===== Selección de evento (E4) ===== */}
+
+      {/* ===== Selector de evento ===== */}
       <div className="mb-4">
         <label className="block text-sm font-medium mb-2">
           Evento seleccionado
@@ -207,6 +205,45 @@ export default function AdminPage() {
         </select>
       </div>
 
+      {/* ===== Eliminar evento ===== */}
+      <button
+        onClick={async () => {
+          if (!selectedEventSlug) return
+
+          const confirmDelete = confirm(
+            '⚠️ Esto eliminará el evento, sus fotos y sus caras. ¿Continuar?'
+          )
+          if (!confirmDelete) return
+
+          setStatus('Eliminando evento...')
+
+          const res = await fetch('/api/admin/delete-event', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event_slug: selectedEventSlug,
+            }),
+          })
+
+          const data = await res.json()
+
+          if (res.ok) {
+            setStatus('Evento eliminado correctamente ✅')
+            window.location.reload()
+          } else {
+            setStatus(data.error || 'Error eliminando evento')
+          }
+        }}
+        className="w-full border border-red-500 text-red-600 py-3 rounded-full mb-6"
+      >
+        Eliminar evento
+      </button>
+
+      {/* ===== Subir fotos ===== */}
+      <h1 className="text-xl font-semibold mb-4">
+        Subir fotos del evento
+      </h1>
+
       <input
         type="file"
         multiple
@@ -221,12 +258,10 @@ export default function AdminPage() {
         Subir fotos
       </button>
 
+      {/* ===== Indexar fotos ===== */}
       <button
         onClick={async () => {
-          if (!selectedEventSlug) {
-            alert('Selecciona un evento primero')
-            return
-          }
+          if (!selectedEventSlug) return
 
           setStatus('Indexando fotos...')
 
@@ -239,6 +274,7 @@ export default function AdminPage() {
           })
 
           const data = await res.json()
+
           if (data.ok) {
             const indexed = data.indexedPhotos ?? 0
             const skipped = data.skippedPhotos ?? 0
@@ -250,7 +286,6 @@ export default function AdminPage() {
           } else {
             setStatus('Error indexando fotos')
           }
-
         }}
         className="w-full border py-3 rounded-full mt-4"
       >
@@ -258,7 +293,9 @@ export default function AdminPage() {
       </button>
 
       {status && (
-        <p className="text-sm text-gray-600 mt-4">{status}</p>
+        <p className="text-sm text-gray-600 mt-4 whitespace-pre-line">
+          {status}
+        </p>
       )}
     </div>
   )
