@@ -205,40 +205,6 @@ export default function AdminPage() {
         </select>
       </div>
 
-      {/* ===== Eliminar evento ===== */}
-      <button
-        onClick={async () => {
-          if (!selectedEventSlug) return
-
-          const confirmDelete = confirm(
-            '⚠️ Esto eliminará el evento, sus fotos y sus caras. ¿Continuar?'
-          )
-          if (!confirmDelete) return
-
-          setStatus('Eliminando evento...')
-
-          const res = await fetch('/api/admin/delete-event', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              event_slug: selectedEventSlug,
-            }),
-          })
-
-          const data = await res.json()
-
-          if (res.ok) {
-            setStatus('Evento eliminado correctamente ✅')
-            window.location.reload()
-          } else {
-            setStatus(data.error || 'Error eliminando evento')
-          }
-        }}
-        className="w-full border border-red-500 text-red-600 py-3 rounded-full mb-6"
-      >
-        Eliminar evento
-      </button>
-
       {/* ===== Subir fotos ===== */}
       <h1 className="text-xl font-semibold mb-4">
         Subir fotos del evento
@@ -290,6 +256,40 @@ export default function AdminPage() {
         className="w-full border py-3 rounded-full mt-4"
       >
         Indexar fotos
+      </button>
+
+      {/* ===== Eliminar evento ===== */}
+      <button
+        onClick={async () => {
+          if (!selectedEventSlug) return
+
+          const confirmDelete = confirm(
+            '⚠️ Esto eliminará el evento, sus fotos y sus caras. ¿Continuar?'
+          )
+          if (!confirmDelete) return
+
+          setStatus('Eliminando evento...')
+
+          const res = await fetch('/api/admin/delete-event', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event_slug: selectedEventSlug,
+            }),
+          })
+
+          const data = await res.json()
+
+          if (res.ok) {
+            setStatus('Evento eliminado correctamente ✅')
+            window.location.reload()
+          } else {
+            setStatus(data.error || 'Error eliminando evento')
+          }
+        }}
+        className="w-full border border-red-500 text-red-600 py-3 rounded-full mb-6"
+      >
+        Eliminar evento
       </button>
 
       {status && (
