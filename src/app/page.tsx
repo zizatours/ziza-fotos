@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase-server'
+import { createPublicClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,7 +15,7 @@ type EventRow = {
 }
 
 async function getLatestEvents(): Promise<EventRow[]> {
-  const supabase = createClient()
+  const supabase = createPublicClient()
 
   const { data, error } = await supabase
     .from('events')
