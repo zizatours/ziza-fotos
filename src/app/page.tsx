@@ -18,10 +18,10 @@ async function getLatestEvents(): Promise<EventRow[]> {
   const supabase = createPublicClient()
 
   const { data, error } = await supabase
-    .from('events')
-    .select('*')
-
-  console.log('HOME EVENTS:', data, error)
+  .from('events')
+  .select('*')
+  .order('event_date', { ascending: false })
+  .limit(9)
 
   if (error) {
     console.error('Error loading events:', error)
