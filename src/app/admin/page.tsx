@@ -199,11 +199,18 @@ export default function AdminPage() {
           })
 
           const data = await res.json()
-          setStatus(
-            data.ok
-              ? `Indexación lista ✅ (${data.indexedPhotos} fotos)`
-              : 'Error indexando fotos'
-          )
+          if (data.ok) {
+            const indexed = data.indexedPhotos ?? 0
+            const skipped = data.skippedPhotos ?? 0
+            const total = indexed + skipped
+
+            setStatus(
+              `Indexación lista ✅ (${indexed} nuevas · ${skipped} omitidas · ${total} total)`
+            )
+          } else {
+            setStatus('Error indexando fotos')
+          }
+
         }}
         className="w-full border py-3 rounded-full mt-4"
       >
