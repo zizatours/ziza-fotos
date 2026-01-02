@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import {
   RekognitionClient,
   DetectFacesCommand,
 } from '@aws-sdk/client-rekognition'
+import { createAdminClient } from '@/lib/supabase-server'
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+const supabase = createAdminClient()
+
 
 const rekognition = new RekognitionClient({
   region: process.env.AWS_REGION!,
