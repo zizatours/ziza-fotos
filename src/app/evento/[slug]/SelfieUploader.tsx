@@ -21,6 +21,7 @@ export default function SelfieUploader() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [selected, setSelected] = useState<string[]>([])
   const [statusText, setStatusText] = useState<string | null>(null)
+  const [searched, setSearched] = useState(false)
 
   const toggleSelect = (url: string) => {
     setSelected(prev =>
@@ -50,6 +51,18 @@ export default function SelfieUploader() {
             Usamos reconocimiento facial para mostrarte solo tus fotos
           </p>
 
+          {!searching && !searched && (
+            <p className="text-center text-gray-500 text-sm mb-4">
+              Sube una selfie para buscar tus fotos 📸
+            </p>
+          )}
+
+          {searching && (
+            <p className="text-center text-gray-500 text-sm mb-4">
+              Buscando tus fotos… ⏳
+            </p>
+          )}
+
           {!searching && (
             <label className="block w-full border rounded-full py-3 text-gray-700 cursor-pointer mb-4">
               Seleccionar selfie
@@ -77,6 +90,7 @@ export default function SelfieUploader() {
                 setErrorMsg(null)
                 setMatches([])
                 setSelected([])
+                setSearched(false)
 
                 const formData = new FormData()
                 formData.append('file', fileRef.current)
@@ -112,6 +126,7 @@ export default function SelfieUploader() {
 
                   setMatches(grouped)
                   setResults(true)
+                  setSearched(true)
                 } catch (err) {
                   setErrorMsg('Ocurrió un error al buscar tus fotos')
                 } finally {
@@ -146,16 +161,23 @@ export default function SelfieUploader() {
             </p>
           )}
 
-          {!matches.length && !errorMsg && (
+          {searched && !searching && matches.length === 0 && !errorMsg && (
             <div className="text-gray-600 text-sm">
-              <p className="mb-2">Aún no encontramos coincidencias.</p>
+              <p className="mb-2">
+                No encontramos fotos donde aparezcas 😢
+              </p>
               <p className="text-xs">
-                Puede que las fotos del evento todavía se estén procesando
-                o que aún no estén disponibles.
+                Puede que las fotos del evento aún se estén procesando
+                o que no aparezcas en ellas.
               </p>
             </div>
           )}
-          
+
+          <p className="text-center text-gray-600 text-sm mb-4">
+            Encontramos {matches.length} foto
+            {matches.length > 1 ? 's' : ''} donde apareces 🎉
+          </p>
+
           {matches.length > 0 && (
             <>
               <div className="grid grid-cols-2 gap-4">
