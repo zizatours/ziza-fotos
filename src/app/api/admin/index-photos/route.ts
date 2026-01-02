@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import {
   RekognitionClient,
-  IndexFacesCommand,
+  DetectFacesCommand,
 } from '@aws-sdk/client-rekognition'
 
 const supabase = createClient(
@@ -18,9 +18,16 @@ const rekognition = new RekognitionClient({
   },
 })
 
+// helper: descargar imagen desde Supabase (URL pública) y devolver bytes
+async function fetchImageBytes(url: string): Promise<Uint8Array> {
+  const res = await fetch(url)
+  const arrayBuffer = await res.arrayBuffer()
+  return new Uint8Array(arrayBuffer)
+}
+
 export async function POST(req: Request) {
   // ===============================
-  // E6 — leer event_slug
+  // E5/E6 — leer event_slug
   // ===============================
   const { event_slug } = await req.json()
 
@@ -61,7 +68,7 @@ export async function POST(req: Request) {
     const imageUrl = publicUrlData.publicUrl
 
     // ===============================
-    // E6 — VERIFICAR SI YA EXISTE
+    // E6 — evitar reindexar
     // ===============================
     const { data: existing } = await supabase
       .from('event_faces')
@@ -75,38 +82,43 @@ export async function POST(req: Request) {
       continue
     }
 
-    // ===============================
-    // Indexar SOLO fotos nuevas
-    // ===============================
     try {
-      const command = new IndexFacesCommand({
-        CollectionId: event_slug,
+      // ===============================
+      // Descargar imagen y detectar caras
+      // ===============================
+      const imageBytes = await fetchImageBytes(imageUrl)
+
+      const detectCommand = new DetectFacesCommand({
         Image: {
-          S3Object: {
-            Bucket: process.env.AWS_S3_BUCKET_NAME!,
-            Name: path,
-          },
+          Bytes: imageBytes,
         },
-        ExternalImageId: file.name,
-        DetectionAttributes: [],
+        Attributes: [],
       })
 
-      const result = await rekognition.send(command)
+      const detectResult = await rekognition.send(detectCommand)
 
-      for (const face of result.FaceRecords ?? []) {
-        if (!face.Face?.FaceId || !face.Face?.BoundingBox) continue
+      if (!detectResult.FaceDetails || detectResult.FaceDetails.length === 0) {
+        skippedPhotos++
+        continue
+      }
+
+      // ===============================
+      // Guardar cada cara detectada
+      // ===============================
+      for (const face of detectResult.FaceDetails) {
+        if (!face.BoundingBox) continue
 
         await supabase.from('event_faces').insert({
           event_slug,
           image_url: imageUrl,
-          face_id: face.Face.FaceId,
-          bounding_box: face.Face.BoundingBox,
+          face_id: crypto.randomUUID(), // ID local (ya no AWS FaceId)
+          bounding_box: face.BoundingBox,
         })
       }
 
       indexedPhotos++
     } catch (err) {
-      console.error('Index error:', err)
+      console.error('Detect error:', err)
     }
   }
 
