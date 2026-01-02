@@ -2,6 +2,13 @@
 
 import { useState, useEffect } from 'react'
 
+const sanitizeFileName = (name: string) =>
+  name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // quita acentos
+    .replace(/[^a-zA-Z0-9._-]/g, '_') // reemplaza raros
+
+
 export default function AdminPage() {
   const [password, setPassword] = useState('')
   const [authed, setAuthed] = useState(false)
@@ -72,7 +79,11 @@ export default function AdminPage() {
 
     for (const file of Array.from(files)) {
       const formData = new FormData()
-      formData.append('file', file)
+      const safeFile = new File([file], sanitizeFileName(file.name), {
+        type: file.type,
+      })
+
+      formData.append('file', safeFile)
       formData.append('event_slug', selectedEventSlug)
 
       try {
