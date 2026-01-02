@@ -70,14 +70,13 @@ export async function POST(req: Request) {
     // ===============================
     // E6 — evitar reindexar
     // ===============================
-    const { data: existing } = await supabase
+    const { count } = await supabase
       .from('event_faces')
-      .select('id')
+      .select('*', { count: 'exact', head: true })
       .eq('event_slug', event_slug)
       .eq('image_url', imageUrl)
-      .limit(1)
 
-    if (existing && existing.length > 0) {
+    if ((count ?? 0) > 0) {
       skippedPhotos++
       continue
     }
