@@ -61,7 +61,11 @@ export default function AdminPage() {
       return
     }
 
-    if (!files) return
+    if (!files || files.length === 0) return
+
+    let uploaded = 0
+    let duplicated = 0
+    let errors = 0
 
     setStatus('Subiendo fotos...')
 
@@ -70,20 +74,35 @@ export default function AdminPage() {
       formData.append('file', file)
       formData.append('event_slug', selectedEventSlug)
 
-      const res = await fetch('/api/admin/upload', {
-        method: 'POST',
-        body: formData,
-      })
+      try {
+        const res = await fetch('/api/admin/upload', {
+          method: 'POST',
+          body: formData,
+        })
 
-      const data = await res.json()
+        const data = await res.json()
 
-      if (!res.ok) {
-        setStatus(data.error || 'Error subiendo foto')
-        return
+        if (res.ok) {
+          uploaded++
+        } else if (res.status === 409) {
+          duplicated++
+        } else {
+          errors++
+        }
+      } catch (err) {
+        errors++
       }
     }
 
-    setStatus('Fotos subidas correctamente ✅')
+    const total = uploaded + duplicated + errors
+
+    let message = `Subida completa ✅\n${uploaded} nuevas · ${duplicated} duplicadas · ${total} total`
+
+    if (errors > 0) {
+      message += `\n⚠️ ${errors} con error`
+    }
+
+    setStatus(message)
   }
 
   if (!authed) {
