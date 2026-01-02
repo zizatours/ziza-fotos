@@ -70,10 +70,17 @@ export default function AdminPage() {
       formData.append('file', file)
       formData.append('event_slug', selectedEventSlug)
 
-      await fetch('/api/admin/upload', {
+      const res = await fetch('/api/admin/upload', {
         method: 'POST',
         body: formData,
       })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setStatus(data.error || 'Error subiendo foto')
+        return
+      }
     }
 
     setStatus('Fotos subidas correctamente ✅')
