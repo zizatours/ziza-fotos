@@ -66,6 +66,7 @@ export default function AdminPage() {
     let uploaded = 0
     let duplicated = 0
     let errors = 0
+    const errorFiles: string[] = []
 
     setStatus('Subiendo fotos...')
 
@@ -88,9 +89,11 @@ export default function AdminPage() {
           duplicated++
         } else {
           errors++
+          errorFiles.push(file.name)
         }
       } catch (err) {
         errors++
+        errorFiles.push(file.name)
       }
     }
 
@@ -99,7 +102,7 @@ export default function AdminPage() {
     let message = `Subida completa ✅\n${uploaded} nuevas · ${duplicated} duplicadas · ${total} total`
 
     if (errors > 0) {
-      message += `\n⚠️ ${errors} con error`
+      message += `\n⚠️ Error en: ${errorFiles.join(', ')}`
     }
 
     setStatus(message)
