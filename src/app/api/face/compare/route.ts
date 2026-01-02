@@ -3,9 +3,9 @@ import {
   RekognitionClient,
   CompareFacesCommand,
 } from '@aws-sdk/client-rekognition'
-import { createClient } from '@/lib/supabase-server'
+import { createAdminClient } from '@/lib/supabase-server'
 
-const supabase = createClient()
+const supabase = createAdminClient()
 
 const client = new RekognitionClient({
   region: process.env.AWS_REGION,
