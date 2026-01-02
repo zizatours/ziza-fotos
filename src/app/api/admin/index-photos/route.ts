@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import {
   RekognitionClient,
-  DetectFacesCommand,
+  IndexFacesCommand,
 } from '@aws-sdk/client-rekognition'
 
 const supabase = createClient(
@@ -18,61 +18,84 @@ const rekognition = new RekognitionClient({
   },
 })
 
-export async function POST() {
-  try {
-    // 1) Listar fotos del evento
-    const { data: files, error } = await supabase.storage
+export async function POST(req: Request) {
+  // ===============================
+  // PASO 2 — leer event_slug
+  // ===============================
+  const { event_slug } = await req.json()
+
+  if (!event_slug) {
+    return NextResponse.json(
+      { error: 'Missing event_slug' },
+      { status: 400 }
+    )
+  }
+
+  // ===============================
+  // PASO 3 — listar SOLO fotos del evento
+  // ===============================
+  const { data: files, error: listError } = await supabase.storage
+    .from('event-photos')
+    .list(event_slug)
+
+  if (listError) {
+    console.error(listError)
+    return NextResponse.json(
+      { error: 'Failed to list event photos' },
+      { status: 500 }
+    )
+  }
+
+  let indexedPhotos = 0
+
+  // ===============================
+  // PASO 4 — indexar SOLO esas fotos
+  // ===============================
+  for (const file of files ?? []) {
+    if (!file.name) continue
+
+    const path = `${event_slug}/${file.name}`
+
+    const { data: publicUrlData } = supabase.storage
       .from('event-photos')
-      .list('evento-demo')
+      .getPublicUrl(path)
 
-    if (error || !files) {
-      return NextResponse.json({ error: 'No files found' }, { status: 500 })
-    }
+    const imageUrl = publicUrlData.publicUrl
 
-    let indexed = 0
-
-    for (const file of files) {
-      if (!file.name.match(/\.(jpg|jpeg|png)$/i)) continue
-
-      const publicUrl = supabase.storage
-        .from('event-photos')
-        .getPublicUrl(`evento-demo/${file.name}`).data.publicUrl
-
-      // 2) Descargar imagen
-      const res = await fetch(publicUrl)
-      const buffer = Buffer.from(await res.arrayBuffer())
-
-      // 3) Detectar caras
-      const command = new DetectFacesCommand({
-        Image: { Bytes: buffer },
+    try {
+      const command = new IndexFacesCommand({
+        CollectionId: event_slug, // una colección por evento
+        Image: {
+          S3Object: {
+            Bucket: process.env.AWS_S3_BUCKET_NAME!,
+            Name: path,
+          },
+        },
+        ExternalImageId: file.name,
+        DetectionAttributes: [],
       })
 
       const result = await rekognition.send(command)
 
-      if (!result.FaceDetails) continue
+      for (const face of result.FaceRecords ?? []) {
+        if (!face.Face?.FaceId || !face.Face?.BoundingBox) continue
 
-      // 4) Guardar caras
-      for (const face of result.FaceDetails) {
         await supabase.from('event_faces').insert({
-          event_slug: 'evento-demo',
-          image_url: publicUrl,
-          bounding_box: face.BoundingBox,
-          confidence: face.Confidence,
+          event_slug,
+          image_url: imageUrl,
+          face_id: face.Face.FaceId,
+          bounding_box: face.Face.BoundingBox,
         })
       }
 
-      indexed++
+      indexedPhotos++
+    } catch (err) {
+      console.error('Index error:', err)
     }
-
-    return NextResponse.json({
-      ok: true,
-      indexedPhotos: indexed,
-    })
-  } catch (err) {
-    console.error(err)
-    return NextResponse.json(
-      { error: 'Indexing failed' },
-      { status: 500 }
-    )
   }
+
+  return NextResponse.json({
+    ok: true,
+    indexedPhotos,
+  })
 }
