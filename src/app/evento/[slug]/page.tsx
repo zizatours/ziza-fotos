@@ -1,11 +1,7 @@
-import { sanityClient } from '@/lib/sanity'
 import SelfieUploader from './SelfieUploader'
+import { createPublicClient } from '@/lib/supabase-server'
 
-type Event = {
-  title: string
-  location: string
-  date: string
-}
+export const dynamic = 'force-dynamic'
 
 export default async function EventoPage({
   params,
@@ -14,13 +10,13 @@ export default async function EventoPage({
 }) {
   const { slug } = await params
 
-  const event: Event | null = await sanityClient.fetch(
-    `*[_type == "event" && slug.current == "${slug}"][0]{
-      title,
-      location,
-      date
-    }`
-  )
+  const supabase = createPublicClient()
+
+  const { data: event } = await supabase
+    .from('events')
+    .select('name, location, event_date')
+    .eq('slug', slug)
+    .single()
 
   if (!event) {
     return (
@@ -47,7 +43,7 @@ export default async function EventoPage({
 
         <div className="relative z-10 px-6">
           <h1 className="text-4xl md:text-5xl font-semibold mb-4">
-            {event.title}
+            {event.name}
           </h1>
 
           <p className="text-lg text-gray-200">
@@ -60,7 +56,12 @@ export default async function EventoPage({
       <section className="max-w-5xl mx-auto px-6 py-10">
         <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-600">
           <span>📍 {event.location}</span>
-          <span>📅 {new Date(event.date).toLocaleDateString()}</span>
+          <span>
+            📅 {event.event_date
+              ? new Date(event.event_date).toLocaleDateString()
+              : ''}
+          </span>
+
           <span>📸 Fotos oficiales</span>
         </div>
       </section>

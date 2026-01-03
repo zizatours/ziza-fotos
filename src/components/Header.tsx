@@ -109,6 +109,7 @@ export default function Header() {
                     <button
                       key={ev.id}
                       onClick={() => {
+                        if (!ev.slug) return
                         router.push(`/evento/${ev.slug}`)
                         setOpen(false)
                         setQuery('')
