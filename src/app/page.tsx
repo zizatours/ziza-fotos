@@ -1,6 +1,8 @@
+'use client'
+import { useEffect, useState } from 'react'
+
 import Image from 'next/image'
 import Link from 'next/link'
-import { createPublicClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,27 +10,10 @@ type EventRow = {
   id: string
   name: string
   slug: string
-  date: string | null
+  event_date: string | null
   location: string | null
   image_url: string | null
   created_at: string
-}
-
-async function getLatestEvents(): Promise<EventRow[]> {
-  const supabase = createPublicClient()
-
-  const { data, error } = await supabase
-  .from('events')
-  .select('*')
-  .order('event_date', { ascending: false })
-  .limit(9)
-
-  if (error) {
-    console.error('Error loading events:', error)
-    return []
-  }
-
-  return data ?? []
 }
 
 function EventCard({ event }: { event: EventRow }) {
@@ -60,7 +45,7 @@ function EventCard({ event }: { event: EventRow }) {
             {event.name}
           </div>
           <div className="text-sm text-gray-500 mt-1">
-            {[event.date, event.location].filter(Boolean).join(' · ')}
+            {[event.event_date, event.location].filter(Boolean).join(' · ')}
           </div>
         </div>
       </div>
@@ -105,8 +90,18 @@ function CategoryBanner({
   )
 }
 
-export default async function HomePage() {
-  const events = await getLatestEvents()
+export default function HomePage() {
+
+  const [events, setEvents] = useState<EventRow[]>([])
+
+  useEffect(() => {
+    fetch('/api/admin/list-events', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data) => {
+        const list = data.events ?? []
+        setEvents(list)
+      })
+  }, [])
 
   return (
     <main className="w-full">
