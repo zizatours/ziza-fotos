@@ -11,7 +11,7 @@ type EventRow = {
   id: string
   name: string
   slug: string
-  date: string | null
+  event_date: string | null
   location: string | null
   image_url: string | null
   created_at: string
@@ -63,7 +63,7 @@ function EventCard({ event }: { event: EventRow }) {
             {event.name}
           </div>
           <div className="text-sm text-gray-500 mt-1">
-            {[event.date, event.location].filter(Boolean).join(' · ')}
+            {[event.event_date, event.location].filter(Boolean).join(' · ')}
           </div>
         </div>
       </div>
@@ -108,7 +108,7 @@ function CategoryBanner({
   )
 }
 
-export default async function HomePage() {
+export default function HomePage() {
   const [events, setEvents] = useState<EventRow[]>([])
   const [filtered, setFiltered] = useState<EventRow[]>([])
 
