@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -17,6 +17,19 @@ export default function Header() {
   const [query, setQuery] = useState('')
   const [events, setEvents] = useState<EventRow[]>([])
   const router = useRouter()
+  const boxRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) {
+        setOpen(false)
+        setQuery('')
+      }
+    }
+
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [])
 
   // cargar eventos una vez
   useEffect(() => {
@@ -73,7 +86,7 @@ export default function Header() {
       </div>
 
       {open && (
-        <div className="border-t bg-white">
+        <div ref={boxRef} className="border-t bg-white">
           <div className="max-w-6xl mx-auto px-4 py-3">
             <input
               type="search"
@@ -86,13 +99,13 @@ export default function Header() {
 
             {/* RESULTADOS */}
             {query && (
-              <div className="mt-2 border rounded bg-white shadow-sm">
+              <div className="mt-2 border rounded bg-white shadow-sm max-h-64 overflow-auto">
                 {results.length === 0 ? (
                   <div className="p-3 text-sm text-gray-500">
                     Sin resultados
                   </div>
                 ) : (
-                  results.map((ev) => (
+                  results.slice(0, 5).map((ev) => (
                     <button
                       key={ev.id}
                       onClick={() => {
@@ -104,9 +117,7 @@ export default function Header() {
                     >
                       <div className="font-medium">{ev.name}</div>
                       <div className="text-xs text-gray-500">
-                        {[ev.event_date, ev.location]
-                          .filter(Boolean)
-                          .join(' · ')}
+                        {[ev.event_date, ev.location].filter(Boolean).join(' · ')}
                       </div>
                     </button>
                   ))
