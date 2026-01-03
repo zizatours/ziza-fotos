@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { createPublicClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,23 +14,6 @@ type EventRow = {
   location: string | null
   image_url: string | null
   created_at: string
-}
-
-async function getLatestEvents(): Promise<EventRow[]> {
-  const supabase = createPublicClient()
-
-  const { data, error } = await supabase
-  .from('events')
-  .select('*')
-  .order('event_date', { ascending: false })
-  .limit(9)
-
-  if (error) {
-    console.error('Error loading events:', error)
-    return []
-  }
-
-  return data ?? []
 }
 
 function EventCard({ event }: { event: EventRow }) {
