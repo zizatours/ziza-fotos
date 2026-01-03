@@ -1,3 +1,6 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createPublicClient } from '@/lib/supabase-server'
@@ -106,7 +109,41 @@ function CategoryBanner({
 }
 
 export default async function HomePage() {
-  const events = await getLatestEvents()
+  const [events, setEvents] = useState<EventRow[]>([])
+  const [filtered, setFiltered] = useState<EventRow[]>([])
+
+  useEffect(() => {
+    fetch('/api/admin/list-events')
+      .then((res) => res.json())
+      .then((data) => {
+        const list = data.events ?? []
+        setEvents(list)
+        setFiltered(list)
+      })
+  }, [])
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      const q = e.detail.toLowerCase()
+
+      if (!q) {
+        setFiltered(events)
+        return
+      }
+
+      setFiltered(
+        events.filter((ev) =>
+          [ev.name, ev.location]
+            .filter(Boolean)
+            .some((v) => v!.toLowerCase().includes(q))
+        )
+      )
+    }
+
+    window.addEventListener('search-events', handler)
+    return () =>
+      window.removeEventListener('search-events', handler)
+  }, [events])
 
   return (
     <main className="w-full">
@@ -138,7 +175,7 @@ export default async function HomePage() {
           </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {events.map((event) => (
+            {filtered.map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
           </div>
