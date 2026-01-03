@@ -30,8 +30,7 @@ function EventCard({ event }: { event: EventRow }) {
               src={event.image_url}
               alt={event.name}
               fill
-              className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-              sizes="(max-width: 768px) 100vw, 33vw"
+              className="object-cover"
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
@@ -39,7 +38,6 @@ function EventCard({ event }: { event: EventRow }) {
             </div>
           )}
         </div>
-
         <div className="p-3">
           <div className="font-medium leading-tight line-clamp-2">
             {event.name}
