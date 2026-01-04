@@ -23,7 +23,7 @@ function EventCard({ event }: { event: EventRow }) {
       className="group block"
       prefetch={false}
     >
-      <div className="overflow-hidden rounded-xl border bg-white">
+      <div className="overflow-hidden rounded-2xl bg-white shadow-md hover:shadow-lg transition-shadow">
         <div className="relative aspect-[4/3] bg-gray-100">
           {event.image_url ? (
             <Image
@@ -65,7 +65,7 @@ function CategoryBanner({
   return (
     <Link
       href={href}
-      className="relative block h-[220px] sm:h-[260px] rounded-2xl overflow-hidden group"
+      className="relative block h-[220px] sm:h-[260px] rounded-2xl overflow-hidden group shadow-md hover:shadow-lg transition-shadow"
       prefetch={false}
     >
       <div className="absolute inset-0 bg-black/40 z-10" />
@@ -98,7 +98,14 @@ export default function HomePage() {
     fetch('/api/admin/list-events', { cache: 'no-store' })
       .then((res) => res.json())
       .then((data) => {
-        const list = data.events ?? []
+        const list = (data.events ?? [])
+          .sort(
+            (a: any, b: any) =>
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime()
+          )
+          .slice(0, 6)
+
         setEvents(list)
       })
   }, [])
@@ -106,26 +113,41 @@ export default function HomePage() {
   return (
     <main className="w-full">
       {/* HERO */}
-      <section className="border-b">
-        <div className="relative h-[240px] sm:h-[340px] md:h-[440px]">
-          <Image
-            src="/hero.jpg"
-            alt="Ziza Fotos"
-            fill
-            priority
-            className="object-cover"
-          />
+      <section className="relative h-[80vh] flex items-center justify-center text-center text-white">
+        <Image
+          src="/hero.jpg"
+          alt="Ziza Fotos"
+          fill
+          priority
+          className="object-cover"
+        />
+
+        <div className="absolute inset-0 bg-black/35" />
+
+        <div className="relative z-10 max-w-3xl px-6">
+          <h1 className="text-4xl sm:text-5xl font-semibold mb-4">
+            Explora tus recuerdos de eventos
+          </h1>
+
+          <p className="text-lg text-gray-200 mb-8">
+            Sube una selfie y descubre todas las fotos donde apareces
+          </p>
+
+          {/* Buscador visual (el real está en el Header) */}
+          <div className="mx-auto max-w-xl bg-white rounded-full px-6 py-4 text-gray-500 text-left shadow-lg">
+            Buscar evento…
+          </div>
         </div>
-        <p className="text-center py-6 text-gray-700">
-          Encuentra tus fotos de eventos en segundos 📸
-        </p>
       </section>
 
       {/* ÚLTIMOS EVENTOS */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-        <h2 className="text-center text-2xl sm:text-3xl font-semibold mb-6">
+        <h2 className="text-center text-2xl sm:text-3xl font-semibold mb-1">
           Últimos eventos
         </h2>
+        <p className="text-center text-gray-600 mb-14">
+          Encuentra tus fotos en estos eventos:
+        </p>
 
         {events.length === 0 ? (
           <p className="text-center text-gray-500">
@@ -141,7 +163,7 @@ export default function HomePage() {
       </section>
 
       {/* CATEGORÍAS */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-10 space-y-6">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-16 mt-8 space-y-8">
         <CategoryBanner
           title="Tours"
           subtitle="Explora fotos de tours"

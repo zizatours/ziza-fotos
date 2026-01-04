@@ -30,24 +30,23 @@ export default async function EventoPage({
     <main className="bg-white min-h-screen">
 
       {/* HERO */}
-      <section
-        className="relative h-[60vh] flex items-center justify-center text-center text-white"
-        style={{
-          backgroundImage:
-            'url(https://images.unsplash.com/photo-1501281668745-f7f57925c3b4)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      >
-        <div className="absolute inset-0 bg-black/60" />
+      <section className="relative h-[70vh] flex items-center justify-center text-center text-white">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage: `url(${event.image_url ?? '/hero.jpg'})`,
+          }}
+        />
 
-        <div className="relative z-10 px-6">
-          <h1 className="text-4xl md:text-5xl font-semibold mb-4">
+        <div className="absolute inset-0 bg-black/50" />
+
+        <div className="relative z-10 max-w-3xl px-6">
+          <h1 className="text-4xl sm:text-5xl font-semibold mb-4">
             {event.name}
           </h1>
 
           <p className="text-lg text-gray-200">
-            Sube una selfie y encuentra tus fotos oficiales
+            Sube una selfie y encuentra solo tus fotos
           </p>
         </div>
       </section>
