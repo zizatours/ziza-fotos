@@ -122,10 +122,10 @@ export default function HomePage() {
           className="object-cover"
         />
 
-        <div className="absolute inset-0 bg-black/35" />
+        <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
 
         <div className="relative z-10 max-w-3xl px-6">
-          <h1 className="text-4xl sm:text-5xl font-semibold mb-4">
+          <h1 className="text-4xl sm:text-5xl font-semibold mb-6 tracking-wide">
             Explora tus recuerdos de eventos
           </h1>
 
