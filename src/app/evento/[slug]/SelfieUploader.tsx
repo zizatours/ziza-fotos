@@ -9,7 +9,12 @@ const fakePhotos = [
   'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee',
 ]
 
-export default function SelfieUploader() {
+export default function SelfieUploader({
+  eventSlug,
+}: {
+  eventSlug: string
+}) {
+
   const [fileName, setFileName] = useState<string | null>(null)
   const fileRef = useRef<File | null>(null)
   const [searching, setSearching] = useState(false)
@@ -98,7 +103,9 @@ export default function SelfieUploader() {
                 try {
                   setStatusText('Analizando tu selfie…')
 
-                  const res = await fetch('/api/face/compare', {
+                  formData.append('event_slug', eventSlug)
+
+                  const res = await fetch('/api/event/search', {
                     method: 'POST',
                     body: formData,
                   })
