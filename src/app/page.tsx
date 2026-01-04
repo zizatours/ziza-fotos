@@ -23,7 +23,7 @@ function EventCard({ event }: { event: EventRow }) {
       className="group block"
       prefetch={false}
     >
-      <div className="overflow-hidden rounded-2xl bg-white shadow-md hover:shadow-lg transition-shadow">
+      <div className="overflow-hidden rounded-2xl bg-white shadow-lg">
         <div className="relative aspect-[4/3] bg-gray-100">
           {event.image_url ? (
             <Image
@@ -40,7 +40,7 @@ function EventCard({ event }: { event: EventRow }) {
           )}
         </div>
 
-        <div className="p-3">
+        <div className="p-5 bg-white">
           <div className="font-medium leading-tight line-clamp-2">
             {event.name}
           </div>
@@ -65,24 +65,24 @@ function CategoryBanner({
   return (
     <Link
       href={href}
-      className="relative block h-[220px] sm:h-[260px] rounded-2xl overflow-hidden group shadow-md hover:shadow-lg transition-shadow"
+      className="relative block h-[260px] rounded-2xl overflow-hidden shadow-lg"
       prefetch={false}
     >
-      <div className="absolute inset-0 bg-black/40 z-10" />
+      <div className="absolute inset-0 bg-black/25 z-10" />
       <Image
         src="/hero.jpg"
         alt={title}
         fill
         className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
       />
-      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white text-center px-6">
-        <h3 className="text-3xl sm:text-4xl font-semibold">
+      <div className="absolute inset-0 z-20 flex flex-col justify-end text-white px-6 pb-6">
+        <h3 className="text-3xl font-semibold tracking-wide">
           {title}
         </h3>
         <p className="mt-1 text-sm sm:text-base text-white/90">
           {subtitle}
         </p>
-        <span className="mt-4 inline-block border border-white/50 rounded-full px-4 py-2 text-sm">
+        <span className="mt-4 inline-block rounded-full bg-white/90 px-5 py-2 text-sm text-gray-800 shadow">
           Ver eventos →
         </span>
       </div>
