@@ -14,7 +14,7 @@ export default async function EventoPage({
 
   const { data: event } = await supabase
     .from('events')
-    .select('name, location, event_date')
+    .select('name, location, event_date, image_url')
     .eq('slug', slug)
     .single()
 
