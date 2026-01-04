@@ -68,7 +68,7 @@ export default async function EventoPage({
 
       {/* SELFIE CARD (solo UI por ahora) */}
       <section className="max-w-md mx-auto px-6 pb-24">
-        <SelfieUploader />
+        <SelfieUploader eventSlug={slug} />
       </section>
     </main>
   )
