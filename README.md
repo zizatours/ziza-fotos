@@ -34,3 +34,26 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## 🎨 Diseño – Versión V1 (congelada)
+
+El diseño actual de la web (Home + Evento) corresponde a la **Versión 1 del producto**.
+
+### Principios de la V1
+- Diseño limpio, emocional y centrado en recuerdos
+- La tecnología no es protagonista
+- Tipografía única y consistente
+- Mucho espacio en blanco
+- Navegación simple y clara
+
+### Home V1 incluye:
+- Hero con imagen de evento
+- Buscador principal
+- Sección “Últimos eventos” (2 filas)
+- Cards de eventos con CTA “Encontrar mis fotos”
+- Banners de categorías:
+  - Gira de estudio
+  - Tours
+  - Fiesta
+
+⚠️ Cualquier cambio visual mayor debe considerarse **V2**.
