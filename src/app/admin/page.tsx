@@ -15,6 +15,8 @@ export default function AdminPage() {
 
   const [files, setFiles] = useState<FileList | null>(null)
   const [status, setStatus] = useState('')
+  const [eventImage, setEventImage] = useState<File | null>(null)
+  const [imageToUpload, setImageToUpload] = useState<File | null>(null)
 
   const [eventTitle, setEventTitle] = useState('')
   const [events, setEvents] = useState<
@@ -159,16 +161,33 @@ export default function AdminPage() {
           className="w-full border px-3 py-2 rounded mb-3"
         />
 
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            if (e.target.files?.[0]) {
+              setEventImage(e.target.files[0])
+            }
+          }}
+          className="w-full mb-3"
+        />
+
         <button
           onClick={async () => {
             if (!eventTitle) return
 
             setStatus('Creando evento...')
 
+            const formData = new FormData()
+            formData.append('title', eventTitle)
+
+            if (eventImage) {
+              formData.append('image', eventImage)
+            }
+
             const res = await fetch('/api/admin/create-event', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ title: eventTitle }),
+              body: formData,
             })
 
             const data = await res.json()
@@ -198,12 +217,52 @@ export default function AdminPage() {
           value={selectedEventSlug}
           onChange={(e) => setSelectedEventSlug(e.target.value)}
         >
-          {events.map((ev) => (
-            <option key={ev.id} value={ev.slug}>
-              {ev.name} ({ev.slug})
+          <option value="">Selecciona un evento</option>
+
+          {events.map((event) => (
+            <option key={event.id} value={event.slug}>
+              {event.name}
             </option>
           ))}
         </select>
+
+        <div className="mt-4 border p-4 rounded-lg">
+          <p className="font-medium mb-2">
+            Cambiar imagen principal del evento
+          </p>
+
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              if (e.target.files?.[0]) {
+                setImageToUpload(e.target.files[0])
+              }
+            }}
+            className="mb-3"
+          />
+
+          <button
+            onClick={async () => {
+              if (!imageToUpload || !selectedEventSlug) return
+
+              const formData = new FormData()
+              formData.append('eventSlug', selectedEventSlug)
+              formData.append('image', imageToUpload)
+
+              await fetch('/api/admin/update-event-image', {
+                method: 'POST',
+                body: formData,
+              })
+
+              window.location.reload()
+            }}
+            className="bg-black text-white px-4 py-2 rounded"
+          >
+            Guardar imagen
+          </button>
+        </div>
+
       </div>
 
       {/* ===== Subir fotos ===== */}

@@ -18,35 +18,31 @@ type EventRow = {
 
 function EventCard({ event }: { event: EventRow }) {
   return (
-    <Link
-      href={`/evento/${event.slug}`}
-      className="group block"
-      prefetch={false}
-    >
-      <div className="overflow-hidden rounded-2xl bg-white shadow-lg">
-        <div className="relative aspect-[4/3] bg-gray-100">
-          {event.image_url ? (
-            <Image
-              src={event.image_url}
-              alt={event.name}
-              fill
-              className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-              sizes="(max-width: 768px) 100vw, 33vw"
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
-              Sin imagen
-            </div>
-          )}
+    <Link href={`/evento/${event.slug}`} className="group">
+      <div className="rounded-3xl overflow-hidden bg-white shadow-[0_24px_48px_rgba(0,0,0,0.10)]">
+        {/* Imagen */}
+        <div className="relative h-64">
+          <Image
+            src={event.image_url || '/hero.jpg'}
+            alt={event.name}
+            fill
+            className="object-cover brightness-95"
+          />
         </div>
 
-        <div className="p-5 bg-white">
-          <div className="font-medium leading-tight line-clamp-2">
+        {/* Texto */}
+        <div className="p-6">
+          <h3 className="text-lg font-medium mb-1">
             {event.name}
-          </div>
-          <div className="text-sm text-gray-500 mt-1">
-            {[event.event_date, event.location].filter(Boolean).join(' · ')}
-          </div>
+          </h3>
+
+          <p className="text-sm text-gray-600 mb-4">
+            {event.location} · {event.event_date}
+          </p>
+
+          <span className="inline-block rounded-full bg-[#f6f3ee] px-4 py-2 text-sm">
+            Encontrar mis fotos →
+          </span>
         </div>
       </div>
     </Link>
@@ -65,25 +61,28 @@ function CategoryBanner({
   return (
     <Link
       href={href}
-      className="relative block h-[260px] rounded-2xl overflow-hidden shadow-lg"
+      className="group relative block h-[260px] rounded-3xl overflow-hidden shadow-[0_24px_48px_rgba(0,0,0,0.12)]"
       prefetch={false}
     >
-      <div className="absolute inset-0 bg-black/25 z-10" />
+      {/* Imagen */}
       <Image
         src="/hero.jpg"
         alt={title}
         fill
-        className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+        className="object-cover brightness-90 group-hover:brightness-100 transition"
       />
-      <div className="absolute inset-0 z-20 flex flex-col justify-end text-white px-6 pb-6">
-        <h3 className="text-3xl font-semibold tracking-wide">
+
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/30" />
+
+      {/* Contenido */}
+      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-white text-center px-6">
+        <h3 className="text-3xl sm:text-4xl font-light mb-3">
           {title}
         </h3>
-        <p className="mt-1 text-sm sm:text-base text-white/90">
-          {subtitle}
-        </p>
-        <span className="mt-4 inline-block rounded-full bg-white/90 px-5 py-2 text-sm text-gray-800 shadow">
-          Ver eventos →
+
+        <span className="rounded-full bg-white/90 px-5 py-2 text-sm text-gray-800 shadow">
+          {subtitle} →
         </span>
       </div>
     </Link>
@@ -111,7 +110,7 @@ export default function HomePage() {
   }, [])
 
   return (
-    <main className="w-full">
+    <main className="w-full bg-[#f6f3ee]">
       {/* HERO */}
       <section className="relative h-[80vh] flex items-center justify-center text-center text-white">
         <Image
@@ -138,6 +137,7 @@ export default function HomePage() {
             Buscar evento…
           </div>
         </div>
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-b from-transparent to-[#f6f3ee]" />
       </section>
 
       {/* ÚLTIMOS EVENTOS */}
