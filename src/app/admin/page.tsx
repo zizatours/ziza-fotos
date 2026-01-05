@@ -24,6 +24,8 @@ export default function AdminPage() {
   >([])
   const [selectedEventSlug, setSelectedEventSlug] = useState('')
   const [loading, setLoading] = useState(false)
+  const [eventLocation, setEventLocation] = useState('')
+  const [eventDate, setEventDate] = useState('')
 
   // ===== cargar eventos =====
   useEffect(() => {
@@ -162,6 +164,22 @@ export default function AdminPage() {
         />
 
         <input
+          type="text"
+          placeholder="Ubicación del evento (ej: Maracanã, Rio de Janeiro)"
+          value={eventLocation}
+          onChange={(e) => setEventLocation(e.target.value)}
+          className="w-full border px-3 py-2 rounded mb-3"
+        />
+
+        <input
+          type="text"
+          placeholder="Fecha del evento (ej: 21/12/2025)"
+          value={eventDate}
+          onChange={(e) => setEventDate(e.target.value)}
+          className="w-full border px-3 py-2 rounded mb-3"
+        />
+
+        <input
           type="file"
           accept="image/*"
           onChange={(e) => {
@@ -180,6 +198,8 @@ export default function AdminPage() {
 
             const formData = new FormData()
             formData.append('title', eventTitle)
+            formData.append('location', eventLocation)
+            formData.append('event_date', eventDate)
 
             if (eventImage) {
               formData.append('image', eventImage)

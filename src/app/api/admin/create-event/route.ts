@@ -7,6 +7,9 @@ export async function POST(req: Request) {
 
     const formData = await req.formData()
     const title = formData.get('title') as string
+    const location = formData.get('location') as string
+    const eventDate = formData.get('event_date') as string
+
     const image = formData.get('image') as File | null
 
     if (!title) {
@@ -44,9 +47,11 @@ export async function POST(req: Request) {
 
     const { error } = await supabase.from('events').insert({
       name: title,
-      slug,
-      image_url: imageUrl,
-    })
+        slug,
+        location,
+        event_date: eventDate,
+        image_url: imageUrl,
+      })
 
     if (error) {
       return NextResponse.json(
