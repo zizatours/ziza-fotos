@@ -61,7 +61,7 @@ function CategoryBanner({
   return (
     <Link
       href={href}
-      className="group relative block h-[260px] rounded-3xl overflow-hidden shadow-[0_24px_48px_rgba(0,0,0,0.12)]"
+      className="group relative block h-[180px] rounded-3xl overflow-hidden shadow-[0_24px_48px_rgba(0,0,0,0.12)]"
       prefetch={false}
     >
       {/* Imagen */}
@@ -76,12 +76,12 @@ function CategoryBanner({
       <div className="absolute inset-0 bg-black/30" />
 
       {/* Contenido */}
-      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-white text-center px-6">
+      <div className="absolute inset-0 z-10 flex flex-col items-center justify-start pt-14 text-white text-center px-6">
         <h3 className="text-3xl sm:text-4xl font-light mb-3">
           {title}
         </h3>
 
-        <span className="rounded-full bg-white/90 px-5 py-2 text-sm text-gray-800 shadow">
+        <span className="rounded-full bg-white/90 px-4 py-1.5 text-xs text-gray-800 shadow">
           {subtitle} →
         </span>
       </div>
