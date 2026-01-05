@@ -53,7 +53,7 @@ export default function SelfieUploader({
           </h2>
 
           <p className="text-gray-600 text-sm mb-6">
-            Usamos reconocimiento facial para mostrarte solo tus fotos
+            Sube una selfie y te mostraremos solo las fotos donde apareces
           </p>
 
           {!searching && !searched && (
@@ -63,9 +63,12 @@ export default function SelfieUploader({
           )}
 
           {searching && (
-            <p className="text-center text-gray-500 text-sm mb-4">
-              Buscando tus fotos… ⏳
-            </p>
+            <div className="flex flex-col items-center justify-center mb-6">
+              <div className="h-8 w-8 mb-4 animate-spin rounded-full border-2 border-gray-300 border-t-black" />
+              <p className="text-center text-gray-600 text-sm">
+                {statusText ?? 'Buscando tus fotos…'}
+              </p>
+            </div>
           )}
 
           {!searching && (
@@ -145,12 +148,6 @@ export default function SelfieUploader({
             >
               Buscar mis fotos
             </button>
-          )}
-
-          {searching && (
-            <div className="text-gray-600 text-sm animate-pulse">
-              🔍 {statusText ?? 'Buscando tus fotos…'}
-            </div>
           )}
 
         </>
