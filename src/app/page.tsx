@@ -49,40 +49,36 @@ function EventCard({ event }: { event: EventRow }) {
   )
 }
 
-function CategoryBanner({
+function CategoryCard({
   title,
-  subtitle,
   href,
 }: {
   title: string
-  subtitle: string
   href: string
 }) {
   return (
     <Link
       href={href}
-      className="group relative block h-[180px] rounded-3xl overflow-hidden shadow-[0_24px_48px_rgba(0,0,0,0.12)]"
-      prefetch={false}
+      className="block overflow-hidden rounded-2xl bg-white shadow-[0_20px_40px_rgba(0,0,0,0.08)]"
     >
       {/* Imagen */}
-      <Image
-        src="/hero.jpg"
-        alt={title}
-        fill
-        className="object-cover brightness-90 group-hover:brightness-100 transition"
-      />
+      <div className="relative h-48">
+        <Image
+          src="/hero.jpg"
+          alt={title}
+          fill
+          className="object-cover"
+        />
+      </div>
 
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-black/30" />
-
-      {/* Contenido */}
-      <div className="absolute inset-0 z-10 flex flex-col items-center justify-start pt-14 text-white text-center px-6">
-        <h3 className="text-3xl sm:text-4xl font-light mb-3">
+      {/* Texto */}
+      <div className="p-5 text-center">
+        <h3 className="text-xl font-medium mb-4">
           {title}
         </h3>
 
-        <span className="rounded-full bg-white/90 px-4 py-1.5 text-xs text-gray-800 shadow">
-          {subtitle} →
+        <span className="inline-block rounded-full bg-[#f6f3ee] px-5 py-2 text-sm">
+          Ver {title.toLowerCase()} →
         </span>
       </div>
     </Link>
@@ -143,7 +139,7 @@ export default function HomePage() {
       {/* ÚLTIMOS EVENTOS */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
         <h2 className="text-center text-2xl sm:text-3xl font-semibold mb-1">
-          Últimos eventos TEST
+          Últimos eventos
         </h2>
         <p className="text-center text-gray-600 mb-14">
           Encuentra tus fotos en estos eventos:
@@ -164,21 +160,11 @@ export default function HomePage() {
 
       {/* CATEGORÍAS */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-16 mt-8 space-y-8">
-        <CategoryBanner
-          title="Tours"
-          subtitle="Explora fotos de tours"
-          href="/"
-        />
-        <CategoryBanner
-          title="Fiesta"
-          subtitle="Momentos únicos para recordar"
-          href="/"
-        />
-        <CategoryBanner
-          title="Giras de estudio"
-          subtitle="Recuerdos de tu generación"
-          href="/"
-        />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <CategoryCard title="Gira de estudio" href="/giras" />
+          <CategoryCard title="Tours" href="/tours" />
+          <CategoryCard title="Fiesta" href="/fiesta" />
+        </div>
       </section>
 
       {/* BLOQUE DE RESPIRO */}
