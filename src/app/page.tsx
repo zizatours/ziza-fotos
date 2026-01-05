@@ -97,7 +97,9 @@ export default function HomePage() {
   const [events, setEvents] = useState<EventRow[]>([])
 
   useEffect(() => {
-    fetch('/api/admin/list-events', { cache: 'no-store' })
+    fetch('/api/admin/list-events', {
+      next: { revalidate: 60 },
+    })
       .then((res) => res.json())
       .then((data) => {
         const list = (data.events ?? [])
