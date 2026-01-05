@@ -61,7 +61,6 @@ export default async function EventoPage({
               : ''}
           </span>
 
-          <span>📸 Fotos oficiales</span>
         </div>
       </section>
 
