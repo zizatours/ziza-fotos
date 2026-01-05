@@ -18,32 +18,39 @@ type EventRow = {
 
 function EventCard({ event }: { event: EventRow }) {
   return (
-    <Link href={`/evento/${event.slug}`} className="group">
-      <div className="rounded-3xl overflow-hidden bg-white shadow-[0_24px_48px_rgba(0,0,0,0.10)]">
-        {/* Imagen */}
-        <div className="relative h-64">
-          <Image
-            src={event.image_url || '/hero.jpg'}
-            alt={event.name}
-            fill
-            className="object-cover brightness-95"
-          />
+    <Link
+      href={`/evento/${event.slug}`}
+      className="block overflow-hidden rounded-2xl bg-white shadow-[0_20px_40px_rgba(0,0,0,0.08)]"
+    >
+      {/* Imagen */}
+      <div className="relative h-56">
+        <Image
+          src={event.image_url || '/hero.jpg'}
+          alt={event.name}
+          fill
+          className="object-cover"
+        />
+      </div>
+
+      {/* Info debajo de la imagen */}
+      <div className="p-5">
+        <h3 className="text-lg font-semibold leading-tight mb-2">
+          {event.name}
+        </h3>
+
+        <div className="text-sm text-gray-600 space-y-1 mb-4">
+          <div className="flex items-center gap-2">
+            📍 <span>{event.location}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            📅 <span>{event.event_date}</span>
+          </div>
         </div>
 
-        {/* Texto */}
-        <div className="p-6">
-          <h3 className="text-lg font-medium mb-1">
-            {event.name}
-          </h3>
-
-          <p className="text-sm text-gray-600 mb-4">
-            {event.location} · {event.event_date}
-          </p>
-
-          <span className="inline-block rounded-full bg-[#f6f3ee] px-4 py-2 text-sm">
-            Encontrar mis fotos →
-          </span>
-        </div>
+        <span className="inline-block rounded-full bg-[#f6f3ee] px-4 py-2 text-sm">
+          Encontrar mis fotos →
+        </span>
       </div>
     </Link>
   )
