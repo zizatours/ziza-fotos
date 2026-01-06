@@ -48,6 +48,11 @@ export default async function EventoPage({
           <p className="text-lg text-gray-200">
             Sube una selfie y encuentra solo tus fotos
           </p>
+
+          <p className="text-sm text-gray-300 mt-3">
+            Tu selfie se usa solo para buscar tus fotos. No se guarda ni se comparte.
+          </p>
+
         </div>
       </section>
 
@@ -64,8 +69,16 @@ export default async function EventoPage({
         </div>
       </section>
 
-      {/* SELFIE CARD (solo UI por ahora) */}
-      <section className="max-w-md mx-auto px-6 pb-24">
+      {/* SELFIE CARD */}
+      <section className="max-w-md mx-auto px-6 pb-24 pt-8 text-center">
+        <h2 className="text-lg font-medium mb-1">
+          Encuentra tus fotos
+        </h2>
+
+        <p className="text-sm text-gray-500 mb-6">
+          Sube una selfie clara donde se vea bien tu rostro
+        </p>
+
         <SelfieUploader eventSlug={slug} />
       </section>
     </main>

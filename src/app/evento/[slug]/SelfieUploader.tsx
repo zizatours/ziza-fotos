@@ -159,6 +159,17 @@ export default function SelfieUploader({
             Resultados
           </h2>
 
+          {searching && matches.length === 0 && (
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              {[...Array(6)].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-40 rounded-lg bg-gray-200 animate-pulse"
+                />
+              ))}
+            </div>
+          )}
+
           {errorMsg && (
             <p className="text-red-500 text-sm mb-4">
               {errorMsg}
