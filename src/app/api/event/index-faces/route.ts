@@ -1,64 +1,85 @@
 import { NextResponse } from 'next/server'
-import {
-  RekognitionClient,
-  DetectFacesCommand,
-} from '@aws-sdk/client-rekognition'
-import { createAdminClient } from '@/lib/supabase-server'
+import { RekognitionClient, IndexFacesCommand } from '@aws-sdk/client-rekognition'
+import { createClient } from '@supabase/supabase-js'
 
-const supabase = createAdminClient()
-
-const client = new RekognitionClient({
-  region: process.env.AWS_REGION,
+const rekognition = new RekognitionClient({
+  region: process.env.AWS_REGION!,
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
   },
 })
 
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
 export async function POST(req: Request) {
   try {
+    const { imageUrl, eventSlug } = await req.json()
 
-    // 🔴 luego seguimos con la foto real
-    const formData = await req.formData()
-    const file = formData.get('file') as File | null
-
-    if (!file) {
+    if (!imageUrl || !eventSlug) {
       return NextResponse.json(
-        { error: 'No file provided' },
+        { error: 'Missing imageUrl or eventSlug' },
         { status: 400 }
       )
     }
 
-    const bytes = Buffer.from(await file.arrayBuffer())
-
-    const command = new DetectFacesCommand({
-      Image: { Bytes: bytes },
-      Attributes: [],
+    const command = new IndexFacesCommand({
+      CollectionId: process.env.AWS_REKOGNITION_COLLECTION_ID!,
+      Image: {
+        S3Object: {
+          Bucket: process.env.AWS_S3_BUCKET!,
+          Name: imageUrl.split('/').pop()!,
+        },
+      },
+      DetectionAttributes: [],
     })
 
-    const response = await client.send(command)
+    const response = await rekognition.send(command)
 
-    const eventSlug = 'evento-demo'
-    const imageUrl = 'https://lhnmkonbpehcysbbwfdf.supabase.co/storage/v1/object/public/event-photos/varias%20personas.jpg'
+    if (!response.FaceRecords || response.FaceRecords.length === 0) {
+      return NextResponse.json(
+        { error: 'No face detected in image' },
+        { status: 200 }
+      )
+    }
 
-    if (response.FaceDetails?.length) {
-      const rows = response.FaceDetails.map(face => ({
-        event_slug: eventSlug,
-        image_url: imageUrl,
-        bounding_box: face.BoundingBox,
-        confidence: face.Confidence,
-      }))
+    const faceRecord = response.FaceRecords[0]
 
-      await supabase.from('event_faces').insert(rows)
+    if (!faceRecord.Face || !faceRecord.Face.FaceId) {
+      return NextResponse.json(
+        { error: 'Face data missing' },
+        { status: 500 }
+      )
+    }
+
+    const face = faceRecord.Face
+
+    const { error } = await supabase.from('event_faces').insert({
+      event_slug: eventSlug,
+      image_url: imageUrl,
+      face_id: face.FaceId,
+      bounding_box: face.BoundingBox,
+    })
+
+    if (error) {
+      console.error('SUPABASE INSERT ERROR:', error)
+      return NextResponse.json(
+        { error: 'Failed to save face data' },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({
-      facesDetected: response.FaceDetails?.length ?? 0,
+      success: true,
+      faceId: face.FaceId,
     })
-  } catch (error) {
-    console.error('INDEX FACES ERROR:', error)
+  } catch (err) {
+    console.error('INDEX FACE ERROR:', err)
     return NextResponse.json(
-      { error: 'Index faces failed' },
+      { error: 'Indexing failed' },
       { status: 500 }
     )
   }
