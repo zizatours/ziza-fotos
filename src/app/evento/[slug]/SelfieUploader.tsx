@@ -101,7 +101,7 @@ export default function SelfieUploader({
                 setSearched(false)
 
                 const formData = new FormData()
-                formData.append('file', fileRef.current)
+                formData.append('selfie', fileRef.current)
 
                 try {
                   setStatusText('Analizando tu selfie…')
@@ -112,29 +112,17 @@ export default function SelfieUploader({
                     method: 'POST',
                     body: formData,
                   })
+                  
+                  const data = await res.json()
 
                   setStatusText('Comparando con las fotos del evento…')
 
-                  const data = await res.json()
-
-                  const grouped = Object.values(
-                    (data.matches || []).reduce((acc: any, match: any) => {
-                      if (!acc[match.image_url]) {
-                        acc[match.image_url] = {
-                          image_url: match.image_url,
-                          bestSimilarity: match.similarity,
-                        }
-                      } else {
-                        acc[match.image_url].bestSimilarity = Math.max(
-                          acc[match.image_url].bestSimilarity,
-                          match.similarity
-                        )
-                      }
-                      return acc
-                    }, {})
+                  setMatches(
+                    (data.results || []).map((url: string) => ({
+                      image_url: url,
+                    }))
                   )
 
-                  setMatches(grouped)
                   setResults(true)
                   setSearched(true)
                 } catch (err) {
