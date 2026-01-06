@@ -1,12 +1,9 @@
 import { NextResponse } from 'next/server'
 import {
   RekognitionClient,
-  DetectFacesCommand,
+  IndexFacesCommand,
 } from '@aws-sdk/client-rekognition'
-import { createAdminClient } from '@/lib/supabase-server'
-
-const supabase = createAdminClient()
-
+import { createClient } from '@supabase/supabase-js'
 
 const rekognition = new RekognitionClient({
   region: process.env.AWS_REGION!,
@@ -16,121 +13,74 @@ const rekognition = new RekognitionClient({
   },
 })
 
-// helper: descargar imagen desde Supabase (URL pública) y devolver bytes
-async function fetchImageBytes(url: string): Promise<Uint8Array> {
-  const res = await fetch(url)
-  const arrayBuffer = await res.arrayBuffer()
-  return new Uint8Array(arrayBuffer)
-}
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function POST(req: Request) {
-  // ===============================
-  // E5/E6 — leer event_slug
-  // ===============================
-  const { event_slug } = await req.json()
+  try {
+    const { event_slug, imageUrls } = await req.json()
 
-  if (!event_slug) {
-    return NextResponse.json(
-      { error: 'Missing event_slug' },
-      { status: 400 }
-    )
-  }
-
-  // ===============================
-  // Listar SOLO fotos del evento
-  // ===============================
-  const { data: files, error: listError } = await supabase.storage
-    .from('event-photos')
-    .list(event_slug)
-
-  if (listError) {
-    console.error(listError)
-    return NextResponse.json(
-      { error: 'Failed to list event photos' },
-      { status: 500 }
-    )
-  }
-
-  let indexedPhotos = 0
-  let skippedPhotos = 0
-
-  for (const file of files ?? []) {
-    if (!file.name) continue
-
-    const path = `${event_slug}/${file.name}`
-
-    const { data: publicUrlData } = supabase.storage
-      .from('event-photos')
-      .getPublicUrl(path)
-
-    const imageUrl = publicUrlData.publicUrl
-
-    // ===============================
-    // E6 — evitar reindexar
-    // ===============================
-    const { count } = await supabase
-      .from('event_faces')
-      .select('*', { count: 'exact', head: true })
-      .eq('event_slug', event_slug)
-      .eq('image_url', imageUrl)
-
-    if ((count ?? 0) > 0) {
-      skippedPhotos++
-      continue
+    if (!event_slug || !imageUrls || !Array.isArray(imageUrls)) {
+      return NextResponse.json(
+        { error: 'Missing event_slug or imageUrls' },
+        { status: 400 }
+      )
     }
 
-    try {
-      // ===============================
-      // Descargar imagen y detectar caras
-      // ===============================
-      const imageBytes = await fetchImageBytes(imageUrl)
+    let indexed = 0
 
-      const detectCommand = new DetectFacesCommand({
+    for (const imageUrl of imageUrls) {
+      const key = imageUrl.split('/').pop()
+      if (!key) continue
+
+      const command = new IndexFacesCommand({
+        CollectionId: process.env.AWS_REKOGNITION_COLLECTION_ID!,
         Image: {
-          Bytes: imageBytes,
+          S3Object: {
+            Bucket: process.env.AWS_S3_BUCKET!,
+            Name: `${event_slug}/${key}`,
+          },
         },
-        Attributes: [],
+        DetectionAttributes: [],
       })
 
-      const detectResult = await rekognition.send(detectCommand)
+      const response = await rekognition.send(command)
 
-      if (!detectResult.FaceDetails || detectResult.FaceDetails.length === 0) {
-        skippedPhotos++
-        continue
-      }
+      if (!response.FaceRecords || response.FaceRecords.length === 0) continue
 
-      // ===============================
-      // Guardar cada cara detectada
-      // ===============================
-      for (const face of detectResult.FaceDetails) {
-        if (!face.BoundingBox) continue
+      for (const record of response.FaceRecords) {
+        if (!record.Face?.FaceId || !record.Face.BoundingBox) continue
 
-        const { error: insertError } = await supabase.from('event_faces').insert({
+        const { error } = await supabase.from('event_faces').insert({
           event_slug,
           image_url: imageUrl,
-          face_id: crypto.randomUUID(),
-          // más seguro: guardamos como JSON string (evita fallas por tipo de columna)
-          bounding_box: JSON.stringify(face.BoundingBox),
+          face_id: record.Face.FaceId,
+          bounding_box: record.Face.BoundingBox,
         })
 
-        if (insertError) {
-          console.error('SUPABASE INSERT ERROR:', insertError)
+        if (error) {
+          console.error('SUPABASE INSERT ERROR:', error)
           return NextResponse.json(
-            { error: 'Failed to insert into event_faces', details: insertError },
+            { error: 'Failed to insert face' },
             { status: 500 }
           )
         }
+
+        indexed++
       }
-
-      indexedPhotos++
-    } catch (err) {
-      console.error('Detect error:', err)
     }
-  }
 
-  return NextResponse.json({
-    ok: true,
-    indexedPhotos,
-    skippedPhotos,
-  })
+    return NextResponse.json({
+      success: true,
+      indexed,
+    })
+  } catch (err) {
+    console.error('INDEX PHOTOS ERROR:', err)
+    return NextResponse.json(
+      { error: 'Indexing failed' },
+      { status: 500 }
+    )
+  }
 }
