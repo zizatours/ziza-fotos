@@ -34,7 +34,7 @@ function EventCard({ event }: { event: EventRow }) {
 
       {/* Info debajo de la imagen */}
       <div className="p-5">
-        <h3 className="text-lg font-semibold leading-tight mb-2">
+        <h3 className="text-lg font-semibold leading-tight mb-2 text-gray-900">
           {event.name}
         </h3>
 
@@ -48,7 +48,7 @@ function EventCard({ event }: { event: EventRow }) {
           </div>
         </div>
 
-        <span className="inline-block rounded-full bg-[#f6f3ee] px-4 py-2 text-sm">
+        <span className="inline-block rounded-full bg-[#f6f3ee] px-4 py-2 text-sm text-gray-900">
           Encontrar mis fotos →
         </span>
       </div>
@@ -80,11 +80,11 @@ function CategoryCard({
 
       {/* Texto */}
       <div className="p-5 text-center">
-        <h3 className="text-xl font-medium mb-4">
+        <h3 className="text-xl font-medium mb-4 text-gray-900">
           {title}
         </h3>
 
-        <span className="inline-block rounded-full bg-[#f6f3ee] px-5 py-2 text-sm">
+        <span className="inline-block rounded-full bg-[#f6f3ee] px-5 py-2 text-sm text-gray-900">
           Ver {title.toLowerCase()} →
         </span>
       </div>
