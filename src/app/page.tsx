@@ -207,7 +207,7 @@ export default function HomePage() {
       </section>
 
       {/* FOOTER */}
-      <footer className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+      <footer className="max-w-6xl mx-auto px-4 sm:px-6 py-12 text-gray-900">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
           <div>
             <h3 className="font-semibold mb-3">
