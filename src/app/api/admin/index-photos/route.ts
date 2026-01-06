@@ -6,7 +6,7 @@ import {
 import { createClient } from '@supabase/supabase-js'
 
 const rekognition = new RekognitionClient({
-  region: process.env.AWS_REGION!,
+  region: 'us-east-1',
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
@@ -57,13 +57,27 @@ export async function POST(req: Request) {
 
       const imageUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/event-photos/${event_slug}/${file.name}`
 
+      // 🔍 Verificar si esta imagen ya fue indexada
+      const { data: existing } = await supabase
+        .from('event_faces')
+        .select('id')
+        .eq('event_slug', event_slug)
+        .eq('image_url', imageUrl)
+        .limit(1)
+
+      if (existing && existing.length > 0) {
+        continue // ya indexada, saltamos
+      }
+
+      // Descargar imagen desde Supabase
+      const response = await fetch(imageUrl)
+      const arrayBuffer = await response.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+
       const command = new IndexFacesCommand({
         CollectionId: process.env.AWS_REKOGNITION_COLLECTION_ID!,
         Image: {
-          S3Object: {
-            Bucket: process.env.AWS_S3_BUCKET!,
-            Name: `${event_slug}/${file.name}`,
-          },
+          Bytes: buffer,
         },
       })
 

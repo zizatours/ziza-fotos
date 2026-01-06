@@ -322,13 +322,13 @@ export default function AdminPage() {
 
           const data = await res.json()
 
-          if (data.ok) {
-            const indexed = data.indexedPhotos ?? 0
-            const skipped = data.skippedPhotos ?? 0
-            const total = indexed + skipped
+          if (data.success) {
+            const indexed = data.indexed ?? 0
 
             setStatus(
-              `Indexación lista ✅ (${indexed} nuevas · ${skipped} omitidas · ${total} total)`
+              indexed > 0
+                ? `Indexación lista ✅ (${indexed} caras nuevas indexadas)`
+                : 'ℹ️ Indexación completada (no se detectaron caras nuevas)'
             )
           } else {
             setStatus('Error indexando fotos')
