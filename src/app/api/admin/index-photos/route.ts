@@ -105,12 +105,21 @@ export async function POST(req: Request) {
       for (const face of detectResult.FaceDetails) {
         if (!face.BoundingBox) continue
 
-        await supabase.from('event_faces').insert({
+        const { error: insertError } = await supabase.from('event_faces').insert({
           event_slug,
           image_url: imageUrl,
-          face_id: crypto.randomUUID(), // ID local (ya no AWS FaceId)
-          bounding_box: face.BoundingBox,
+          face_id: crypto.randomUUID(),
+          // más seguro: guardamos como JSON string (evita fallas por tipo de columna)
+          bounding_box: JSON.stringify(face.BoundingBox),
         })
+
+        if (insertError) {
+          console.error('SUPABASE INSERT ERROR:', insertError)
+          return NextResponse.json(
+            { error: 'Failed to insert into event_faces', details: insertError },
+            { status: 500 }
+          )
+        }
       }
 
       indexedPhotos++
