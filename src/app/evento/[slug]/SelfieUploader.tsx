@@ -48,14 +48,6 @@ export default function SelfieUploader({
     <div className="border rounded-2xl p-8 shadow-sm text-center">
       {!results && (
         <>
-          <h2 className="text-xl font-medium mb-2">
-            Sube tu selfie
-          </h2>
-
-          <p className="text-gray-600 text-sm mb-6">
-            Sube una selfie y te mostraremos solo las fotos donde apareces
-          </p>
-
           {!searching && !searched && (
             <p className="text-center text-gray-500 text-sm mb-4">
               Sube una selfie para buscar tus fotos 📸
