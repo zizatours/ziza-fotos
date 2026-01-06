@@ -92,9 +92,25 @@ function CategoryCard({
   )
 }
 
+function EventCardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-2xl bg-white shadow-[0_20px_40px_rgba(0,0,0,0.08)]">
+      <div className="h-56 bg-gray-200 animate-pulse" />
+      <div className="p-5 space-y-3">
+        <div className="h-5 bg-gray-200 rounded animate-pulse" />
+        <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse" />
+        <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse" />
+        <div className="h-8 bg-gray-200 rounded-full w-32 animate-pulse mt-4" />
+      </div>
+    </div>
+  )
+}
+
 export default function HomePage() {
 
   const [events, setEvents] = useState<EventRow[]>([])
+
+  const [loadingEvents, setLoadingEvents] = useState(true)
 
   useEffect(() => {
     fetch('/api/admin/list-events', {
@@ -110,7 +126,7 @@ export default function HomePage() {
           )
           .slice(0, 6)
 
-        setEvents(list)
+        setLoadingEvents(false)
       })
   }, [])
 
@@ -154,7 +170,13 @@ export default function HomePage() {
           Encuentra tus fotos en estos eventos:
         </p>
 
-        {events.length === 0 ? (
+        {loadingEvents ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <EventCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : events.length === 0 ? (
           <p className="text-center text-gray-500">
             Aún no hay eventos publicados.
           </p>
