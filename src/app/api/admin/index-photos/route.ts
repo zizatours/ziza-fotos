@@ -20,50 +20,73 @@ const supabase = createClient(
 
 export async function POST(req: Request) {
   try {
-    const { event_slug, imageUrls } = await req.json()
+    const { event_slug } = await req.json()
 
-    if (!event_slug || !imageUrls || !Array.isArray(imageUrls)) {
+    if (!event_slug) {
       return NextResponse.json(
-        { error: 'Missing event_slug or imageUrls' },
+        { error: 'Missing event_slug' },
+        { status: 400 }
+      )
+    }
+
+    // 1️⃣ Listar fotos del evento desde Storage
+    const { data: files, error: listError } = await supabase.storage
+      .from('event-photos')
+      .list(event_slug)
+
+    if (listError) {
+      console.error('STORAGE LIST ERROR:', listError)
+      return NextResponse.json(
+        { error: 'Failed to list photos' },
+        { status: 500 }
+      )
+    }
+
+    if (!files || files.length === 0) {
+      return NextResponse.json(
+        { error: 'No photos found for event' },
         { status: 400 }
       )
     }
 
     let indexed = 0
 
-    for (const imageUrl of imageUrls) {
-      const key = imageUrl.split('/').pop()
-      if (!key) continue
+    // 2️⃣ Indexar cada foto con Rekognition
+    for (const file of files) {
+      if (!file.name) continue
+
+      const imageUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/event-photos/${event_slug}/${file.name}`
 
       const command = new IndexFacesCommand({
         CollectionId: process.env.AWS_REKOGNITION_COLLECTION_ID!,
         Image: {
           S3Object: {
             Bucket: process.env.AWS_S3_BUCKET!,
-            Name: `${event_slug}/${key}`,
+            Name: `${event_slug}/${file.name}`,
           },
         },
-        DetectionAttributes: [],
       })
 
-      const response = await rekognition.send(command)
+      const result = await rekognition.send(command)
 
-      if (!response.FaceRecords || response.FaceRecords.length === 0) continue
+      if (!result.FaceRecords || result.FaceRecords.length === 0) continue
 
-      for (const record of response.FaceRecords) {
+      for (const record of result.FaceRecords) {
         if (!record.Face?.FaceId || !record.Face.BoundingBox) continue
 
-        const { error } = await supabase.from('event_faces').insert({
-          event_slug,
-          image_url: imageUrl,
-          face_id: record.Face.FaceId,
-          bounding_box: record.Face.BoundingBox,
-        })
+        const { error: insertError } = await supabase
+          .from('event_faces')
+          .insert({
+            event_slug,
+            image_url: imageUrl,
+            face_id: record.Face.FaceId,
+            bounding_box: JSON.stringify(record.Face.BoundingBox),
+          })
 
-        if (error) {
-          console.error('SUPABASE INSERT ERROR:', error)
+        if (insertError) {
+          console.error('SUPABASE INSERT ERROR:', insertError)
           return NextResponse.json(
-            { error: 'Failed to insert face' },
+            { error: 'Failed to insert face data' },
             { status: 500 }
           )
         }
