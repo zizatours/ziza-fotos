@@ -45,39 +45,23 @@ export default async function EventoPage({
             {event.name}
           </h1>
 
-          <p className="text-lg text-gray-200">
-            Sube una selfie y encuentra solo tus fotos
-          </p>
-
-          <p className="text-sm text-gray-300 mt-3">
-            Tu selfie se usa solo para buscar tus fotos. No se guarda ni se comparte.
-          </p>
-
-        </div>
-      </section>
-
-      {/* INFO */}
-      <section className="max-w-5xl mx-auto px-6 py-10">
-        <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-600">
-          <span>📍 {event.location}</span>
-          <span>
-            📅 {event.event_date
-              ? new Date(event.event_date).toLocaleDateString()
-              : ''}
-          </span>
+          <div className="flex flex-wrap justify-center gap-6 text-sm text-white/90 mt-2">
+            <span>📍 {event.location}</span>
+            <span>
+              📅 {event.event_date
+                ? new Date(event.event_date).toLocaleDateString()
+                : ''}
+            </span>
+          </div>
 
         </div>
       </section>
 
       {/* SELFIE CARD */}
       <section className="max-w-md mx-auto px-6 pb-24 pt-8 text-center">
-        <h2 className="text-lg font-medium mb-1">
+        <h2 className="text-lg font-medium mb-1 text-gray-900">
           Encuentra tus fotos
         </h2>
-
-        <p className="text-sm text-gray-500 mb-6">
-          Sube una selfie clara donde se vea bien tu rostro
-        </p>
 
         <SelfieUploader eventSlug={slug} />
       </section>
