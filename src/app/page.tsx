@@ -113,19 +113,18 @@ export default function HomePage() {
   const [loadingEvents, setLoadingEvents] = useState(true)
 
   useEffect(() => {
-    fetch('/api/admin/list-events', {
-      next: { revalidate: 60 },
-    })
+    fetch('/api/admin/list-events')
       .then((res) => res.json())
       .then((data) => {
         const list = (data.events ?? [])
           .sort(
-            (a: any, b: any) =>
+            (a: EventRow, b: EventRow) =>
               new Date(b.created_at).getTime() -
               new Date(a.created_at).getTime()
           )
           .slice(0, 6)
 
+        setEvents(list)
         setLoadingEvents(false)
       })
   }, [])
