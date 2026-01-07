@@ -45,9 +45,9 @@ export default function SelfieUploader({
   }
 
   return (
-    <div className="border rounded-2xl p-8 shadow-sm text-center">
+    <div className="w-full text-center">
       {!results && (
-        <>
+        <div className="max-w-md mx-auto border rounded-2xl p-8 shadow-sm">
           {!searching && !searched && (
             <p className="text-center text-gray-500 text-sm mb-4">
               Sube una selfie para buscar tus fotos 📸
@@ -129,9 +129,9 @@ export default function SelfieUploader({
               Buscar mis fotos
             </button>
           )}
-
-        </>
+        </div>
       )}
+
 
       {results && (
         <>
@@ -175,7 +175,7 @@ export default function SelfieUploader({
 
           {matches.length > 0 && (
             <>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                 {matches.map((m, i) => (
                   <div
                     key={i}
