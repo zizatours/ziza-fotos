@@ -58,7 +58,7 @@ export default async function EventoPage({
       </section>
 
       {/* SELFIE CARD */}
-      <section className="max-w-md mx-auto px-6 pb-24 pt-8 text-center">
+      <section className="max-w-6xl mx-auto px-6 pb-24 pt-8 text-center">
         <h2 className="text-lg font-medium mb-1 text-gray-900">
           Encuentra tus fotos
         </h2>
