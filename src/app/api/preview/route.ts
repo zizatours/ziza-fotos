@@ -32,25 +32,29 @@ export async function GET(req: NextRequest) {
           <pattern
             id="wm"
             patternUnits="userSpaceOnUse"
-            width="500"
-            height="350"
+            width="420"
+            height="420"
             patternTransform="rotate(-30)"
           >
-            <text
-              x="0"
-              y="250"
-              fill="rgba(255,255,255,0.28)"
-              font-size="72"
-              font-family="Arial, Helvetica, sans-serif"
-              font-weight="700"
-            >
-              ZIZA FOTOS
-            </text>
+            <g fill="rgba(255,255,255,0.22)">
+              <path d="M0 200 L320 200" stroke="rgba(255,255,255,0.22)" stroke-width="2"/>
+              <text
+                x="0"
+                y="180"
+                font-size="72"
+                fill="rgba(255,255,255,0.22)"
+                font-family="sans-serif"
+                font-weight="900"
+              >
+                ZIZA FOTOS
+              </text>
+            </g>
           </pattern>
         </defs>
+
         <rect width="100%" height="100%" fill="url(#wm)" />
       </svg>
-    `
+      `
 
     const output = await sharp(imageBuffer)
       .composite([
