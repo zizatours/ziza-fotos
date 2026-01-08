@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
       .jpeg({ quality: 82 })
       .toBuffer()
 
-    return new NextResponse(output, {
+    return new Response(output, {
       headers: {
         'Content-Type': 'image/jpeg',
         'Cache-Control': 'public, max-age=31536000, immutable'
