@@ -110,8 +110,8 @@ export default function SelfieUploader({
                   setStatusText('Comparando con las fotos del evento…')
 
                   setMatches(
-                    (data.results || []).map((url: string) => ({
-                      image_url: url,
+                    (data.results || []).map((path: string) => ({
+                      path,
                     }))
                   )
 
@@ -187,7 +187,7 @@ export default function SelfieUploader({
                   >
                     {/* Imagen real */}
                     <img
-                      src={`/api/preview?path=${encodeURIComponent(m.image_url)}`}
+                      src={`/api/preview?path=${encodeURIComponent(m.path)}`}
                       alt="Foto del evento"
                       className="w-full h-40 object-cover cursor-pointer"
                       onClick={() => toggleSelect(m.image_url)}
