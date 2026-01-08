@@ -46,28 +46,33 @@ export async function GET(req: Request) {
   const originalRes = await fetch(src)
   const originalBuffer = Buffer.from(await originalRes.arrayBuffer())
 
-  // 3️⃣ watermark fuerte, repetido, seguro
+  // 3️⃣ watermark FUERTE y repetido (evento real)
   const meta = await sharp(originalBuffer).metadata()
-  const size = Math.min(meta.width ?? 1200, meta.height ?? 1200)
+  const base = Math.max(meta.width ?? 2000, meta.height ?? 2000)
+
+  // tamaño del texto proporcional a la imagen
+  const fontSize = Math.round(base * 0.12) // ~480px en fotos grandes
+  const step = Math.round(base * 0.35)     // distancia entre repeticiones
 
   const watermark = Buffer.from(`
-  <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+  <svg xmlns="http://www.w3.org/2000/svg" width="${base}" height="${base}">
     <defs>
       <pattern
         id="wm"
         patternUnits="userSpaceOnUse"
-        width="420"
-        height="420"
+        width="${step}"
+        height="${step}"
         patternTransform="rotate(-35)"
       >
         <text
           x="0"
-          y="260"
+          y="${fontSize}"
           fill="white"
-          fill-opacity="0.32"
-          font-size="96"
+          fill-opacity="0.28"
+          font-size="${fontSize}"
           font-family="sans-serif"
-          font-weight="800"
+          font-weight="900"
+          letter-spacing="8"
         >
           ZIZA FOTOS
         </text>
@@ -79,9 +84,16 @@ export async function GET(req: Request) {
   `)
 
   const output = await sharp(originalBuffer)
-    .composite([{ input: watermark, tile: true }])
+    .composite([
+      {
+        input: watermark,
+        tile: true,
+        blend: 'over',
+      },
+    ])
     .jpeg({ quality: 80 })
     .toBuffer()
+
 
   // 4️⃣ guardar preview
   await supabase.storage
