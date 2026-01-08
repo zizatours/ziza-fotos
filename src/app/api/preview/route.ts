@@ -6,10 +6,10 @@ import path from 'path'
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
-    const src = searchParams.get('src')
+    const src = searchParams.get('path')
 
     if (!src) {
-      return new NextResponse('Missing src', { status: 400 })
+      return new NextResponse('Missing path', { status: 400 })
     }
 
     // 1️⃣ Descargar imagen original
