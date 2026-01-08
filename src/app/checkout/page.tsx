@@ -135,14 +135,17 @@ export default function CheckoutPage() {
 
             {/* MINI GRID (placeholder visual) */}
             <div className="grid grid-cols-3 gap-2 mb-6">
-              {images.slice(0, 6).map((url, i) => (
-                <img
-                  key={i}
-                  src={getPreviewUrl(url)}
-                  alt="Foto seleccionada"
-                  className="aspect-square object-cover rounded-md"
-                />
-              ))}
+              {images
+                .filter(Boolean)
+                .slice(0, 6)
+                .map((url, i) => (
+                  <img
+                    key={i}
+                    src={getPreviewUrl(url)}
+                    alt="Foto seleccionada"
+                    className="aspect-square object-cover rounded-md"
+                  />
+                ))}
             </div>
 
             {/* PRECIOS */}
