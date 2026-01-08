@@ -38,8 +38,15 @@ export async function GET(req: Request) {
 
     const watermarkBuffer = fs.readFileSync(watermarkPath)
 
-    // 3️⃣ Componer imagen
+    // 3️⃣ Normalizar tamaño de preview + watermark (uniforme en todas)
     const output = await sharp(imageBuffer)
+      .rotate()
+      .resize({
+        width: 2000,
+        height: 2000,
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
       .composite([
         {
           input: watermarkBuffer,
