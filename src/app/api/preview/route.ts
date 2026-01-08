@@ -27,41 +27,22 @@ export async function GET(req: NextRequest) {
 
     // Watermark grande, repetido y diagonal
     const svg = `
-      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern
-            id="wm"
-            patternUnits="userSpaceOnUse"
-            width="500"
-            height="500"
-            patternTransform="rotate(-30)"
-          >
-            <text
-              x="0"
-              y="180"
-              fill="rgba(255,255,255,0.28)"
-              font-size="96"
-              font-weight="900"
-              font-family="sans-serif"
-            >
-              ZIZA FOTOS
-            </text>
-            <text
-              x="40"
-              y="320"
-              fill="rgba(255,255,255,0.28)"
-              font-size="96"
-              font-weight="900"
-              font-family="sans-serif"
-            >
-              ZIZA FOTOS
-            </text>
-          </pattern>
-        </defs>
-
-        <rect width="100%" height="100%" fill="url(#wm)" />
-      </svg>
-      `
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="rgba(255,0,0,0.25)" />
+      <text
+        x="50%"
+        y="50%"
+        text-anchor="middle"
+        dominant-baseline="middle"
+        font-size="160"
+        fill="white"
+        font-family="sans-serif"
+        font-weight="900"
+      >
+        TEST ZIZA
+      </text>
+    </svg>
+    `
 
     const output = await sharp(imageBuffer)
       .composite([
