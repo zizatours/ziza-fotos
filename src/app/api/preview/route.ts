@@ -51,21 +51,21 @@ export async function GET(req: Request) {
   const size = Math.min(meta.width ?? 1200, meta.height ?? 1200)
 
   const watermark = Buffer.from(`
-<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-  <defs>
-    <pattern id="wm" patternUnits="userSpaceOnUse" width="260" height="260" patternTransform="rotate(-30)">
-      <text x="0" y="160"
-        fill="white"
-        fill-opacity="0.3"
-        font-size="48"
-        font-family="sans-serif"
-        font-weight="700"
-      >ZIZA FOTOS</text>
-    </pattern>
-  </defs>
-  <rect width="100%" height="100%" fill="url(#wm)" />
-</svg>
-`)
+  <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+    <defs>
+      <pattern id="wm" patternUnits="userSpaceOnUse" width="260" height="260" patternTransform="rotate(-30)">
+        <text x="0" y="160"
+          fill="white"
+          fill-opacity="0.3"
+          font-size="48"
+          font-family="sans-serif"
+          font-weight="700"
+        >ZIZA FOTOS</text>
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#wm)" />
+  </svg>
+  `)
 
   const output = await sharp(originalBuffer)
     .composite([{ input: watermark, tile: true }])
