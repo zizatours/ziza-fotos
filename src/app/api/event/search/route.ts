@@ -91,13 +91,16 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({
-      results: photos?.map(p =>
-        p.image_url.replace(
-          /^https?:\/\/[^/]+\/storage\/v1\/object\/public\/event-photos\//,
+      results: photos?.map(p => {
+        const url = new URL(p.image_url)
+        const path = url.pathname.replace(
+          '/storage/v1/object/public/event-photos/',
           ''
         )
-      ) ?? [],
+        return path
+      }) ?? [],
     })
+
   } catch (err) {
     console.error('SEARCH ERROR:', err)
     return NextResponse.json(
