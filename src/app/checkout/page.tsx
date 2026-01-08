@@ -6,7 +6,7 @@ export default function CheckoutPage() {
   const [eventSlug, setEventSlug] = useState<string | null>(null)
   
   const getPreviewUrl = (url: string) =>
-    `/api/preview?src=${encodeURIComponent(url)}`
+    `/api/preview?path=${encodeURIComponent(url)}`
 
   const quantity = images.length
   const unitPrice = 18
