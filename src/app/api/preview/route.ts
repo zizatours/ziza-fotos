@@ -73,21 +73,21 @@ export async function GET(req: Request) {
 
   // 3️⃣ WATERMARK
   const watermark = Buffer.from(`
-  <svg xmlns="http://www.w3.org/2000/svg" width="800" height="800">
+  <svg xmlns="http://www.w3.org/2000/svg" width="1" height="1">
     <defs>
       <pattern
         id="wm"
         patternUnits="userSpaceOnUse"
-        width="260"
-        height="260"
+        width="300"
+        height="300"
         patternTransform="rotate(-30)"
       >
         <text
           x="0"
-          y="130"
+          y="160"
           fill="white"
-          fill-opacity="0.28"
-          font-size="42"
+          fill-opacity="0.25"
+          font-size="48"
           font-family="sans-serif"
           font-weight="700"
         >
