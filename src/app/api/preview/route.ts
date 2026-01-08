@@ -43,7 +43,11 @@ export async function GET(req: Request) {
 
   const sharp = (await import('sharp')).default
 
-  const hash = crypto.createHash('md5').update(src).digest('hex')
+  const hash = crypto
+    .createHash('md5')
+    .update(src + '_v2_watermark')
+    .digest('hex')
+
   const previewPath = `previews/${hash}.jpg`
 
   // 1️⃣ ¿EXISTE PREVIEW?
