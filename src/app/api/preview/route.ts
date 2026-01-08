@@ -6,10 +6,10 @@ import path from 'path'
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
-    const src = searchParams.get('path')
+    const src = searchParams.get('path') ?? searchParams.get('src')
 
     if (!src) {
-      return new NextResponse('Missing path', { status: 400 })
+      return new NextResponse('Missing path/src', { status: 400 })
     }
 
     // 🔑 construir URL pública real de Supabase
