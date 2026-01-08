@@ -29,6 +29,9 @@ export default function CheckoutPage() {
     setEventSlug(data.event_slug || null)
   }, [])
 
+  const getPreviewUrl = (url: string) =>
+    `/api/preview?src=${encodeURIComponent(url)}`
+
   return (
     <main className="min-h-screen bg-white">
       <div className="max-w-6xl mx-auto px-6 py-12">
@@ -135,7 +138,7 @@ export default function CheckoutPage() {
               {images.slice(0, 6).map((url, i) => (
                 <img
                   key={i}
-                  src={`/api/preview?src=${encodeURIComponent(url)}`}
+                  src={getPreviewUrl(url)}
                   alt="Foto seleccionada"
                   className="aspect-square object-cover rounded-md"
                 />
