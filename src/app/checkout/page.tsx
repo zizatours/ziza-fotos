@@ -2,15 +2,18 @@
 import { useEffect, useState } from 'react'
 
 export default function CheckoutPage() {
+  const [images, setImages] = useState<string[]>([])
+  const [eventSlug, setEventSlug] = useState<string | null>(null)
+  
+  const getPreviewUrl = (url: string) =>
+    `/api/preview?src=${encodeURIComponent(url)}`
+
+  const quantity = images.length
+  const unitPrice = 18
+
   const [email, setEmail] = useState('')
   const [emailConfirm, setEmailConfirm] = useState('')
   const [loading, setLoading] = useState(false)
-
-  // ⚠️ Estos datos luego vendrán desde el flujo real
-  const [images, setImages] = useState<string[]>([])
-  const [eventSlug, setEventSlug] = useState<string | null>(null)
-  const quantity = images.length
-  const unitPrice = 18
 
   const subtotal = quantity * unitPrice
   const discountPercent =
@@ -28,9 +31,6 @@ export default function CheckoutPage() {
     setImages(data.images || [])
     setEventSlug(data.event_slug || null)
   }, [])
-
-  const getPreviewUrl = (url: string) =>
-    `/api/preview?src=${encodeURIComponent(url)}`
 
   return (
     <main className="min-h-screen bg-white">
