@@ -187,7 +187,7 @@ export default function SelfieUploader({
                   >
                     {/* Imagen real */}
                     <img
-                      src={m.image_url}
+                      src={`/api/preview?path=${encodeURIComponent(m.image_url)}`}
                       alt="Foto del evento"
                       className="w-full h-40 object-cover cursor-pointer"
                       onClick={() => toggleSelect(m.image_url)}
