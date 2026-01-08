@@ -12,8 +12,12 @@ export async function GET(req: Request) {
       return new NextResponse('Missing path', { status: 400 })
     }
 
+    // 🔑 construir URL pública real de Supabase
+    const publicUrl = `https://hmmkonpbencybsbwfdfr.supabase.co/storage/v1/object/public/event-photos/${src}`
+
     // 1️⃣ Descargar imagen original
-    const imageRes = await fetch(src)
+    const imageRes = await fetch(publicUrl)
+
     if (!imageRes.ok) {
       return new NextResponse('Image fetch failed', { status: 500 })
     }
