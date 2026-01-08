@@ -1,68 +1,120 @@
 import { NextRequest } from 'next/server'
-import sharp from 'sharp'
+import sharp, { type OverlayOptions, type Blend } from 'sharp'
+import path from 'path'
+import { readFile } from 'fs/promises'
+
+export const runtime = 'nodejs' // importante: sharp necesita runtime node
+
+let WATERMARK_CACHE: Buffer | null = null
+
+async function getWatermarkBuffer() {
+  if (WATERMARK_CACHE) return WATERMARK_CACHE
+  const watermarkPath = path.join(process.cwd(), 'public', 'watermark.png')
+  WATERMARK_CACHE = await readFile(watermarkPath)
+  return WATERMARK_CACHE
+}
 
 export async function GET(req: NextRequest) {
   try {
-    const src = req.nextUrl.searchParams.get('src')
+    const { searchParams } = new URL(req.url)
+    const src = searchParams.get('src')
+
     if (!src) {
       return new Response('Missing src', { status: 400 })
     }
 
-    // 1️⃣ Descargar imagen original
-    const originalRes = await fetch(src)
-    const originalBuffer = Buffer.from(await originalRes.arrayBuffer())
+    // 1) Descargar imagen original
+    const imgRes = await fetch(src)
+    if (!imgRes.ok) {
+      return new Response(`Failed to fetch src: ${imgRes.status}`, { status: 400 })
+    }
+    const inputArrayBuffer = await imgRes.arrayBuffer()
+    const inputBuffer = Buffer.from(inputArrayBuffer)
 
-    const baseImage = sharp(originalBuffer)
-    const metadata = await baseImage.metadata()
+    // 2) Leer watermark desde /public/watermark.png
+    const watermarkBuffer = await getWatermarkBuffer()
 
-    if (!metadata.width || !metadata.height) {
-      throw new Error('Invalid image dimensions')
+    // 3) Preparar base
+    const base = sharp(inputBuffer)
+    const meta = await base.metadata()
+    const width = meta.width ?? 0
+    const height = meta.height ?? 0
+
+    if (!width || !height) {
+      return new Response('Invalid image', { status: 400 })
     }
 
-    // 2️⃣ Cargar watermark
-    const watermarkRes = await fetch(
-      `${process.env.NEXT_PUBLIC_SITE_URL}/watermark.png`
-    )
-    const watermarkBuffer = Buffer.from(await watermarkRes.arrayBuffer())
+    // 4) Escalar watermark relativo al tamaño de la foto
+    //    Ajusta estos valores si quieres más/menos grande:
+    const targetWmWidth = Math.max(220, Math.round(width * 0.28)) // ~28% del ancho
+    const wm = sharp(watermarkBuffer).resize({ width: targetWmWidth, withoutEnlargement: true })
+    const wmPng = await wm.png().toBuffer()
+    const wmMeta = await sharp(wmPng).metadata()
 
-    // 3️⃣ Redimensionar watermark RELATIVO a la imagen
-    const watermarkWidth = Math.floor(metadata.width * 0.35)
+    const wmW = wmMeta.width ?? 0
+    const wmH = wmMeta.height ?? 0
+    if (!wmW || !wmH) {
+      return new Response('Invalid watermark', { status: 500 })
+    }
 
-    const resizedWatermark = await sharp(watermarkBuffer)
-      .resize(watermarkWidth)
-      .png()
-      .toBuffer()
+    // Si por algún motivo el watermark queda más grande que la foto, lo achicamos
+    let finalWm = wmPng
+    let finalW = wmW
+    let finalH = wmH
 
-    // 4️⃣ Tile manual (repetir watermark)
-    const tileX = Math.ceil(metadata.width / watermarkWidth)
-    const tileY = Math.ceil(metadata.height / watermarkWidth)
+    if (finalW > width || finalH > height) {
+      const fitWidth = Math.round(width * 0.8)
+      const resized = await sharp(wmPng).resize({ width: fitWidth, withoutEnlargement: true }).png().toBuffer()
+      const rMeta = await sharp(resized).metadata()
+      finalWm = resized
+      finalW = rMeta.width ?? finalW
+      finalH = rMeta.height ?? finalH
+    }
 
-    const overlays = []
-    for (let y = 0; y < tileY; y++) {
-      for (let x = 0; x < tileX; x++) {
+    // 5) Generar tiles SIN salirse de la imagen (esto evita el 500 de sharp)
+    //    Gap controla distancia entre marcas para que no se “pisen”
+    const gapX = Math.round(finalW * 0.65)
+    const gapY = Math.round(finalH * 0.65)
+
+    const stepX = finalW + gapX
+    const stepY = finalH + gapY
+
+    const overlays: OverlayOptions[] = []
+
+    let row = 0
+    for (let top = 0; top + finalH <= height; top += stepY) {
+      const rowOffset = row % 2 === 0 ? 0 : Math.round(stepX / 2)
+
+      for (let left = -rowOffset; left + finalW <= width; left += stepX) {
+        const safeLeft = Math.max(0, left) // nunca negativo
+        if (safeLeft + finalW > width) continue
+
         overlays.push({
-          input: resizedWatermark,
-          left: x * watermarkWidth,
-          top: y * watermarkWidth,
-          blend: 'overlay'
+          input: finalWm,
+          left: safeLeft,
+          top,
+          blend: 'over' as Blend,
         })
       }
+
+      row++
     }
 
-    // 5️⃣ Componer imagen final
-    const output = await baseImage
+    // 6) Componer
+    const output = await base
       .composite(overlays)
       .jpeg({ quality: 85 })
       .toBuffer()
 
-    return new Response(output, {
+    // 7) Responder (IMPORTANTE: usar Uint8Array para evitar error TS Buffer vs BodyInit)
+    return new Response(new Uint8Array(output), {
       headers: {
         'Content-Type': 'image/jpeg',
-        'Cache-Control': 'no-store'
-      }
+        'Cache-Control': 'public, max-age=31536000, immutable',
+      },
     })
-  } catch (err) {
+  } catch (err: any) {
     console.error('Preview error:', err)
-    return new Response('Preview failed', { status: 500 })
+    return new Response(`Preview error: ${err?.message ?? 'Unknown error'}`, { status: 500 })
   }
 }
