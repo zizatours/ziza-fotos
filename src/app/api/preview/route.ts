@@ -32,23 +32,30 @@ export async function GET(req: NextRequest) {
           <pattern
             id="wm"
             patternUnits="userSpaceOnUse"
-            width="420"
-            height="420"
+            width="500"
+            height="500"
             patternTransform="rotate(-30)"
           >
-            <g fill="rgba(255,255,255,0.22)">
-              <path d="M0 200 L320 200" stroke="rgba(255,255,255,0.22)" stroke-width="2"/>
-              <text
-                x="0"
-                y="180"
-                font-size="72"
-                fill="rgba(255,255,255,0.22)"
-                font-family="sans-serif"
-                font-weight="900"
-              >
-                ZIZA FOTOS
-              </text>
-            </g>
+            <text
+              x="0"
+              y="180"
+              fill="rgba(255,255,255,0.28)"
+              font-size="96"
+              font-weight="900"
+              font-family="sans-serif"
+            >
+              ZIZA FOTOS
+            </text>
+            <text
+              x="40"
+              y="320"
+              fill="rgba(255,255,255,0.28)"
+              font-size="96"
+              font-weight="900"
+              font-family="sans-serif"
+            >
+              ZIZA FOTOS
+            </text>
           </pattern>
         </defs>
 
