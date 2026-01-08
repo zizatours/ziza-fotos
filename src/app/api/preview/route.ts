@@ -13,7 +13,12 @@ export async function GET(req: Request) {
     }
 
     // 🔑 construir URL pública real de Supabase
-    const publicUrl = `https://hmmkonpbencybsbwfdfr.supabase.co/storage/v1/object/public/event-photos/${src}`
+    const base = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/$/, '')
+    if (!base) {
+      return new NextResponse('Missing SUPABASE_URL', { status: 500 })
+    }
+
+    const publicUrl = `${base}/storage/v1/object/public/event-photos/${src}`
 
     // 1️⃣ Descargar imagen original
     const imageRes = await fetch(publicUrl)
