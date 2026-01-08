@@ -69,20 +69,26 @@ export async function GET(req: Request) {
 
   // 3️⃣ WATERMARK
   const watermark = Buffer.from(`
-    <svg width="500" height="300">
-      <text
-        x="50%"
-        y="50%"
-        dominant-baseline="middle"
-        text-anchor="middle"
-        fill="white"
-        opacity="0.35"
-        font-size="42"
-        font-family="Arial"
-      >
-        ZIZA FOTOS
-      </text>
-    </svg>
+  <svg width="800" height="800" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id="wm" patternUnits="userSpaceOnUse" width="300" height="300">
+        <text
+          x="0"
+          y="150"
+          transform="rotate(-30)"
+          fill="white"
+          fill-opacity="0.25"
+          font-size="48"
+          font-family="Arial"
+          font-weight="bold"
+        >
+          ZIZA FOTOS
+        </text>
+      </pattern>
+    </defs>
+
+    <rect width="100%" height="100%" fill="url(#wm)" />
+  </svg>
   `)
 
   const output = await sharp(originalBuffer)
