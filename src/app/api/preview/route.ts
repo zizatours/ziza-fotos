@@ -33,14 +33,21 @@ export async function GET(req: Request) {
   const hash = crypto.createHash('md5').update(src).digest('hex')
   const previewPath = `previews/${hash}.jpg`
 
-  const { data: existing } = supabase
-    .storage
-    .from('event-previews')
-    .getPublicUrl(previewPath)
+  // 1️⃣ ¿EXISTE REALMENTE EL PREVIEW?
+  const { data: existingFile, error: downloadError } =
+    await supabase.storage
+      .from('event-previews')
+      .download(previewPath)
 
-  if (existing?.publicUrl) {
-    return NextResponse.redirect(existing.publicUrl)
+  if (!downloadError && existingFile) {
+    const { data } = supabase
+      .storage
+      .from('event-previews')
+      .getPublicUrl(previewPath)
+
+    return NextResponse.redirect(data.publicUrl)
   }
+
 
   const imageRes = await fetch(src)
   const buffer = Buffer.from(await imageRes.arrayBuffer())
