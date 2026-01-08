@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     const { width, height } = metadata
 
     // 4️⃣ Redimensionar watermark (GRANDE)
-    const wmSize = Math.floor(Math.min(width, height) * 0.4)
+    const wmSize = Math.floor(Math.min(width, height) * 0.6)
 
     const wmBuffer = await sharp(watermarkBuffer)
       .resize(wmSize)
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
 
     // 5️⃣ Repetir watermark por TODA la imagen
     const overlays: sharp.OverlayOptions[] = []
-    const step = Math.floor(wmSize * 1.2)
+    const step = Math.floor(wmSize * 0.9)
 
     for (let y = -height; y < height * 2; y += step) {
       for (let x = -width; x < width * 2; x += step) {
@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
           input: wmBuffer,
           left: x,
           top: y,
-          blend: 'overlay'
+          blend: 'over'
         })
       }
     }
