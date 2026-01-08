@@ -69,18 +69,23 @@ export async function GET(req: Request) {
 
   // 3️⃣ WATERMARK
   const watermark = Buffer.from(`
-  <svg width="800" height="800" xmlns="http://www.w3.org/2000/svg">
+  <svg xmlns="http://www.w3.org/2000/svg" width="800" height="800">
     <defs>
-      <pattern id="wm" patternUnits="userSpaceOnUse" width="300" height="300">
+      <pattern
+        id="wm"
+        patternUnits="userSpaceOnUse"
+        width="260"
+        height="260"
+        patternTransform="rotate(-30)"
+      >
         <text
           x="0"
-          y="150"
-          transform="rotate(-30)"
+          y="130"
           fill="white"
-          fill-opacity="0.25"
-          font-size="48"
-          font-family="Arial"
-          font-weight="bold"
+          fill-opacity="0.28"
+          font-size="42"
+          font-family="sans-serif"
+          font-weight="700"
         >
           ZIZA FOTOS
         </text>
