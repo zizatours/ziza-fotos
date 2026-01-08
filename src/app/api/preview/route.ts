@@ -1,89 +1,79 @@
 import { NextRequest } from 'next/server'
 import sharp from 'sharp'
-import fs from 'fs'
 import path from 'path'
+import fs from 'fs/promises'
 
 export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest) {
+  const src = req.nextUrl.searchParams.get('src')
+
+  if (!src) {
+    return new Response('Missing src', { status: 400 })
+  }
+
   try {
-    const { searchParams } = new URL(req.url)
-    const src = searchParams.get('src')
-
-    if (!src) {
-      return new Response('Missing src', { status: 400 })
-    }
-
     // 1️⃣ Descargar imagen original
-    const imgRes = await fetch(src)
-    if (!imgRes.ok) {
-      return new Response('Failed to fetch image', { status: 400 })
+    const imageRes = await fetch(src)
+    if (!imageRes.ok) {
+      return new Response('Image fetch failed', { status: 500 })
     }
 
-    const imgArrayBuffer = await imgRes.arrayBuffer()
-    const imageBuffer = Buffer.from(imgArrayBuffer)
+    const imageBuffer = Buffer.from(await imageRes.arrayBuffer())
 
+    // 2️⃣ Cargar watermark PNG (YA CON TEXTO RENDERIZADO)
+    const watermarkPath = path.join(
+      process.cwd(),
+      'public',
+      'watermark.png' // 👈 ESTE ARCHIVO DEBE EXISTIR
+    )
+
+    const watermarkBuffer = await fs.readFile(watermarkPath)
+
+    // 3️⃣ Obtener tamaño imagen original
     const baseImage = sharp(imageBuffer)
     const metadata = await baseImage.metadata()
 
     if (!metadata.width || !metadata.height) {
-      return new Response('Invalid image', { status: 400 })
+      return new Response('Invalid image', { status: 500 })
     }
 
-    // 2️⃣ Cargar watermark local
-    const watermarkPath = path.join(
-      process.cwd(),
-      'public',
-      'watermark',
-      'ziza-watermark.png'
-    )
+    const { width, height } = metadata
 
-    if (!fs.existsSync(watermarkPath)) {
-      return new Response('Watermark not found', { status: 500 })
-    }
+    // 4️⃣ Redimensionar watermark (GRANDE)
+    const wmSize = Math.floor(Math.min(width, height) * 0.4)
 
-    const watermarkBuffer = fs.readFileSync(watermarkPath)
-
-    // 3️⃣ Preparar watermark repetido
-    const wmSize = Math.floor(Math.min(metadata.width, metadata.height) * 0.35)
-
-    const tiledWatermark = await sharp(watermarkBuffer)
+    const wmBuffer = await sharp(watermarkBuffer)
       .resize(wmSize)
       .ensureAlpha()
-      .linear(1, -0.4) // 👈 baja la opacidad real
       .png()
       .toBuffer()
 
-    const composites: sharp.OverlayOptions[] = []
+    // 5️⃣ Repetir watermark por TODA la imagen
+    const overlays: sharp.OverlayOptions[] = []
+    const step = Math.floor(wmSize * 1.2)
 
-    const stepX = wmSize * 1.4
-    const stepY = wmSize * 1.4
-
-    for (let y = 0; y < metadata.height; y += stepY) {
-      for (let x = 0; x < metadata.width; x += stepX) {
-        composites.push({
-          input: tiledWatermark,
-          left: Math.floor(x),
-          top: Math.floor(y),
-          blend: 'overlay',
+    for (let y = -height; y < height * 2; y += step) {
+      for (let x = -width; x < width * 2; x += step) {
+        overlays.push({
+          input: wmBuffer,
+          left: x,
+          top: y,
+          blend: 'overlay'
         })
       }
     }
 
-    // 4️⃣ Componer imagen final
-    const outputBuffer = await baseImage
-      .composite(composites)
+    // 6️⃣ Componer imagen final
+    const output = await baseImage
+      .composite(overlays)
       .jpeg({ quality: 82 })
       .toBuffer()
 
-    // 🔴 CLAVE: convertir Buffer → Uint8Array
-    const body = new Uint8Array(outputBuffer)
-
-    return new Response(body, {
+    return new Response(new Uint8Array(output), {
       headers: {
         'Content-Type': 'image/jpeg',
-        'Cache-Control': 'public, max-age=31536000, immutable',
-        'X-Robots-Tag': 'noindex'
+        'Cache-Control': 'public, max-age=31536000, immutable'
       }
     })
   } catch (err) {
