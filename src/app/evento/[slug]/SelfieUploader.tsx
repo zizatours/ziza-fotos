@@ -22,7 +22,7 @@ export default function SelfieUploader({
   const [adminFileName, setAdminFileName] = useState<string | null>(null)
   const adminFileRef = useRef<File | null>(null)
   const [adminStatus, setAdminStatus] = useState<string>('')
-  const [matches, setMatches] = useState<any[]>([])
+  const [matches, setMatches] = useState<string[]>([])
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [selected, setSelected] = useState<string[]>([])
   const [statusText, setStatusText] = useState<string | null>(null)
@@ -109,11 +109,7 @@ export default function SelfieUploader({
 
                   setStatusText('Comparando con las fotos del evento…')
 
-                  setMatches(
-                    (data.results || []).map((path: string) => ({
-                      path,
-                    }))
-                  )
+                  setMatches(data.results || [])
 
                   setResults(true)
                   setSearched(true)
@@ -178,21 +174,17 @@ export default function SelfieUploader({
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                 {matches.map((m, i) => (
                   <div
-                    key={i}
+                    key={m}
                     className={`relative border rounded-lg overflow-hidden shadow-sm ${
-                      selected.includes(m.image_url)
-                        ? 'ring-4 ring-black'
-                        : ''
+                      selected.includes(m) ? 'ring-4 ring-black' : ''
                     }`}
                   >
-                    {/* Imagen real */}
                     <img
-                      src={`/api/preview?path=${encodeURIComponent(m.path)}`}
+                      src={`/api/preview?path=${encodeURIComponent(m)}`}
                       alt="Foto del evento"
                       className="w-full h-40 object-cover cursor-pointer"
-                      onClick={() => toggleSelect(m.image_url)}
+                      onClick={() => toggleSelect(m)}
                     />
-
                   </div>
                 ))}
               </div>
