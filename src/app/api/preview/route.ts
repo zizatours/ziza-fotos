@@ -21,11 +21,7 @@ export async function GET(req: Request) {
     const imageBuffer = Buffer.from(await imageRes.arrayBuffer())
 
     // 2️⃣ Cargar watermark
-    const watermarkPath = path.join(
-      process.cwd(),
-      'public',
-      'watermark.png'
-    )
+    const watermarkPath = path.join(process.cwd(), 'public', 'watermark.png')
 
     if (!fs.existsSync(watermarkPath)) {
       return new NextResponse('Watermark not found', { status: 500 })
@@ -33,25 +29,21 @@ export async function GET(req: Request) {
 
     const watermarkBuffer = fs.readFileSync(watermarkPath)
 
-    // 3️⃣ Procesar imagen base
-    const baseImage = sharp(imageBuffer)
-
-    // 4️⃣ Aplicar watermark (REPETIDO, SIN POSICIONES)
-    const output = await baseImage
+    // 3️⃣ Componer imagen
+    const output = await sharp(imageBuffer)
       .composite([
         {
           input: watermarkBuffer,
           tile: true,
           gravity: 'center',
-          blend: 'over',
-          opacity: 0.4
+          blend: 'over'
         }
       ])
       .jpeg({ quality: 85 })
       .toBuffer()
 
-    // 5️⃣ Respuesta
-    return new NextResponse(output, {
+    // 4️⃣ RESPUESTA (👈 AQUÍ ESTÁ LA CLAVE)
+    return new NextResponse(new Uint8Array(output), {
       headers: {
         'Content-Type': 'image/jpeg',
         'Cache-Control': 'public, max-age=31536000, immutable'
