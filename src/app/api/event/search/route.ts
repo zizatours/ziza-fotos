@@ -91,7 +91,12 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({
-      results: photos?.map(p => p.image_url) ?? [],
+      results: photos?.map(p =>
+        p.image_url.replace(
+          /^https?:\/\/[^/]+\/storage\/v1\/object\/public\/event-photos\//,
+          ''
+        )
+      ) ?? [],
     })
   } catch (err) {
     console.error('SEARCH ERROR:', err)
