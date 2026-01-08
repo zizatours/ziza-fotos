@@ -226,7 +226,7 @@ export default function SelfieUploader({
       )}
       <p className="text-xs text-gray-400 mt-6">
         Tu selfie se usa solo para encontrar tus fotos.
-        No se publica ni se guarda.
+        No se publica ni se guarda
       </p>
     </div>
   )
