@@ -16,7 +16,7 @@ export async function GET(req: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  const isDev = process.env.NODE_ENV !== 'production'
+  const isDev = process.env.VERCEL_ENV !== 'production'
 
   /* -------------------------------------------------
      🟢 DEV MODE (Windows / Turbopack friendly)
@@ -71,39 +71,46 @@ export async function GET(req: Request) {
   const originalRes = await fetch(src)
   const originalBuffer = Buffer.from(await originalRes.arrayBuffer())
 
-  // 3️⃣ WATERMARK
+  // 3️⃣ WATERMARK (tile safe ✅)
+  const meta = await sharp(originalBuffer).metadata()
+  const baseW = meta.width ?? 1200
+  const baseH = meta.height ?? 1200
+
+  // tamaño del “tile” del watermark: SIEMPRE <= imagen base
+  const tileSize = Math.max(140, Math.min(320, baseW, baseH))
+  const step = Math.round(tileSize * 0.9)
+  const fontSize = Math.round(tileSize * 0.16) // ~48 cuando tileSize=300
+
   const watermark = Buffer.from(`
-  <svg xmlns="http://www.w3.org/2000/svg" width="1" height="1">
+  <svg xmlns="http://www.w3.org/2000/svg" width="${tileSize}" height="${tileSize}">
     <defs>
-      <pattern
-        id="wm"
-        patternUnits="userSpaceOnUse"
-        width="300"
-        height="300"
-        patternTransform="rotate(-30)"
-      >
+      <pattern id="wm" patternUnits="userSpaceOnUse" width="${step}" height="${step}" patternTransform="rotate(-30)">
         <text
           x="0"
-          y="160"
+          y="${Math.round(tileSize * 0.55)}"
           fill="white"
-          fill-opacity="0.25"
-          font-size="48"
+          fill-opacity="0.28"
+          font-size="${fontSize}"
           font-family="sans-serif"
           font-weight="700"
-        >
-          ZIZA FOTOS
-        </text>
+        >ZIZA FOTOS</text>
       </pattern>
     </defs>
-
     <rect width="100%" height="100%" fill="url(#wm)" />
   </svg>
   `)
 
   const output = await sharp(originalBuffer)
-    .composite([{ input: watermark, gravity: 'center' }])
+    .composite([
+      {
+        input: watermark,
+        tile: true,        // ✅ repite por toda la imagen
+        blend: 'over',
+      },
+    ])
     .jpeg({ quality: 80 })
     .toBuffer()
+
 
   // 4️⃣ SUBIR PREVIEW
   await supabase.storage
