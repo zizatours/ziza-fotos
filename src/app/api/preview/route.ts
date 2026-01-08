@@ -1,68 +1,79 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import sharp from 'sharp'
 
 export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const src = searchParams.get('src')
+
+  if (!src) {
+    return new NextResponse('Missing src', { status: 400 })
+  }
+
   try {
-    const { searchParams } = new URL(req.url)
-    const src = searchParams.get('src')
-
-    if (!src) {
-      return new Response('Missing src', { status: 400 })
+    // 1️⃣ Descargar imagen original
+    const imageRes = await fetch(src)
+    if (!imageRes.ok) {
+      return new NextResponse('Image fetch failed', { status: 400 })
     }
 
-    // Descargar imagen original
-    const originalRes = await fetch(src)
-    if (!originalRes.ok) {
-      return new Response('Failed to fetch image', { status: 500 })
-    }
+    const imageBuffer = Buffer.from(await imageRes.arrayBuffer())
 
-    const imageBuffer = Buffer.from(await originalRes.arrayBuffer())
+    // 2️⃣ Obtener metadata
+    const baseImage = sharp(imageBuffer)
+    const metadata = await baseImage.metadata()
 
-    // Obtener dimensiones reales
-    const metadata = await sharp(imageBuffer).metadata()
     const width = metadata.width || 1200
     const height = metadata.height || 800
 
-    // Watermark grande, repetido y diagonal
-    const svg = `
-    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100%" height="100%" fill="rgba(255,0,0,0.25)" />
-      <text
-        x="50%"
-        y="50%"
-        text-anchor="middle"
-        dominant-baseline="middle"
-        font-size="160"
-        fill="white"
-        font-family="sans-serif"
-        font-weight="900"
-      >
-        TEST ZIZA
-      </text>
-    </svg>
+    // 3️⃣ Crear SVG de watermark (GRANDE + REPETIDO)
+    const watermarkSvg = `
+      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern
+            id="wm"
+            patternUnits="userSpaceOnUse"
+            width="400"
+            height="400"
+            patternTransform="rotate(-30)"
+          >
+            <text
+              x="0"
+              y="200"
+              font-size="48"
+              fill="rgba(255,255,255,0.35)"
+              font-family="Arial, Helvetica, sans-serif"
+            >
+              ZizaPhotography
+            </text>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#wm)" />
+      </svg>
     `
 
-    const output = await sharp(imageBuffer)
+    // 4️⃣ Componer imagen + watermark
+    const outputBuffer = await baseImage
       .composite([
         {
-          input: Buffer.from(svg),
+          input: Buffer.from(watermarkSvg),
           blend: 'over',
         },
       ])
-      .jpeg({ quality: 82 })
+      .jpeg({ quality: 80 })
       .toBuffer()
 
-    // ⚠️ USAR Response, NO NextResponse
-    return new Response(new Uint8Array(output), {
+    // 5️⃣ RESPUESTA CORRECTA (🔴 ESTA LÍNEA ARREGLA TU ERROR DE TS)
+    return new NextResponse(new Uint8Array(outputBuffer), {
+      status: 200,
       headers: {
         'Content-Type': 'image/jpeg',
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Cache-Control': 'no-store',
       },
     })
   } catch (err) {
-    console.error('[preview error]', err)
-    return new Response('Internal error', { status: 500 })
+    console.error('Preview error:', err)
+    return new NextResponse('Internal error', { status: 500 })
   }
 }
