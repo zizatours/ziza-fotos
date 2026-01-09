@@ -24,12 +24,18 @@ function EventCard({ event }: { event: EventRow }) {
     >
       {/* Imagen */}
       <div className="relative h-56">
-        <Image
-          src={event.image_url || '/hero.jpg'}
-          alt={event.name}
-          fill
-          className="object-cover"
-        />
+        <video
+          className="absolute inset-0 h-full w-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          poster="/hero.jpg"
+        >
+          <source src="/hero.webm" type="video/webm" />
+          <source src="/hero.mp4" type="video/mp4" />
+        </video>
       </div>
 
       {/* Info debajo de la imagen */}
