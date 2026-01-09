@@ -24,18 +24,13 @@ function EventCard({ event }: { event: EventRow }) {
     >
       {/* Imagen */}
       <div className="relative h-56">
-        <video
-          className="absolute inset-0 h-full w-full object-cover"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          poster="/hero.jpg"
-        >
-          <source src="/hero.webm" type="video/webm" />
-          <source src="/hero.mp4" type="video/mp4" />
-        </video>
+        <Image
+          src="/hero.jpg"
+          alt="Ziza Fotos"
+          fill
+          priority
+          className="object-cover"
+        />
       </div>
 
       {/* Info debajo de la imagen */}
@@ -139,13 +134,18 @@ export default function HomePage() {
     <main className="w-full bg-[#f6f3ee]">
       {/* HERO */}
       <section className="relative h-[80vh] flex items-center justify-center text-center text-white">
-        <Image
-          src="/hero.jpg"
-          alt="Ziza Fotos"
-          fill
-          priority
-          className="object-cover"
-        />
+        <video
+          className="absolute inset-0 h-full w-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          poster="/hero.jpg"
+        >
+          <source src="/hero.webm" type="video/webm" />
+          <source src="/hero.mp4" type="video/mp4" />
+        </video>
 
         <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
 
