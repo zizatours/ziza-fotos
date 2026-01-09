@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import Image from 'next/image'
 import Link from 'next/link'
@@ -109,6 +109,28 @@ function EventCardSkeleton() {
 
 export default function HomePage() {
 
+  const heroRef = useRef<HTMLVideoElement | null>(null)
+
+  useEffect(() => {
+    const v = heroRef.current
+    if (!v) return
+
+    // intenta autoplay inmediato
+    v.muted = true
+    v.play().catch(() => {})
+
+    // fallback: si algún navegador móvil lo bloquea, arranca al primer toque
+    const tryPlay = () => v.play().catch(() => {})
+    window.addEventListener('touchstart', tryPlay, { once: true })
+    window.addEventListener('click', tryPlay, { once: true })
+
+    return () => {
+      window.removeEventListener('touchstart', tryPlay)
+      window.removeEventListener('click', tryPlay)
+    }
+  }, [])
+
+
   const [events, setEvents] = useState<EventRow[]>([])
 
   const [loadingEvents, setLoadingEvents] = useState(true)
@@ -135,6 +157,7 @@ export default function HomePage() {
       {/* HERO */}
       <section className="relative h-[80vh] flex items-center justify-center text-center text-white">
         <video
+          ref={heroRef}
           className="absolute inset-0 h-full w-full object-cover"
           autoPlay
           muted
