@@ -140,14 +140,13 @@ export default function HomePage() {
           muted
           loop
           playsInline
-          preload="metadata"
-          poster="/hero.jpg"
+          preload="auto"
         >
-          <source src="/hero.webm" type="video/webm" />
           <source src="/hero.mp4" type="video/mp4" />
         </video>
 
-        <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
+        {/* Overlay SIN blur (para que no se vea borroso) */}
+        <div className="absolute inset-0 bg-black/30" />
 
         <div className="relative z-10 max-w-3xl px-6">
           <h1 className="text-4xl sm:text-5xl font-semibold mb-6 tracking-wide">
