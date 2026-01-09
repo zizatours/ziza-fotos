@@ -141,6 +141,11 @@ export default function HomePage() {
           loop
           playsInline
           preload="auto"
+          onEnded={(e) => {
+            const v = e.currentTarget
+            v.currentTime = 0
+            v.play().catch(() => {})
+          }}
         >
           <source src="/hero.mp4" type="video/mp4" />
         </video>
