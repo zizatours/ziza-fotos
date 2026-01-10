@@ -25,11 +25,11 @@ function EventCard({ event }: { event: EventRow }) {
       {/* Imagen */}
       <div className="relative h-56">
         <Image
-          src="/hero.jpg"
-          alt="Ziza Fotos"
+          src={event.image_url || '/hero.jpg'}
+          alt={event.name}
           fill
-          priority
           className="object-cover"
+          unoptimized
         />
       </div>
 
