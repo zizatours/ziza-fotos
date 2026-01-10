@@ -26,6 +26,9 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false)
   const [eventLocation, setEventLocation] = useState('')
   const [eventDate, setEventDate] = useState('')
+  const [activeTab, setActiveTab] = useState<'imagen' | 'fotos' | 'index' | 'peligro'>('fotos')
+  const [showCreate, setShowCreate] = useState(false)
+
 
   // ===== cargar eventos =====
   useEffect(() => {
@@ -149,81 +152,87 @@ export default function AdminPage() {
 
   return (
     <div className="max-w-md mx-auto mt-20 p-6 border rounded-xl">
-      {/* ===== Crear evento ===== */}
-      <div className="mb-8 border-b pb-6">
-        <h2 className="text-lg font-semibold mb-2">
-          Crear evento
-        </h2>
-
-        <input
-          type="text"
-          placeholder="Nombre del evento"
-          value={eventTitle}
-          onChange={(e) => setEventTitle(e.target.value)}
-          className="w-full border px-3 py-2 rounded mb-3"
-        />
-
-        <input
-          type="text"
-          placeholder="Ubicación del evento (ej: Maracanã, Rio de Janeiro)"
-          value={eventLocation}
-          onChange={(e) => setEventLocation(e.target.value)}
-          className="w-full border px-3 py-2 rounded mb-3"
-        />
-
-        <input
-          type="text"
-          placeholder="Fecha del evento (ej: 21/12/2025)"
-          value={eventDate}
-          onChange={(e) => setEventDate(e.target.value)}
-          className="w-full border px-3 py-2 rounded mb-3"
-        />
-
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => {
-            if (e.target.files?.[0]) {
-              setEventImage(e.target.files[0])
-            }
-          }}
-          className="w-full mb-3"
-        />
-
+      {/* ===== Crear evento (colapsable) ===== */}
+      <div className="mb-6 border-b pb-6">
         <button
-          onClick={async () => {
-            if (!eventTitle) return
-
-            setStatus('Creando evento...')
-
-            const formData = new FormData()
-            formData.append('title', eventTitle)
-            formData.append('location', eventLocation)
-            formData.append('event_date', eventDate)
-
-            if (eventImage) {
-              formData.append('image', eventImage)
-            }
-
-            const res = await fetch('/api/admin/create-event', {
-              method: 'POST',
-              body: formData,
-            })
-
-            const data = await res.json()
-
-            if (res.ok) {
-              setStatus(`Evento creado ✅ (${data.slug})`)
-              setEventTitle('')
-              window.location.reload()
-            } else {
-              setStatus(data.error || 'Error creando evento')
-            }
-          }}
-          className="w-full bg-black text-white py-3 rounded-full"
+          type="button"
+          onClick={() => setShowCreate(v => !v)}
+          className="w-full flex items-center justify-between"
         >
-          Crear evento
+          <h2 className="text-lg font-semibold">Crear evento</h2>
+          <span className="text-sm text-gray-600">{showCreate ? 'Ocultar' : 'Mostrar'}</span>
         </button>
+
+        {showCreate && (
+          <div className="mt-4">
+            <input
+              type="text"
+              placeholder="Nombre del evento"
+              value={eventTitle}
+              onChange={(e) => setEventTitle(e.target.value)}
+              className="w-full border px-3 py-2 rounded mb-3"
+            />
+
+            <input
+              type="text"
+              placeholder="Ubicación del evento (ej: Maracanã, Rio de Janeiro)"
+              value={eventLocation}
+              onChange={(e) => setEventLocation(e.target.value)}
+              className="w-full border px-3 py-2 rounded mb-3"
+            />
+
+            <input
+              type="text"
+              placeholder="Fecha del evento (ej: 21/12/2025)"
+              value={eventDate}
+              onChange={(e) => setEventDate(e.target.value)}
+              className="w-full border px-3 py-2 rounded mb-3"
+            />
+
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                if (e.target.files?.[0]) setEventImage(e.target.files[0])
+              }}
+              className="w-full mb-3"
+            />
+
+            <button
+              onClick={async () => {
+                if (!eventTitle) return
+
+                setStatus('Creando evento...')
+
+                const formData = new FormData()
+                formData.append('title', eventTitle)
+                formData.append('location', eventLocation)
+                formData.append('event_date', eventDate)
+
+                if (eventImage) formData.append('image', eventImage)
+
+                const res = await fetch('/api/admin/create-event', {
+                  method: 'POST',
+                  body: formData,
+                })
+
+                const data = await res.json()
+
+                if (res.ok) {
+                  setStatus(`Evento creado ✅ (${data.slug})`)
+                  setEventTitle('')
+                  setShowCreate(false)
+                  window.location.reload()
+                } else {
+                  setStatus(data.error || 'Error creando evento')
+                }
+              }}
+              className="w-full bg-black text-white py-3 rounded-full"
+            >
+              Crear evento
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ===== Selector de evento ===== */}
@@ -235,7 +244,10 @@ export default function AdminPage() {
         <select
           className="w-full border px-3 py-2 rounded"
           value={selectedEventSlug}
-          onChange={(e) => setSelectedEventSlug(e.target.value)}
+          onChange={(e) => {
+            setSelectedEventSlug(e.target.value)
+            setActiveTab('fotos')
+          }}
         >
           <option value="">Selecciona un evento</option>
 
@@ -246,137 +258,175 @@ export default function AdminPage() {
           ))}
         </select>
 
-        <div className="mt-4 border p-4 rounded-lg">
-          <p className="font-medium mb-2">
-            Cambiar imagen principal del evento
-          </p>
+        {activeTab === 'imagen' && (
+          <div className="mt-4 border p-4 rounded-lg">
+            <p className="font-medium mb-2">
+              Cambiar imagen principal del evento
+            </p>
 
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              if (e.target.files?.[0]) {
-                setImageToUpload(e.target.files[0])
-              }
-            }}
-            className="mb-3"
-          />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                if (e.target.files?.[0]) {
+                  setImageToUpload(e.target.files[0])
+                }
+              }}
+              className="mb-3"
+            />
 
-          <button
-            onClick={async () => {
-              if (!imageToUpload || !selectedEventSlug) return
+            <button
+              onClick={async () => {
+                if (!imageToUpload || !selectedEventSlug) return
 
-              const formData = new FormData()
-              formData.append('eventSlug', selectedEventSlug)
-              formData.append('image', imageToUpload)
+                const formData = new FormData()
+                formData.append('eventSlug', selectedEventSlug)
+                formData.append('image', imageToUpload)
 
-              await fetch('/api/admin/update-event-image', {
-                method: 'POST',
-                body: formData,
-              })
+                await fetch('/api/admin/update-event-image', {
+                  method: 'POST',
+                  body: formData,
+                })
 
-              window.location.reload()
-            }}
-            className="bg-black text-white px-4 py-2 rounded"
-          >
-            Guardar imagen
-          </button>
-        </div>
+                window.location.reload()
+              }}
+              className="bg-black text-white px-4 py-2 rounded"
+            >
+              Guardar imagen
+            </button>
+          </div>
+        )}
+      </div>
 
+      {/* ===== Tabs ===== */}
+      <div className="flex gap-2 mt-6">
+        <button
+          className={`flex-1 border py-2 rounded ${activeTab === 'imagen' ? 'bg-black text-white' : ''}`}
+          onClick={() => setActiveTab('imagen')}
+        >
+          Imagen
+        </button>
+        <button
+          className={`flex-1 border py-2 rounded ${activeTab === 'fotos' ? 'bg-black text-white' : ''}`}
+          onClick={() => setActiveTab('fotos')}
+        >
+          Fotos
+        </button>
+        <button
+          className={`flex-1 border py-2 rounded ${activeTab === 'index' ? 'bg-black text-white' : ''}`}
+          onClick={() => setActiveTab('index')}
+        >
+          Indexación
+        </button>
+        <button
+          className={`flex-1 border py-2 rounded ${activeTab === 'peligro' ? 'bg-red-600 text-white border-red-600' : 'border-red-300 text-red-600'}`}
+          onClick={() => setActiveTab('peligro')}
+        >
+          Peligro
+        </button>
       </div>
 
       {/* ===== Subir fotos ===== */}
-      <h1 className="text-xl font-semibold mb-4">
-        Subir fotos del evento
-      </h1>
+      {activeTab === 'fotos' && (
+        <>
+          <h1 className="text-xl font-semibold mb-4">
+            Subir fotos del evento
+          </h1>
 
-      <input
-        type="file"
-        multiple
-        accept="image/*"
-        onChange={(e) => setFiles(e.target.files ?? null)}
-      />
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={(e) => setFiles(e.target.files ?? null)}
+          />
 
-      <button
-        onClick={uploadFiles}
-        className="w-full bg-black text-white py-3 rounded-full mt-4"
-      >
-        Subir fotos
-      </button>
+          <button
+            onClick={uploadFiles}
+            className="w-full bg-black text-white py-3 rounded-full mt-4"
+          >
+            Subir fotos
+          </button>
+        </>
+      )}
 
       {/* ===== Indexar fotos ===== */}
-      <button
-        onClick={async () => {
-          if (!selectedEventSlug || loading) return
+      {activeTab === 'index' && (
+        <button
+          onClick={async () => {
+            if (!selectedEventSlug || loading) return
 
-          setLoading(true)
-          setStatus('Indexando fotos...')
+            setLoading(true)
+            setStatus('Indexando fotos...')
 
-          const res = await fetch('/api/admin/index-photos', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              event_slug: selectedEventSlug,
-            }),
-          })
+            const res = await fetch('/api/admin/index-photos', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                event_slug: selectedEventSlug,
+              }),
+            })
 
-          const data = await res.json()
+            const data = await res.json()
 
-          if (data.success) {
-            const indexed = data.indexed ?? 0
+            if (data.success) {
+              const indexed = data.indexed ?? 0
 
-            setStatus(
-              indexed > 0
-                ? `Indexación lista ✅ (${indexed} caras nuevas indexadas)`
-                : 'ℹ️ Indexación completada (no se detectaron caras nuevas)'
-            )
-          } else {
-            setStatus('Error indexando fotos')
-          }
+              setStatus(
+                indexed > 0
+                  ? `Indexación lista ✅ (${indexed} caras nuevas indexadas)`
+                  : 'ℹ️ Indexación completada (no se detectaron caras nuevas)'
+              )
+            } else {
+              setStatus('Error indexando fotos')
+            }
 
-          setLoading(false)
-        }}
-        disabled={loading}
-        className={`w-full border py-3 rounded-full mt-4 ${
-          loading ? 'opacity-50' : ''
-        }`}
-      >
-        {loading ? 'Indexando…' : 'Indexar fotos'}
-      </button>
+            setLoading(false)
+          }}
+          disabled={loading}
+          className={`w-full border py-3 rounded-full mt-4 ${
+            loading ? 'opacity-50' : ''
+          }`}
+        >
+          {loading ? 'Indexando…' : 'Indexar fotos'}
+        </button>
+      )}
 
       {/* ===== Eliminar evento ===== */}
-      <button
-        onClick={async () => {
-          if (!selectedEventSlug) return
+      {activeTab === 'peligro' && (
+        <button
+          onClick={async () => {
+            if (!selectedEventSlug) return
 
-          const confirmDelete = confirm(
-            '⚠️ Esto eliminará el evento, sus fotos y sus caras. ¿Continuar?'
-          )
-          if (!confirmDelete) return
+            const confirmDelete = confirm(
+              '⚠️ Esto eliminará el evento, sus fotos y sus caras. ¿Continuar?'
+            )
+            if (!confirmDelete) return
 
-          setStatus('Eliminando evento...')
+            setStatus('Eliminando evento...')
 
-          const res = await fetch('/api/admin/delete-event', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              event_slug: selectedEventSlug,
-            }),
-          })
+            const res = await fetch('/api/admin/delete-event', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                event_slug: selectedEventSlug,
+              }),
+            })
 
-          const data = await res.json()
+            const data = await res.json()
 
-          if (res.ok) {
-            setStatus('Evento eliminado correctamente ✅')
-            window.location.reload()
-          } else {
-            setStatus(data.error || 'Error eliminando evento')
-          }
-        }}
-        className="w-full border border-red-500 text-red-600 py-3 rounded-full mb-6"
-      >
-        Eliminar evento
-      </button>
+            if (res.ok) {
+              setStatus('Evento eliminado correctamente ✅')
+              window.location.reload()
+            } else {
+              setStatus(data.error || 'Error eliminando evento')
+            }
+          }}
+          className="w-full border border-red-500 text-red-600 py-3 rounded-full mb-6 mt-4"
+        >
+          Eliminar evento
+        </button>
+      )}
+
 
       {status && (
         <p className="text-sm text-gray-600 mt-4 whitespace-pre-line">
