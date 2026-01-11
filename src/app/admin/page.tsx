@@ -28,6 +28,16 @@ export default function AdminPage() {
   const [eventDate, setEventDate] = useState('')
   const [activeTab, setActiveTab] = useState<'imagen' | 'fotos' | 'index' | 'peligro'>('fotos')
   const [showCreate, setShowCreate] = useState(false)
+  // ===== progreso subida =====
+const [uploading, setUploading] = useState(false)
+const [uploadTotal, setUploadTotal] = useState(0)
+const [uploadDone, setUploadDone] = useState(0)
+const [uploadCurrent, setUploadCurrent] = useState('')
+const [uploadUploaded, setUploadUploaded] = useState(0)
+const [uploadDuplicated, setUploadDuplicated] = useState(0)
+const [uploadErrors, setUploadErrors] = useState(0)
+const [uploadErrorFiles, setUploadErrorFiles] = useState<string[]>([])
+
 
 
   // ===== cargar eventos =====
@@ -67,7 +77,7 @@ export default function AdminPage() {
     else alert('Clave incorrecta')
   }
 
-  // ===== subir fotos =====
+  // ===== subir fotos (con progreso) =====
   const uploadFiles = async () => {
     if (!selectedEventSlug) {
       alert('Selecciona un evento primero')
@@ -75,22 +85,33 @@ export default function AdminPage() {
     }
 
     if (!files || files.length === 0) return
+    if (uploading) return
 
+    const list = Array.from(files)
     let uploaded = 0
     let duplicated = 0
     let errors = 0
     const errorFiles: string[] = []
 
+    // reset UI progreso
+    setUploading(true)
+    setUploadTotal(list.length)
+    setUploadDone(0)
+    setUploadCurrent('')
+    setUploadUploaded(0)
+    setUploadDuplicated(0)
+    setUploadErrors(0)
+    setUploadErrorFiles([])
+
     setStatus('Subiendo fotos...')
 
-    for (const file of Array.from(files)) {
-      const formData = new FormData()
+    for (let i = 0; i < list.length; i++) {
+      const file = list[i]
+      const safeName = sanitizeFileName(file.name)
+      setUploadCurrent(safeName)
 
-      const safeFile = new File(
-        [file],
-        sanitizeFileName(file.name),
-        { type: file.type }
-      )
+      const formData = new FormData()
+      const safeFile = new File([file], safeName, { type: file.type })
 
       formData.append('file', safeFile)
       formData.append('event_slug', selectedEventSlug)
@@ -101,22 +122,32 @@ export default function AdminPage() {
           body: formData,
         })
 
-        const data = await res.json()
+        // (tu API responde JSON, lo dejamos igual)
+        await res.json().catch(() => null)
 
-        if (res.ok) uploaded++
-        else if (res.status === 409) duplicated++
-        else {
+        if (res.ok) {
+          uploaded++
+          setUploadUploaded(uploaded)
+        } else if (res.status === 409) {
+          duplicated++
+          setUploadDuplicated(duplicated)
+        } else {
           errors++
           errorFiles.push(file.name)
+          setUploadErrors(errors)
+          setUploadErrorFiles([...errorFiles])
         }
       } catch {
         errors++
         errorFiles.push(file.name)
+        setUploadErrors(errors)
+        setUploadErrorFiles([...errorFiles])
       }
+
+      setUploadDone(i + 1)
     }
 
     const total = uploaded + duplicated + errors
-
     let message = `Subida completa ✅\n${uploaded} nuevas · ${duplicated} duplicadas · ${total} total`
 
     if (errors > 0) {
@@ -124,7 +155,10 @@ export default function AdminPage() {
     }
 
     setStatus(message)
+    setUploading(false)
+    setUploadCurrent('')
   }
+
 
   // ===== UI =====
   if (!authed) {
@@ -342,10 +376,41 @@ export default function AdminPage() {
 
           <button
             onClick={uploadFiles}
-            className="w-full bg-black text-white py-3 rounded-full mt-4"
+            disabled={uploading || !selectedEventSlug || !files || files.length === 0}
+            className={`w-full bg-black text-white py-3 rounded-full mt-4 ${
+              uploading || !selectedEventSlug || !files || files.length === 0 ? 'opacity-50' : ''
+            }`}
           >
-            Subir fotos
+            {uploading ? `Subiendo ${uploadDone}/${uploadTotal}…` : 'Subir fotos'}
           </button>
+          
+          {uploading && (
+            <div className="mt-4">
+              <div className="text-sm text-gray-700">
+                Archivo: <span className="font-medium">{uploadCurrent}</span>
+              </div>
+
+              <div className="w-full h-2 bg-gray-200 rounded mt-2 overflow-hidden">
+                <div
+                  className="h-2 bg-black"
+                  style={{
+                    width:
+                      uploadTotal > 0 ? `${Math.round((uploadDone / uploadTotal) * 100)}%` : '0%',
+                  }}
+                />
+              </div>
+
+              <div className="text-xs text-gray-600 mt-2">
+                {uploadUploaded} nuevas · {uploadDuplicated} duplicadas · {uploadErrors} errores
+              </div>
+
+              {uploadErrors > 0 && uploadErrorFiles.length > 0 && (
+                <div className="text-xs text-red-600 mt-2 break-words">
+                  Fallaron: {uploadErrorFiles.join(', ')}
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
 
