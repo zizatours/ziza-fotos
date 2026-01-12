@@ -112,7 +112,7 @@ export async function POST(req: Request) {
               Image: { Bytes: buffer },
               MaxFaces: 10,
               QualityFilter: 'AUTO',
-              ExternalImageId: objectPath, // útil para debug en Rekognition
+              ExternalImageId: objectPath.replace(/[^\w.\-:]/g, '_'),
             })
 
             const result = await rekognition.send(cmd)
