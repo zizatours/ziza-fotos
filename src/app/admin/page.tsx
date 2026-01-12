@@ -38,7 +38,15 @@ const [uploadDuplicated, setUploadDuplicated] = useState(0)
 const [uploadErrors, setUploadErrors] = useState(0)
 const [uploadErrorFiles, setUploadErrorFiles] = useState<string[]>([])
 
-
+// ===== progreso indexación =====
+const [indexing, setIndexing] = useState(false)
+const [indexTotal, setIndexTotal] = useState(0)
+const [indexDone, setIndexDone] = useState(0)
+const [indexCurrent, setIndexCurrent] = useState('')
+const [indexIndexed, setIndexIndexed] = useState(0)
+const [indexSkipped, setIndexSkipped] = useState(0)
+const [indexFailed, setIndexFailed] = useState(0)
+const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
 
   // ===== cargar eventos =====
   useEffect(() => {
@@ -159,6 +167,86 @@ const [uploadErrorFiles, setUploadErrorFiles] = useState<string[]>([])
     setUploadCurrent('')
   }
 
+  // ===== indexar fotos (con progreso) =====
+  const runIndex = async () => {
+    if (!selectedEventSlug) return
+    if (indexing) return
+
+    setIndexing(true)
+    setStatus('Indexando fotos...')
+
+    // reset UI progreso
+    setIndexTotal(0)
+    setIndexDone(0)
+    setIndexCurrent('')
+    setIndexIndexed(0)
+    setIndexSkipped(0)
+    setIndexFailed(0)
+    setIndexFailedFiles([])
+
+    const res = await fetch('/api/admin/index-photos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event_slug: selectedEventSlug }),
+    })
+
+    if (!res.ok || !res.body) {
+      setStatus('Error indexando fotos (no stream)')
+      setIndexing(false)
+      return
+    }
+
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    let buf = ''
+
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done) break
+
+      buf += decoder.decode(value, { stream: true })
+      const lines = buf.split('\n')
+      buf = lines.pop() || ''
+
+      for (const line of lines) {
+        if (!line.trim()) continue
+
+        let msg: any
+        try {
+          msg = JSON.parse(line)
+        } catch {
+          continue
+        }
+
+        if (msg.type === 'start') {
+          setIndexTotal(msg.total ?? 0)
+        }
+
+        if (msg.type === 'file') {
+          setIndexCurrent(msg.name ?? '')
+        }
+
+        if (msg.type === 'failed') {
+          const name = msg.name ?? ''
+          if (name) setIndexFailedFiles((prev) => [...prev, name])
+        }
+
+        if (msg.type === 'progress') {
+          setIndexDone(msg.done ?? 0)
+          setIndexIndexed(msg.indexed ?? 0)
+          setIndexSkipped(msg.skipped ?? 0)
+          setIndexFailed(msg.failed ?? 0)
+        }
+
+        if (msg.type === 'done') {
+          setIndexCurrent('')
+        }
+      }
+    }
+
+    setStatus('Indexación lista ✅')
+    setIndexing(false)
+  }
 
   // ===== UI =====
   if (!authed) {
@@ -416,44 +504,43 @@ const [uploadErrorFiles, setUploadErrorFiles] = useState<string[]>([])
 
       {/* ===== Indexar fotos ===== */}
       {activeTab === 'index' && (
-        <button
-          onClick={async () => {
-            if (!selectedEventSlug || loading) return
+        <div className="mt-4">
+          <button
+            onClick={runIndex}
+            disabled={indexing || !selectedEventSlug}
+            className={`w-full border py-3 rounded-full ${indexing ? 'opacity-50' : ''}`}
+          >
+            {indexing ? `Indexando ${indexDone}/${indexTotal || '…'}…` : 'Indexar fotos'}
+          </button>
 
-            setLoading(true)
-            setStatus('Indexando fotos...')
+          {indexing && (
+            <div className="mt-4">
+              <div className="text-sm text-gray-700">
+                Archivo: <span className="font-medium">{indexCurrent || '—'}</span>
+              </div>
 
-            const res = await fetch('/api/admin/index-photos', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                event_slug: selectedEventSlug,
-              }),
-            })
+              <div className="w-full h-2 bg-gray-200 rounded mt-2 overflow-hidden">
+                <div
+                  className="h-2 bg-black"
+                  style={{
+                    width:
+                      indexTotal > 0 ? `${Math.round((indexDone / indexTotal) * 100)}%` : '0%',
+                  }}
+                />
+              </div>
 
-            const data = await res.json()
+              <div className="text-xs text-gray-600 mt-2">
+                {indexIndexed} caras indexadas · {indexSkipped} saltadas · {indexFailed} fallidas
+              </div>
 
-            if (data.success) {
-              const indexed = data.indexed ?? 0
-
-              setStatus(
-                indexed > 0
-                  ? `Indexación lista ✅ (${indexed} caras nuevas indexadas)`
-                  : 'ℹ️ Indexación completada (no se detectaron caras nuevas)'
-              )
-            } else {
-              setStatus('Error indexando fotos')
-            }
-
-            setLoading(false)
-          }}
-          disabled={loading}
-          className={`w-full border py-3 rounded-full mt-4 ${
-            loading ? 'opacity-50' : ''
-          }`}
-        >
-          {loading ? 'Indexando…' : 'Indexar fotos'}
-        </button>
+              {indexFailedFiles.length > 0 && (
+                <div className="text-xs text-red-600 mt-2 break-words">
+                  Fallaron: {indexFailedFiles.join(', ')}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {/* ===== Eliminar evento ===== */}
