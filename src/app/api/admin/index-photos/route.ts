@@ -5,6 +5,8 @@ import {
 } from '@aws-sdk/client-rekognition'
 import { createClient } from '@supabase/supabase-js'
 
+export const runtime = 'nodejs'
+
 const rekognition = new RekognitionClient({
   region: 'us-east-1',
   credentials: {
@@ -49,69 +51,90 @@ export async function POST(req: Request) {
       )
     }
 
-    let indexed = 0
-
     // 2️⃣ Indexar cada foto con Rekognition
-    for (const file of files) {
-      if (!file.name) continue
+    const candidates = (files ?? [])
+      .filter((f) => !!f?.name)
+      // si metadata viene, evitamos archivos vacíos
+      .filter((f: any) => (f?.metadata?.size ?? 1) > 0)
+      // solo imágenes comunes
+      .filter((f) => /\.(jpe?g|png|webp)$/i.test(f.name))
 
-      const imageUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/event-photos/${event_slug}/${file.name}`
+    let indexed = 0
+    let skipped = 0
+    let failed = 0
+    const failedFiles: string[] = []
 
-      // 🔍 Verificar si esta imagen ya fue indexada
-      const { data: existing } = await supabase
-        .from('event_faces')
-        .select('id')
-        .eq('event_slug', event_slug)
-        .eq('image_url', imageUrl)
-        .limit(1)
+    for (const file of candidates) {
+      const objectPath = `${event_slug}/${file.name}`
 
-      if (existing && existing.length > 0) {
-        continue // ya indexada, saltamos
-      }
+      try {
+        const { data: blob, error: downloadError } = await supabase.storage
+          .from('event-photos')
+          .download(objectPath)
 
-      // Descargar imagen desde Supabase
-      const response = await fetch(imageUrl)
-      const arrayBuffer = await response.arrayBuffer()
-      const buffer = Buffer.from(arrayBuffer)
-
-      const command = new IndexFacesCommand({
-        CollectionId: process.env.AWS_REKOGNITION_COLLECTION_ID!,
-        Image: {
-          Bytes: buffer,
-        },
-      })
-
-      const result = await rekognition.send(command)
-
-      if (!result.FaceRecords || result.FaceRecords.length === 0) continue
-
-      for (const record of result.FaceRecords) {
-        if (!record.Face?.FaceId || !record.Face.BoundingBox) continue
-
-        const { error: insertError } = await supabase
-          .from('event_faces')
-          .insert({
-            event_slug,
-            image_url: imageUrl,
-            face_id: record.Face.FaceId,
-            bounding_box: JSON.stringify(record.Face.BoundingBox),
-          })
-
-        if (insertError) {
-          console.error('SUPABASE INSERT ERROR:', insertError)
-          return NextResponse.json(
-            { error: 'Failed to insert face data' },
-            { status: 500 }
-          )
+        if (downloadError || !blob) {
+          console.error('DOWNLOAD ERROR:', objectPath, downloadError)
+          skipped++
+          continue
         }
 
-        indexed++
+        const buffer = Buffer.from(await blob.arrayBuffer())
+
+        if (buffer.length === 0) {
+          console.error('EMPTY FILE (0 bytes):', objectPath)
+          skipped++
+          continue
+        }
+
+        const command = new IndexFacesCommand({
+          CollectionId: process.env.AWS_REKOGNITION_COLLECTION_ID!,
+          Image: { Bytes: buffer },
+          // opcional: limita cantidad de caras por foto
+          MaxFaces: 10,
+          QualityFilter: 'AUTO',
+        })
+
+        const result = await rekognition.send(command)
+
+        const faceRecords =
+          result.FaceRecords?.map((r) => ({
+            event_slug,
+            face_id: r.Face?.FaceId,
+            image_path: objectPath,
+          })) ?? []
+
+        if (faceRecords.length === 0) {
+          skipped++
+          continue
+        }
+
+        const { error: dbError } = await supabase
+          .from('event_faces')
+          .insert(faceRecords)
+
+        if (dbError) {
+          console.error('DB INSERT ERROR:', objectPath, dbError)
+          failed++
+          failedFiles.push(objectPath)
+          continue
+        }
+
+        indexed += faceRecords.length
+      } catch (e) {
+        console.error('INDEX ERROR:', objectPath, e)
+        failed++
+        failedFiles.push(objectPath)
+        continue
       }
     }
+
 
     return NextResponse.json({
       success: true,
       indexed,
+      skipped,
+      failed,
+      failedFiles,
     })
   } catch (err) {
     console.error('INDEX PHOTOS ERROR:', err)
