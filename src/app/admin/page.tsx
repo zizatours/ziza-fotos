@@ -551,7 +551,7 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
               </div>
 
               <div className="text-xs text-gray-600 mt-2">
-                {indexIndexed} caras indexadas · {indexSkipped} saltadas · {indexFailed} fallidas
+                {indexIndexed} Archivos indexadas · {indexSkipped} saltadas · {indexFailed} fallidas
               </div>
 
               {indexFailedFiles.length > 0 && (
