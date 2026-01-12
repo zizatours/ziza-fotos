@@ -119,13 +119,18 @@ export async function POST(req: Request) {
 
             const faceRecords =
               (result.FaceRecords ?? [])
-                .map((r) => r.Face?.FaceId)
-                .filter((id): id is string => !!id)
-                .map((faceId) => ({
+                .map((r) => ({
                   event_slug,
-                  face_id: faceId,
-                  image_url: objectPath, // <— OJO: columna esperada en tu DB
-                })) ?? []
+                  face_id: r.Face?.FaceId ?? null,
+                  image_url: objectPath,
+
+                  // ✅ NO NULL: si no viene, mandamos {}
+                  bounding_box: r.Face?.BoundingBox ?? {},
+
+                  // (si tienes columna confidence)
+                  confidence: r.Face?.Confidence ?? null,
+                }))
+                .filter((x) => !!x.face_id)
 
             if (faceRecords.length === 0) {
               // no detectó caras en esta foto (o no indexó nada)
