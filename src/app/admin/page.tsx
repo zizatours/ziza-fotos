@@ -219,7 +219,9 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
         }
 
         if (msg.type === 'start') {
-          setIndexTotal(msg.total ?? 0)
+          setIndexTotal(msg.totalFiles ?? 0)
+          setIndexDone(0)
+          setStatus(`Archivos indexados 0/${msg.totalFiles ?? 0}`)
         }
 
         if (msg.type === 'file') {
@@ -232,19 +234,38 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
         }
 
         if (msg.type === 'progress') {
-          setIndexDone(msg.done ?? 0)
-          setIndexIndexed(msg.indexed ?? 0)
-          setIndexSkipped(msg.skipped ?? 0)
-          setIndexFailed(msg.failed ?? 0)
+          const done = msg.done ?? 0
+          const total = msg.totalFiles ?? indexTotal
+
+          setIndexDone(done)
+          if (typeof total === 'number') setIndexTotal(total)
+
+          // contadores por archivo (del backend)
+          setIndexIndexed(msg.filesOk ?? 0)
+          setIndexSkipped(msg.filesSkipped ?? 0)
+          setIndexFailed(msg.filesFailed ?? 0)
+
+          setStatus(`Archivos indexados ${done}/${total}`)
         }
 
         if (msg.type === 'done') {
           setIndexCurrent('')
+
+          const total = msg.totalFiles ?? indexTotal
+          const ok = msg.filesOk ?? 0
+          const skip = msg.filesSkipped ?? 0
+          const fail = msg.filesFailed ?? 0
+
+          setIndexDone(total)
+
+          setStatus(
+            fail > 0
+              ? `Terminó con errores ⚠️ Archivos ${total}/${total} (ok:${ok} skip:${skip} fail:${fail})`
+              : `Indexación lista ✅ Archivos ${total}/${total} (ok:${ok} skip:${skip})`
+          )
         }
       }
     }
-
-    setStatus('Indexación lista ✅')
     setIndexing(false)
   }
 

@@ -18,11 +18,29 @@ const supabase = createClient(
 )
 
 type StreamMsg =
-  | { type: 'start'; total: number }
-  | { type: 'file'; name: string }
-  | { type: 'failed'; name: string; reason?: string }
-  | { type: 'progress'; done: number; indexed: number; skipped: number; failed: number }
-  | { type: 'done'; indexed: number; skipped: number; failed: number; failedFiles: string[] }
+  | { type: 'start'; totalFiles: number }
+  | {
+      type: 'progress'
+      done: number
+      totalFiles: number
+      file: string
+      status: 'ok' | 'skipped' | 'failed'
+      filesOk: number
+      filesSkipped: number
+      filesFailed: number
+      facesIndexedTotal: number
+      facesInFile?: number
+      reason?: string
+    }
+  | {
+      type: 'done'
+      totalFiles: number
+      filesOk: number
+      filesSkipped: number
+      filesFailed: number
+      facesIndexedTotal: number
+      failedFiles: string[]
+    }
 
 export async function POST(req: Request) {
   try {
@@ -35,7 +53,6 @@ export async function POST(req: Request) {
     const encoder = new TextEncoder()
     const failedFiles: string[] = []
 
-    // helper: escribir una línea NDJSON
     const write = (controller: ReadableStreamDefaultController, msg: StreamMsg) => {
       controller.enqueue(encoder.encode(JSON.stringify(msg) + '\n'))
     }
@@ -62,51 +79,70 @@ export async function POST(req: Request) {
       offset += limit
     }
 
-    // candidatos: solo nombres válidos y extensiones imagen
     const candidates = allFiles
       .filter((f) => !!f?.name)
       .filter((f) => /\.(jpe?g|png|webp)$/i.test(f.name))
 
-    // 2) stream response
-    let done = 0
-    let indexed = 0
-    let skipped = 0
-    let failed = 0
+    const totalFiles = candidates.length
 
     const stream = new ReadableStream({
       async start(controller) {
-        write(controller, { type: 'start', total: candidates.length })
+        write(controller, { type: 'start', totalFiles })
+
+        let done = 0
+        let filesOk = 0
+        let filesSkipped = 0
+        let filesFailed = 0
+        let facesIndexedTotal = 0
 
         for (const file of candidates) {
           const objectPath = `${event_slug}/${file.name}`
-          write(controller, { type: 'file', name: objectPath })
 
           try {
+            // descargar
             const { data: blob, error: downloadError } = await supabase.storage
               .from('event-photos')
               .download(objectPath)
 
             if (downloadError || !blob) {
-              skipped++
-              write(controller, { type: 'failed', name: objectPath, reason: 'download_failed' })
-              failedFiles.push(objectPath)
-              failed++
               done++
-              write(controller, { type: 'progress', done, indexed, skipped, failed })
+              filesFailed++
+              failedFiles.push(objectPath)
+              write(controller, {
+                type: 'progress',
+                done,
+                totalFiles,
+                file: objectPath,
+                status: 'failed',
+                filesOk,
+                filesSkipped,
+                filesFailed,
+                facesIndexedTotal,
+                reason: 'download_failed',
+              })
               continue
             }
 
             const buffer = Buffer.from(await blob.arrayBuffer())
             if (buffer.length === 0) {
-              skipped++
-              write(controller, { type: 'failed', name: objectPath, reason: 'empty_file' })
-              failedFiles.push(objectPath)
-              failed++
               done++
-              write(controller, { type: 'progress', done, indexed, skipped, failed })
+              filesSkipped++
+              write(controller, {
+                type: 'progress',
+                done,
+                totalFiles,
+                file: objectPath,
+                status: 'skipped',
+                filesOk,
+                filesSkipped,
+                filesFailed,
+                facesIndexedTotal,
+                reason: 'empty_file',
+              })
               continue
             }
 
+            // rekognition
             const cmd = new IndexFacesCommand({
               CollectionId: process.env.AWS_REKOGNITION_COLLECTION_ID!,
               Image: { Bytes: buffer },
@@ -123,52 +159,89 @@ export async function POST(req: Request) {
                   event_slug,
                   face_id: r.Face?.FaceId ?? null,
                   image_url: objectPath,
-
-                  // ✅ NO NULL: si no viene, mandamos {}
-                  bounding_box: r.Face?.BoundingBox ?? {},
-
-                  // (si tienes columna confidence)
+                  bounding_box: r.Face?.BoundingBox ?? {}, // no-null
                   confidence: r.Face?.Confidence ?? null,
                 }))
                 .filter((x) => !!x.face_id)
 
-            if (faceRecords.length === 0) {
-              // no detectó caras en esta foto (o no indexó nada)
-              skipped++
-              done++
-              write(controller, { type: 'progress', done, indexed, skipped, failed })
-              continue
+            // insertar (si hay caras)
+            if (faceRecords.length > 0) {
+              const { error: dbError } = await supabase.from('event_faces').insert(faceRecords)
+
+              if (dbError) {
+                console.error('DB INSERT ERROR:', objectPath, dbError)
+                done++
+                filesFailed++
+                failedFiles.push(objectPath)
+                write(controller, {
+                  type: 'progress',
+                  done,
+                  totalFiles,
+                  file: objectPath,
+                  status: 'failed',
+                  filesOk,
+                  filesSkipped,
+                  filesFailed,
+                  facesIndexedTotal,
+                  facesInFile: faceRecords.length,
+                  reason: dbError.message,
+                })
+                continue
+              }
+
+              facesIndexedTotal += faceRecords.length
             }
 
-            const { error: dbError } = await supabase.from('event_faces').insert(faceRecords)
-
-            if (dbError) {
-              console.error('DB INSERT ERROR:', objectPath, dbError)
-              failed++
-              failedFiles.push(objectPath)
-              write(controller, { type: 'failed', name: objectPath, reason: dbError.message })
-            } else {
-              indexed += faceRecords.length
-            }
-
+            // ✅ ARCHIVO OK (aunque tenga 0 caras, el archivo igual fue procesado)
             done++
-            write(controller, { type: 'progress', done, indexed, skipped, failed })
+            filesOk++
+            write(controller, {
+              type: 'progress',
+              done,
+              totalFiles,
+              file: objectPath,
+              status: 'ok',
+              filesOk,
+              filesSkipped,
+              filesFailed,
+              facesIndexedTotal,
+              facesInFile: faceRecords.length,
+            })
           } catch (e: any) {
             console.error('INDEX ERROR:', objectPath, e)
-            failed++
-            failedFiles.push(objectPath)
-            write(controller, { type: 'failed', name: objectPath, reason: e?.message ?? 'unknown' })
             done++
-            write(controller, { type: 'progress', done, indexed, skipped, failed })
-            continue
+            filesFailed++
+            failedFiles.push(objectPath)
+            write(controller, {
+              type: 'progress',
+              done,
+              totalFiles,
+              file: objectPath,
+              status: 'failed',
+              filesOk,
+              filesSkipped,
+              filesFailed,
+              facesIndexedTotal,
+              reason: e?.message ?? 'unknown',
+            })
           }
         }
 
-        write(controller, { type: 'done', indexed, skipped, failed, failedFiles })
+        write(controller, {
+          type: 'done',
+          totalFiles,
+          filesOk,
+          filesSkipped,
+          filesFailed,
+          facesIndexedTotal,
+          failedFiles,
+        })
+
         controller.close()
       },
     })
 
+    // ✅ ESTA ES LA PARTE CLAVE: devolver el stream NDJSON
     return new NextResponse(stream, {
       headers: {
         'Content-Type': 'application/x-ndjson; charset=utf-8',
