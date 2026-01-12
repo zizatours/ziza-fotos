@@ -1,14 +1,11 @@
-import {
-  RekognitionClient,
-  IndexFacesCommand,
-} from '@aws-sdk/client-rekognition'
+export const runtime = 'nodejs'
+
+import { NextResponse } from 'next/server'
+import { RekognitionClient, IndexFacesCommand } from '@aws-sdk/client-rekognition'
 import { createClient } from '@supabase/supabase-js'
 
-export const runtime = 'nodejs'
-export const dynamic = 'force-dynamic'
-
 const rekognition = new RekognitionClient({
-  region: 'us-east-1',
+  region: process.env.AWS_REGION || 'us-east-1',
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
@@ -20,61 +17,69 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-type Msg =
+type StreamMsg =
   | { type: 'start'; total: number }
-  | { type: 'progress'; i: number; total: number; file: string; status: 'indexed' | 'skipped' | 'failed'; faces?: number; reason?: string }
+  | { type: 'file'; name: string }
+  | { type: 'failed'; name: string; reason?: string }
+  | { type: 'progress'; done: number; indexed: number; skipped: number; failed: number }
   | { type: 'done'; indexed: number; skipped: number; failed: number; failedFiles: string[] }
-  | { type: 'error'; message: string }
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => ({}))
-    const event_slug = (body?.event_slug ?? '').toString().trim()
+    const { event_slug } = await req.json()
 
     if (!event_slug) {
-      return new Response(JSON.stringify({ error: 'Missing event_slug' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return NextResponse.json({ error: 'Missing event_slug' }, { status: 400 })
     }
-
-    // 1) Listar fotos del evento
-    const { data: files, error: listError } = await supabase.storage
-      .from('event-photos')
-      .list(event_slug)
-
-    if (listError) {
-      console.error('STORAGE LIST ERROR:', listError)
-      return new Response(JSON.stringify({ error: 'Failed to list photos' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
-
-    const candidates = (files ?? [])
-      .filter((f) => !!f?.name)
-      .filter((f: any) => (f?.metadata?.size ?? 1) > 0)
-      .filter((f) => /\.(jpe?g|png|webp)$/i.test(f.name))
 
     const encoder = new TextEncoder()
-    const stream = new ReadableStream<Uint8Array>({
+    const failedFiles: string[] = []
+
+    // helper: escribir una línea NDJSON
+    const write = (controller: ReadableStreamDefaultController, msg: StreamMsg) => {
+      controller.enqueue(encoder.encode(JSON.stringify(msg) + '\n'))
+    }
+
+    // 1) listar TODO (paginado) desde storage/event-photos/<event_slug>/
+    const allFiles: any[] = []
+    let offset = 0
+    const limit = 1000
+
+    while (true) {
+      const { data, error } = await supabase.storage
+        .from('event-photos')
+        .list(event_slug, { limit, offset })
+
+      if (error) {
+        console.error('STORAGE LIST ERROR:', error)
+        return NextResponse.json({ error: 'Failed to list photos' }, { status: 500 })
+      }
+
+      const batch = data ?? []
+      allFiles.push(...batch)
+
+      if (batch.length < limit) break
+      offset += limit
+    }
+
+    // candidatos: solo nombres válidos y extensiones imagen
+    const candidates = allFiles
+      .filter((f) => !!f?.name)
+      .filter((f) => /\.(jpe?g|png|webp)$/i.test(f.name))
+
+    // 2) stream response
+    let done = 0
+    let indexed = 0
+    let skipped = 0
+    let failed = 0
+
+    const stream = new ReadableStream({
       async start(controller) {
-        const write = (msg: Msg) => {
-          controller.enqueue(encoder.encode(JSON.stringify(msg) + '\n'))
-        }
+        write(controller, { type: 'start', total: candidates.length })
 
-        let indexed = 0
-        let skipped = 0
-        let failed = 0
-        const failedFiles: string[] = []
-
-        write({ type: 'start', total: candidates.length })
-
-        for (let i = 0; i < candidates.length; i++) {
-          if (req.signal.aborted) break
-
-          const file = candidates[i]
+        for (const file of candidates) {
           const objectPath = `${event_slug}/${file.name}`
+          write(controller, { type: 'file', name: objectPath })
 
           try {
             const { data: blob, error: downloadError } = await supabase.storage
@@ -83,110 +88,83 @@ export async function POST(req: Request) {
 
             if (downloadError || !blob) {
               skipped++
-              write({
-                type: 'progress',
-                i: i + 1,
-                total: candidates.length,
-                file: objectPath,
-                status: 'skipped',
-                reason: 'download_failed',
-              })
+              write(controller, { type: 'failed', name: objectPath, reason: 'download_failed' })
+              failedFiles.push(objectPath)
+              failed++
+              done++
+              write(controller, { type: 'progress', done, indexed, skipped, failed })
               continue
             }
 
             const buffer = Buffer.from(await blob.arrayBuffer())
-
             if (buffer.length === 0) {
               skipped++
-              write({
-                type: 'progress',
-                i: i + 1,
-                total: candidates.length,
-                file: objectPath,
-                status: 'skipped',
-                reason: 'empty_file',
-              })
+              write(controller, { type: 'failed', name: objectPath, reason: 'empty_file' })
+              failedFiles.push(objectPath)
+              failed++
+              done++
+              write(controller, { type: 'progress', done, indexed, skipped, failed })
               continue
             }
 
-            const command = new IndexFacesCommand({
+            const cmd = new IndexFacesCommand({
               CollectionId: process.env.AWS_REKOGNITION_COLLECTION_ID!,
               Image: { Bytes: buffer },
               MaxFaces: 10,
               QualityFilter: 'AUTO',
+              ExternalImageId: objectPath, // útil para debug en Rekognition
             })
 
-            const result = await rekognition.send(command)
+            const result = await rekognition.send(cmd)
 
             const faceRecords =
-              result.FaceRecords?.map((r) => ({
-                event_slug,
-                face_id: r.Face?.FaceId,
-                image_path: objectPath,
-              })) ?? []
+              (result.FaceRecords ?? [])
+                .map((r) => r.Face?.FaceId)
+                .filter((id): id is string => !!id)
+                .map((faceId) => ({
+                  event_slug,
+                  face_id: faceId,
+                  image_url: objectPath, // <— OJO: columna esperada en tu DB
+                })) ?? []
 
             if (faceRecords.length === 0) {
+              // no detectó caras en esta foto (o no indexó nada)
               skipped++
-              write({
-                type: 'progress',
-                i: i + 1,
-                total: candidates.length,
-                file: objectPath,
-                status: 'skipped',
-                reason: 'no_faces',
-              })
+              done++
+              write(controller, { type: 'progress', done, indexed, skipped, failed })
               continue
             }
 
-            const { error: dbError } = await supabase
-              .from('event_faces')
-              .insert(faceRecords)
+            const { error: dbError } = await supabase.from('event_faces').insert(faceRecords)
 
             if (dbError) {
+              console.error('DB INSERT ERROR:', objectPath, dbError)
               failed++
               failedFiles.push(objectPath)
-              write({
-                type: 'progress',
-                i: i + 1,
-                total: candidates.length,
-                file: objectPath,
-                status: 'failed',
-                reason: 'db_insert_error',
-              })
-              continue
+              write(controller, { type: 'failed', name: objectPath, reason: dbError.message })
+            } else {
+              indexed += faceRecords.length
             }
 
-            indexed += faceRecords.length
-            write({
-              type: 'progress',
-              i: i + 1,
-              total: candidates.length,
-              file: objectPath,
-              status: 'indexed',
-              faces: faceRecords.length,
-            })
-          } catch (e) {
+            done++
+            write(controller, { type: 'progress', done, indexed, skipped, failed })
+          } catch (e: any) {
             console.error('INDEX ERROR:', objectPath, e)
             failed++
             failedFiles.push(objectPath)
-            write({
-              type: 'progress',
-              i: i + 1,
-              total: candidates.length,
-              file: objectPath,
-              status: 'failed',
-              reason: 'exception',
-            })
+            write(controller, { type: 'failed', name: objectPath, reason: e?.message ?? 'unknown' })
+            done++
+            write(controller, { type: 'progress', done, indexed, skipped, failed })
             continue
           }
         }
 
-        write({ type: 'done', indexed, skipped, failed, failedFiles })
+        write(controller, { type: 'done', indexed, skipped, failed, failedFiles })
         controller.close()
       },
     })
 
-    return new Response(stream, {
+    return new NextResponse(stream, {
       headers: {
         'Content-Type': 'application/x-ndjson; charset=utf-8',
         'Cache-Control': 'no-store',
@@ -194,9 +172,6 @@ export async function POST(req: Request) {
     })
   } catch (err) {
     console.error('INDEX PHOTOS ERROR:', err)
-    return new Response(JSON.stringify({ error: 'Indexing failed' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return NextResponse.json({ error: 'Indexing failed' }, { status: 500 })
   }
 }
