@@ -57,42 +57,6 @@ function EventCard({ event }: { event: EventRow }) {
   )
 }
 
-function CategoryCard({
-  title,
-  href,
-}: {
-  title: string
-  href: string
-}) {
-  return (
-    <Link
-      href={href}
-      className="block overflow-hidden rounded-2xl bg-white shadow-[0_20px_40px_rgba(0,0,0,0.08)]"
-    >
-      {/* Imagen */}
-      <div className="relative h-48">
-        <Image
-          src="/hero.jpg"
-          alt={title}
-          fill
-          className="object-cover"
-        />
-      </div>
-
-      {/* Texto */}
-      <div className="p-5 text-center">
-        <h3 className="text-xl font-medium mb-4 text-gray-900">
-          {title}
-        </h3>
-
-        <span className="inline-block rounded-full bg-[#f6f3ee] px-5 py-2 text-sm text-gray-900">
-          Ver {title.toLowerCase()} →
-        </span>
-      </div>
-    </Link>
-  )
-}
-
 function EventCardSkeleton() {
   return (
     <div className="overflow-hidden rounded-2xl bg-white shadow-[0_20px_40px_rgba(0,0,0,0.08)]">
@@ -219,15 +183,6 @@ export default function HomePage() {
             ))}
           </div>
         )}
-      </section>
-
-      {/* CATEGORÍAS */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-16 mt-8 space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <CategoryCard title="Gira de estudio" href="/giras" />
-          <CategoryCard title="Tours" href="/tours" />
-          <CategoryCard title="Fiesta" href="/fiesta" />
-        </div>
       </section>
 
       {/* BLOQUE DE RESPIRO */}
