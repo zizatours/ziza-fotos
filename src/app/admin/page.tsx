@@ -274,9 +274,9 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
 return (
   <div id="admin-root" className="min-h-screen w-full">
     {/* (Si ya tienes ThemeToggle en tu archivo, ponlo acá) */}
-    {/* <div className="fixed top-4 right-4 z-50">
+    {<div className="fixed top-4 right-4 z-50">
       <ThemeToggle />
-    </div> */}
+    </div>}
 
     {!authed ? (
       // ===== LOGIN =====
@@ -302,7 +302,7 @@ return (
       </div>
     ) : (
       // ===== PANEL =====
-      <div className="w-full max-w-5xl mx-auto px-4 py-8">
+      <div className="w-full max-w-md mx-auto px-4 py-8">
         {/* TODO lo que tenías dentro del <div id="admin-root"...> va acá */}
         {/* ===== Crear evento (colapsable) ===== */}
         <div className="mb-6 border-b pb-6">
