@@ -294,12 +294,12 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
     )
   }
 
-  return (    
-    <div id="admin-root" className="max-w-md mx-auto mt-20 p-6 border rounded-xl">
-    <div className="flex items-center justify-between mb-4">
-      <h1 className="text-xl font-semibold">Panel admin</h1>
-      <ThemeToggle />
-    </div>
+  return (
+    <div id="admin-root" className="min-h-screen w-full">
+      <div className="max-w-md mx-auto mt-20 p-6 border rounded-xl">
+        <h1 className="text-xl font-semibold">Panel admin</h1>
+        <ThemeToggle />
+      </div>
       {/* ===== Crear evento (colapsable) ===== */}
       <div className="mb-6 border-b pb-6">
         <button
