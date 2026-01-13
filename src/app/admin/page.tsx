@@ -270,347 +270,351 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
     setIndexing(false)
   }
 
-  // ===== UI =====
-  if (!authed) {
-    return (
-      <div className="max-w-sm mx-auto mt-32 p-6 border rounded-xl">
-        <h1 className="text-lg font-semibold mb-4">Admin</h1>
+// ===== UI =====
+return (
+  <div id="admin-root" className="min-h-screen w-full">
+    {/* (Si ya tienes ThemeToggle en tu archivo, ponlo acá) */}
+    {/* <div className="fixed top-4 right-4 z-50">
+      <ThemeToggle />
+    </div> */}
 
-        <input
-          type="password"
-          placeholder="Clave admin"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full border px-3 py-2 rounded mb-4"
-        />
-
-        <button
-          onClick={login}
-          className="w-full bg-black text-white py-2 rounded"
-        >
-          Entrar
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <div id="admin-root" className="min-h-screen w-full">
-      <div className="max-w-md mx-auto mt-20 p-6 border rounded-xl">
-        <h1 className="text-xl font-semibold">Panel admin</h1>
-        <ThemeToggle />
-      </div>
-      {/* ===== Crear evento (colapsable) ===== */}
-      <div className="mb-6 border-b pb-6">
-        <button
-          type="button"
-          onClick={() => setShowCreate(v => !v)}
-          className="w-full flex items-center justify-between"
-        >
-          <h2 className="text-lg font-semibold">Crear evento</h2>
-          <span className="text-sm text-gray-600">{showCreate ? 'Ocultar' : 'Mostrar'}</span>
-        </button>
-
-        {showCreate && (
-          <div className="mt-4">
-            <input
-              type="text"
-              placeholder="Nombre del evento"
-              value={eventTitle}
-              onChange={(e) => setEventTitle(e.target.value)}
-              className="w-full border px-3 py-2 rounded mb-3"
-            />
-
-            <input
-              type="text"
-              placeholder="Ubicación del evento (ej: Maracanã, Rio de Janeiro)"
-              value={eventLocation}
-              onChange={(e) => setEventLocation(e.target.value)}
-              className="w-full border px-3 py-2 rounded mb-3"
-            />
-
-            <input
-              type="text"
-              placeholder="Fecha del evento (ej: 21/12/2025)"
-              value={eventDate}
-              onChange={(e) => setEventDate(e.target.value)}
-              className="w-full border px-3 py-2 rounded mb-3"
-            />
-
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                if (e.target.files?.[0]) setEventImage(e.target.files[0])
-              }}
-              className="w-full mb-3"
-            />
-
-            <button
-              onClick={async () => {
-                if (!eventTitle) return
-
-                setStatus('Creando evento...')
-
-                const formData = new FormData()
-                formData.append('title', eventTitle)
-                formData.append('location', eventLocation)
-                formData.append('event_date', eventDate)
-
-                if (eventImage) formData.append('image', eventImage)
-
-                const res = await fetch('/api/admin/create-event', {
-                  method: 'POST',
-                  body: formData,
-                })
-
-                const data = await res.json()
-
-                if (res.ok) {
-                  setStatus(`Evento creado ✅ (${data.slug})`)
-                  setEventTitle('')
-                  setShowCreate(false)
-                  window.location.reload()
-                } else {
-                  setStatus(data.error || 'Error creando evento')
-                }
-              }}
-              className="w-full bg-black text-white py-3 rounded-full"
-            >
-              Crear evento
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* ===== Selector de evento ===== */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-2">
-          Evento seleccionado
-        </label>
-
-        <select
-          className="w-full border px-3 py-2 rounded"
-          value={selectedEventSlug}
-          onChange={(e) => {
-            setSelectedEventSlug(e.target.value)
-            setActiveTab('fotos')
-          }}
-        >
-          <option value="">Selecciona un evento</option>
-
-          {events.map((event) => (
-            <option key={event.id} value={event.slug}>
-              {event.name}
-            </option>
-          ))}
-        </select>
-
-        {activeTab === 'imagen' && (
-          <div className="mt-4 border p-4 rounded-lg">
-            <p className="font-medium mb-2">
-              Cambiar imagen principal del evento
-            </p>
-
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                if (e.target.files?.[0]) {
-                  setImageToUpload(e.target.files[0])
-                }
-              }}
-              className="mb-3"
-            />
-
-            <button
-              onClick={async () => {
-                if (!imageToUpload || !selectedEventSlug) return
-
-                const formData = new FormData()
-                formData.append('eventSlug', selectedEventSlug)
-                formData.append('image', imageToUpload)
-
-                await fetch('/api/admin/update-event-image', {
-                  method: 'POST',
-                  body: formData,
-                })
-
-                window.location.reload()
-              }}
-              className="bg-black text-white px-4 py-2 rounded"
-            >
-              Guardar imagen
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* ===== Tabs ===== */}
-      <div className="flex gap-2 mt-6">
-        <button
-          className={`flex-1 border py-2 rounded ${activeTab === 'imagen' ? 'bg-black text-white' : ''}`}
-          onClick={() => setActiveTab('imagen')}
-        >
-          Imagen
-        </button>
-        <button
-          className={`flex-1 border py-2 rounded ${activeTab === 'fotos' ? 'bg-black text-white' : ''}`}
-          onClick={() => setActiveTab('fotos')}
-        >
-          Fotos
-        </button>
-        <button
-          className={`flex-1 border py-2 rounded ${activeTab === 'index' ? 'bg-black text-white' : ''}`}
-          onClick={() => setActiveTab('index')}
-        >
-          Indexación
-        </button>
-        <button
-          className={`flex-1 border py-2 rounded ${activeTab === 'peligro' ? 'bg-red-600 text-white border-red-600' : 'border-red-300 text-red-600'}`}
-          onClick={() => setActiveTab('peligro')}
-        >
-          Peligro
-        </button>
-      </div>
-
-      {/* ===== Subir fotos ===== */}
-      {activeTab === 'fotos' && (
-        <>
-          <h1 className="text-xl font-semibold mb-4">
-            Subir fotos del evento
-          </h1>
+    {!authed ? (
+      // ===== LOGIN =====
+      <div className="min-h-screen w-full flex items-start justify-center pt-28 px-4">
+        <div className="w-full max-w-sm p-6 border rounded-xl">
+          <h1 className="text-lg font-semibold mb-4">Admin</h1>
 
           <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={(e) => setFiles(e.target.files ?? null)}
+            type="password"
+            placeholder="Clave admin"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full border px-3 py-2 rounded mb-4"
           />
 
           <button
-            onClick={uploadFiles}
-            disabled={uploading || !selectedEventSlug || !files || files.length === 0}
-            className={`w-full bg-black text-white py-3 rounded-full mt-4 ${
-              uploading || !selectedEventSlug || !files || files.length === 0 ? 'opacity-50' : ''
-            }`}
+            onClick={login}
+            className="w-full bg-black text-white py-2 rounded"
           >
-            {uploading ? `Subiendo ${uploadDone}/${uploadTotal}…` : 'Subir fotos'}
+            Entrar
           </button>
-          
-          {uploading && (
-            <div className="mt-4">
-              <div className="text-sm text-gray-700">
-                Archivo: <span className="font-medium">{uploadCurrent}</span>
-              </div>
-
-              <div className="w-full h-2 bg-gray-200 rounded mt-2 overflow-hidden">
-                <div
-                  className="h-2 bg-black"
-                  style={{
-                    width:
-                      uploadTotal > 0 ? `${Math.round((uploadDone / uploadTotal) * 100)}%` : '0%',
-                  }}
-                />
-              </div>
-
-              <div className="text-xs text-gray-600 mt-2">
-                {uploadUploaded} nuevas · {uploadDuplicated} duplicadas · {uploadErrors} errores
-              </div>
-
-              {uploadErrors > 0 && uploadErrorFiles.length > 0 && (
-                <div className="text-xs text-red-600 mt-2 break-words">
-                  Fallaron: {uploadErrorFiles.join(', ')}
-                </div>
-              )}
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ===== Indexar fotos ===== */}
-      {activeTab === 'index' && (
-        <div className="mt-4">
+        </div>
+      </div>
+    ) : (
+      // ===== PANEL =====
+      <div className="w-full max-w-5xl mx-auto px-4 py-8">
+        {/* TODO lo que tenías dentro del <div id="admin-root"...> va acá */}
+        {/* ===== Crear evento (colapsable) ===== */}
+        <div className="mb-6 border-b pb-6">
           <button
-            onClick={runIndex}
-            disabled={indexing || !selectedEventSlug}
-            className={`w-full border py-3 rounded-full ${indexing ? 'opacity-50' : ''}`}
+            type="button"
+            onClick={() => setShowCreate(v => !v)}
+            className="w-full flex items-center justify-between"
           >
-            {indexing ? `Indexando ${indexDone}/${indexTotal || '…'}…` : 'Indexar fotos'}
+            <h2 className="text-lg font-semibold">Crear evento</h2>
+            <span className="text-sm text-gray-600">{showCreate ? 'Ocultar' : 'Mostrar'}</span>
           </button>
 
-          {indexing && (
+          {showCreate && (
             <div className="mt-4">
-              <div className="text-sm text-gray-700">
-                Archivo: <span className="font-medium">{indexCurrent || '—'}</span>
-              </div>
+              <input
+                type="text"
+                placeholder="Nombre del evento"
+                value={eventTitle}
+                onChange={(e) => setEventTitle(e.target.value)}
+                className="w-full border px-3 py-2 rounded mb-3"
+              />
 
-              <div className="w-full h-2 bg-gray-200 rounded mt-2 overflow-hidden">
-                <div
-                  className="h-2 bg-black"
-                  style={{
-                    width:
-                      indexTotal > 0 ? `${Math.round((indexDone / indexTotal) * 100)}%` : '0%',
-                  }}
-                />
-              </div>
+              <input
+                type="text"
+                placeholder="Ubicación del evento (ej: Maracanã, Rio de Janeiro)"
+                value={eventLocation}
+                onChange={(e) => setEventLocation(e.target.value)}
+                className="w-full border px-3 py-2 rounded mb-3"
+              />
 
-              <div className="text-xs text-gray-600 mt-2">
-                {indexIndexed} Archivos indexadas · {indexSkipped} saltadas · {indexFailed} fallidas
-              </div>
+              <input
+                type="text"
+                placeholder="Fecha del evento (ej: 21/12/2025)"
+                value={eventDate}
+                onChange={(e) => setEventDate(e.target.value)}
+                className="w-full border px-3 py-2 rounded mb-3"
+              />
 
-              {indexFailedFiles.length > 0 && (
-                <div className="text-xs text-red-600 mt-2 break-words">
-                  Fallaron: {indexFailedFiles.join(', ')}
-                </div>
-              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) setEventImage(e.target.files[0])
+                }}
+                className="w-full mb-3"
+              />
+
+              <button
+                onClick={async () => {
+                  if (!eventTitle) return
+
+                  setStatus('Creando evento...')
+
+                  const formData = new FormData()
+                  formData.append('title', eventTitle)
+                  formData.append('location', eventLocation)
+                  formData.append('event_date', eventDate)
+
+                  if (eventImage) formData.append('image', eventImage)
+
+                  const res = await fetch('/api/admin/create-event', {
+                    method: 'POST',
+                    body: formData,
+                  })
+
+                  const data = await res.json()
+
+                  if (res.ok) {
+                    setStatus(`Evento creado ✅ (${data.slug})`)
+                    setEventTitle('')
+                    setShowCreate(false)
+                    window.location.reload()
+                  } else {
+                    setStatus(data.error || 'Error creando evento')
+                  }
+                }}
+                className="w-full bg-black text-white py-3 rounded-full"
+              >
+                Crear evento
+              </button>
             </div>
           )}
         </div>
-      )}
 
-      {/* ===== Eliminar evento ===== */}
-      {activeTab === 'peligro' && (
-        <button
-          onClick={async () => {
-            if (!selectedEventSlug) return
+        {/* ===== Selector de evento ===== */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2">
+            Evento seleccionado
+          </label>
 
-            const confirmDelete = confirm(
-              '⚠️ Esto eliminará el evento, sus fotos y sus caras. ¿Continuar?'
-            )
-            if (!confirmDelete) return
+          <select
+            className="w-full border px-3 py-2 rounded"
+            value={selectedEventSlug}
+            onChange={(e) => {
+              setSelectedEventSlug(e.target.value)
+              setActiveTab('fotos')
+            }}
+          >
+            <option value="">Selecciona un evento</option>
 
-            setStatus('Eliminando evento...')
+            {events.map((event) => (
+              <option key={event.id} value={event.slug}>
+                {event.name}
+              </option>
+            ))}
+          </select>
 
-            const res = await fetch('/api/admin/delete-event', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                event_slug: selectedEventSlug,
-              }),
-            })
+          {activeTab === 'imagen' && (
+            <div className="mt-4 border p-4 rounded-lg">
+              <p className="font-medium mb-2">
+                Cambiar imagen principal del evento
+              </p>
 
-            const data = await res.json()
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) {
+                    setImageToUpload(e.target.files[0])
+                  }
+                }}
+                className="mb-3"
+              />
 
-            if (res.ok) {
-              setStatus('Evento eliminado correctamente ✅')
-              window.location.reload()
-            } else {
-              setStatus(data.error || 'Error eliminando evento')
-            }
-          }}
-          className="w-full border border-red-500 text-red-600 py-3 rounded-full mb-6 mt-4"
-        >
-          Eliminar evento
-        </button>
-      )}
+              <button
+                onClick={async () => {
+                  if (!imageToUpload || !selectedEventSlug) return
 
+                  const formData = new FormData()
+                  formData.append('eventSlug', selectedEventSlug)
+                  formData.append('image', imageToUpload)
 
-      {status && (
-        <p className="text-sm text-gray-600 mt-4 whitespace-pre-line">
-          {status}
-        </p>
-      )}
-    </div>
-  )
-}
+                  await fetch('/api/admin/update-event-image', {
+                    method: 'POST',
+                    body: formData,
+                  })
+
+                  window.location.reload()
+                }}
+                className="bg-black text-white px-4 py-2 rounded"
+              >
+                Guardar imagen
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ===== Tabs ===== */}
+        <div className="flex gap-2 mt-6">
+          <button
+            className={`flex-1 border py-2 rounded ${activeTab === 'imagen' ? 'bg-black text-white' : ''}`}
+            onClick={() => setActiveTab('imagen')}
+          >
+            Imagen
+          </button>
+          <button
+            className={`flex-1 border py-2 rounded ${activeTab === 'fotos' ? 'bg-black text-white' : ''}`}
+            onClick={() => setActiveTab('fotos')}
+          >
+            Fotos
+          </button>
+          <button
+            className={`flex-1 border py-2 rounded ${activeTab === 'index' ? 'bg-black text-white' : ''}`}
+            onClick={() => setActiveTab('index')}
+          >
+            Indexación
+          </button>
+          <button
+            className={`flex-1 border py-2 rounded ${activeTab === 'peligro' ? 'bg-red-600 text-white border-red-600' : 'border-red-300 text-red-600'}`}
+            onClick={() => setActiveTab('peligro')}
+          >
+            Peligro
+          </button>
+        </div>
+
+        {/* ===== Subir fotos ===== */}
+        {activeTab === 'fotos' && (
+          <>
+            <h1 className="text-xl font-semibold mb-4">
+              Subir fotos del evento
+            </h1>
+
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={(e) => setFiles(e.target.files ?? null)}
+            />
+
+            <button
+              onClick={uploadFiles}
+              disabled={uploading || !selectedEventSlug || !files || files.length === 0}
+              className={`w-full bg-black text-white py-3 rounded-full mt-4 ${
+                uploading || !selectedEventSlug || !files || files.length === 0 ? 'opacity-50' : ''
+              }`}
+            >
+              {uploading ? `Subiendo ${uploadDone}/${uploadTotal}…` : 'Subir fotos'}
+            </button>
+
+            {uploading && (
+              <div className="mt-4">
+                <div className="text-sm text-gray-700">
+                  Archivo: <span className="font-medium">{uploadCurrent}</span>
+                </div>
+
+                <div className="w-full h-2 bg-gray-200 rounded mt-2 overflow-hidden">
+                  <div
+                    className="h-2 bg-black"
+                    style={{
+                      width:
+                        uploadTotal > 0 ? `${Math.round((uploadDone / uploadTotal) * 100)}%` : '0%',
+                    }}
+                  />
+                </div>
+
+                <div className="text-xs text-gray-600 mt-2">
+                  {uploadUploaded} nuevas · {uploadDuplicated} duplicadas · {uploadErrors} errores
+                </div>
+
+                {uploadErrors > 0 && uploadErrorFiles.length > 0 && (
+                  <div className="text-xs text-red-600 mt-2 break-words">
+                    Fallaron: {uploadErrorFiles.join(', ')}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ===== Indexar fotos ===== */}
+        {activeTab === 'index' && (
+          <div className="mt-4">
+            <button
+              onClick={runIndex}
+              disabled={indexing || !selectedEventSlug}
+              className={`w-full border py-3 rounded-full ${indexing ? 'opacity-50' : ''}`}
+            >
+              {indexing ? `Indexando ${indexDone}/${indexTotal || '…'}…` : 'Indexar fotos'}
+            </button>
+
+            {indexing && (
+              <div className="mt-4">
+                <div className="text-sm text-gray-700">
+                  Archivo: <span className="font-medium">{indexCurrent || '—'}</span>
+                </div>
+
+                <div className="w-full h-2 bg-gray-200 rounded mt-2 overflow-hidden">
+                  <div
+                    className="h-2 bg-black"
+                    style={{
+                      width:
+                        indexTotal > 0 ? `${Math.round((indexDone / indexTotal) * 100)}%` : '0%',
+                    }}
+                  />
+                </div>
+
+                <div className="text-xs text-gray-600 mt-2">
+                  {indexIndexed} Archivos indexadas · {indexSkipped} saltadas · {indexFailed} fallidas
+                </div>
+
+                {indexFailedFiles.length > 0 && (
+                  <div className="text-xs text-red-600 mt-2 break-words">
+                    Fallaron: {indexFailedFiles.join(', ')}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ===== Eliminar evento ===== */}
+        {activeTab === 'peligro' && (
+          <button
+            onClick={async () => {
+              if (!selectedEventSlug) return
+
+              const confirmDelete = confirm(
+                '⚠️ Esto eliminará el evento, sus fotos y sus caras. ¿Continuar?'
+              )
+              if (!confirmDelete) return
+
+              setStatus('Eliminando evento...')
+
+              const res = await fetch('/api/admin/delete-event', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  event_slug: selectedEventSlug,
+                }),
+              })
+
+              const data = await res.json()
+
+              if (res.ok) {
+                setStatus('Evento eliminado correctamente ✅')
+                window.location.reload()
+              } else {
+                setStatus(data.error || 'Error eliminando evento')
+              }
+            }}
+            className="w-full border border-red-500 text-red-600 py-3 rounded-full mb-6 mt-4"
+          >
+            Eliminar evento
+          </button>
+        )}
+
+        {status && (
+          <p className="text-sm text-gray-600 mt-4 whitespace-pre-line">
+            {status}
+          </p>
+        )}
+      </div>
+    )}
+  </div>
+)}
