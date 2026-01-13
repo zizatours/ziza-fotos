@@ -5,6 +5,18 @@
   --foreground: #171717;
 }
 
+#admin-root {
+  --background: #ffffff;
+  --foreground: #171717;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+#admin-root[data-theme='dark'] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
