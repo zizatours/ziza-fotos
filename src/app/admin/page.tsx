@@ -294,7 +294,7 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
   }
 
   return (
-    <div className="max-w-md mx-auto mt-20 p-6 border rounded-xl">
+    <div id="admin-root" className="max-w-md mx-auto mt-20 p-6 border rounded-xl">
       {/* ===== Crear evento (colapsable) ===== */}
       <div className="mb-6 border-b pb-6">
         <button
