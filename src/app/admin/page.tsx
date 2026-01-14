@@ -274,14 +274,13 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
 return (
   <div id="admin-root" className="min-h-screen w-full">
     {/* (Si ya tienes ThemeToggle en tu archivo, ponlo acá) */}
-    {<div className="fixed top-4 right-4 z-50">
+    <div className="fixed top-4 right-4 z-50">
       <ThemeToggle />
-    </div>}
+    </div>
 
     {!authed ? (
       // ===== LOGIN =====
       <div
-        id="admin-root"
         className="min-h-screen w-full flex items-start justify-center pt-28 px-4
                   bg-zinc-50 text-zinc-900
                   dark:bg-zinc-950 dark:text-zinc-100"
