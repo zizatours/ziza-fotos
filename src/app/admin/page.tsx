@@ -280,8 +280,16 @@ return (
 
     {!authed ? (
       // ===== LOGIN =====
-      <div className="min-h-screen w-full flex items-start justify-center pt-28 px-4">
-        <div className="w-full max-w-sm p-6 border rounded-xl">
+      <div
+        id="admin-root"
+        className="min-h-screen w-full flex items-start justify-center pt-28 px-4
+                  bg-zinc-50 text-zinc-900
+                  dark:bg-zinc-950 dark:text-zinc-100"
+      >
+        <div className="w-full max-w-sm p-6 rounded-2xl border shadow-sm
+                bg-white border-zinc-200
+                dark:bg-zinc-900 dark:border-zinc-700">
+
           <h1 className="text-lg font-semibold mb-4">Admin</h1>
 
           <input
@@ -289,12 +297,21 @@ return (
             placeholder="Clave admin"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border px-3 py-2 rounded mb-4"
+            className="w-full border px-3 py-2 rounded mb-4
+                      bg-white text-black border-gray-300 placeholder:text-gray-500
+                      dark:bg-zinc-950 dark:text-white dark:border-zinc-700 dark:placeholder:text-zinc-400"
+
           />
 
           <button
             onClick={login}
-            className="w-full bg-black text-white py-2 rounded"
+            className="w-full py-2.5 rounded-lg font-medium
+                      bg-black text-white
+                      hover:bg-zinc-800
+                      focus:outline-none focus:ring-2 focus:ring-black/30
+                      dark:bg-white dark:text-black
+                      dark:hover:bg-zinc-200
+                      dark:focus:ring-2 dark:focus:ring-white/30"
           >
             Entrar
           </button>
