@@ -1,21 +1,17 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js'
+import { useEffect, useMemo, useState } from 'react'
+import { PayPalButtons, PayPalScriptProvider } from '@paypal/react-paypal-js'
 
 export default function CheckoutPage() {
   const [images, setImages] = useState<string[]>([])
   const [eventSlug, setEventSlug] = useState<string | null>(null)
-  const paypalClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || ''
-  
-  const getPreviewUrl = (url: string) =>
-    `/api/preview?path=${encodeURIComponent(url)}`
-
-  const quantity = images.length
-  const unitPrice = 18
 
   const [email, setEmail] = useState('')
   const [emailConfirm, setEmailConfirm] = useState('')
   const [loading, setLoading] = useState(false)
+
+  const quantity = images.length
+  const unitPrice = 18
 
   const subtotal = quantity * unitPrice
   const discountPercent =
@@ -23,16 +19,43 @@ export default function CheckoutPage() {
   const discountAmount = +(subtotal * (discountPercent / 100)).toFixed(2)
   const total = +(subtotal - discountAmount).toFixed(2)
 
+  // ✅ PayPal Client ID (PUBLIC)
+  const paypalClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || ''
+
+  // ✅ Para watermark: soporta images como "path" (evento/archivo.jpg) o como URL completa
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+  const bucket = 'event-photos'
+
+  const toPublicUrl = (pathOrUrl: string) => {
+    if (!pathOrUrl) return ''
+    if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl
+    if (!supabaseUrl) return pathOrUrl // fallback
+    const clean = pathOrUrl.replace(/^\/+/, '')
+    return `${supabaseUrl}/storage/v1/object/public/${bucket}/${clean}`
+  }
+
+  const getPreviewUrl = (pathOrUrl: string) => {
+    const publicUrl = toPublicUrl(pathOrUrl)
+    return `/api/preview?src=${encodeURIComponent(publicUrl)}`
+  }
+
   useEffect(() => {
     const raw = localStorage.getItem('ziza_checkout_selection')
-
     if (!raw) return
-
     const data = JSON.parse(raw)
-
     setImages(data.images || [])
     setEventSlug(data.event_slug || null)
   }, [])
+
+  const canPay = useMemo(() => {
+    return (
+      !loading &&
+      !!email &&
+      email === emailConfirm &&
+      images.length > 0 &&
+      !!paypalClientId
+    )
+  }, [loading, email, emailConfirm, images.length, paypalClientId])
 
   return (
     <main className="min-h-screen bg-white">
@@ -72,8 +95,7 @@ export default function CheckoutPage() {
               />
 
               <p className="text-xs text-gray-500">
-                Te enviaremos aquí el acceso a tus fotos
-                (por si cierras esta ventana)
+                Te enviaremos aquí el acceso a tus fotos (por si cierras esta ventana)
               </p>
             </div>
 
@@ -93,8 +115,12 @@ export default function CheckoutPage() {
               </p>
             </div>
 
-            {/* CTA (PayPal) */}
-            {(!paypalClientId || !email || email !== emailConfirm || images.length === 0) ? (
+            {/* CTA / PAYPAL */}
+            {!paypalClientId ? (
+              <div className="text-sm text-red-600">
+                Falta configurar <b>NEXT_PUBLIC_PAYPAL_CLIENT_ID</b> en Vercel.
+              </div>
+            ) : !canPay ? (
               <button
                 disabled
                 className="w-full bg-black text-white rounded-full py-4 text-sm disabled:opacity-40"
@@ -103,11 +129,7 @@ export default function CheckoutPage() {
               </button>
             ) : (
               <PayPalScriptProvider
-                options={{
-                  clientId: paypalClientId,
-                  currency: 'BRL',
-                  intent: 'capture',
-                }}
+                options={{ clientId: paypalClientId, currency: 'BRL', intent: 'capture' }}
               >
                 <div className="w-full">
                   <PayPalButtons
@@ -130,17 +152,27 @@ export default function CheckoutPage() {
                       const data = await res.json()
                       setLoading(false)
 
-                      if (!res.ok) throw new Error('No se pudo crear la orden de PayPal')
+                      if (!res.ok) {
+                        console.log('CREATE ORDER ERROR:', data)
+                        throw new Error('No se pudo crear la orden de PayPal')
+                      }
+
                       return data.id
                     }}
-                    onApprove={async (data) => {
+                    onApprove={async (data: { orderID?: string }) => {
+                      const orderID = data?.orderID
+                      if (!orderID) {
+                        alert('No se recibió orderID de PayPal.')
+                        return
+                      }
+
                       setLoading(true)
 
                       const res = await fetch('/api/paypal/capture-order', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                          orderID: data.orderID,
+                          orderID,
                           event_slug: eventSlug,
                           images,
                           email,
@@ -156,9 +188,8 @@ export default function CheckoutPage() {
                         return
                       }
 
-                      // TODO: aquí puedes redirigir a /gracias o mostrar “Pago ok”
                       console.log('PAGO OK:', out)
-                      alert('¡Pago confirmado! (Ahora toca habilitar entrega/descarga)')
+                      alert('¡Pago confirmado! (falta implementar entrega/descarga)')
                     }}
                   />
                 </div>
@@ -176,7 +207,6 @@ export default function CheckoutPage() {
               Resumen de tu selección
             </h2>
 
-            {/* MINI GRID (placeholder visual) */}
             <div className="grid grid-cols-3 gap-2 mb-6">
               {images
                 .filter(Boolean)
@@ -191,7 +221,6 @@ export default function CheckoutPage() {
                 ))}
             </div>
 
-            {/* PRECIOS */}
             <div className="text-sm space-y-2 mb-4">
               <div className="flex justify-between">
                 <span>{quantity} fotos</span>
@@ -212,8 +241,7 @@ export default function CheckoutPage() {
             </div>
 
             <p className="text-xs text-gray-500">
-              Tus fotos son privadas.  
-              Solo tú podrás descargarlas después del pago.
+              Tus fotos son privadas. Solo tú podrás descargarlas después del pago.
             </p>
           </aside>
 
