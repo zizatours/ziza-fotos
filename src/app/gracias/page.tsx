@@ -1,5 +1,6 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 type Order = {
   id: string
@@ -16,8 +17,8 @@ export default function GraciasPage() {
   const [order, setOrder] = useState<Order | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const params = useMemo(() => new URLSearchParams(window.location.search), [])
-  const orderId = params.get('order') || ''
+  const searchParams = useSearchParams()
+  const orderId = searchParams.get('order') || ''
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
   const bucket = 'event-photos'
