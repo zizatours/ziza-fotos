@@ -115,6 +115,9 @@ export default function CheckoutPage() {
               </p>
             </div>
 
+            <div className="text-xs opacity-70 mb-2">
+              paypalClientId: {paypalClientId ? `OK (${paypalClientId.slice(0, 6)}...)` : 'VACÍO'}
+            </div>
             {/* CTA / PAYPAL */}
             {!paypalClientId ? (
               <button
@@ -139,15 +142,25 @@ export default function CheckoutPage() {
                   <PayPalButtons
                     style={{ layout: 'vertical' }}
                     createOrder={async () => {
+                      console.log('PAYPAL createOrder start', { total, eventSlug, imagesCount: images.length, email })
+
                       const res = await fetch('/api/paypal/create-order', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ total, currency: 'BRL', event_slug: eventSlug, images, email }),
                       })
-                      const data = await res.json()
-                      if (!res.ok || !data?.id) throw new Error('create-order failed')
+
+                      const data = await res.json().catch(() => ({} as any))
+                      console.log('PAYPAL createOrder response', res.status, data)
+
+                      if (!res.ok || !data?.id) {
+                        alert('No se pudo crear la orden de PayPal (revisa consola F12 y logs de Vercel).')
+                        throw new Error('create-order failed')
+                      }
+
                       return data.id
                     }}
+
                     onApprove={async (data: { orderID?: string }) => {
                       const orderID = data?.orderID
                       if (!orderID) return
