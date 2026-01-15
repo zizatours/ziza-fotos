@@ -134,7 +134,7 @@ export default function GraciasClient() {
               <a
                 key={i}
                 href={u}
-                className="block text-sm underline"
+                className="block text-sm underline text-gray-900 hover:text-gray-700"
                 target="_blank"
                 rel="noreferrer"
               >
