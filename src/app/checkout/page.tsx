@@ -176,6 +176,10 @@ export default function CheckoutPage() {
                       console.log('PAYPAL BUTTONS ERROR:', err)
                       alert('PayPal dio un error. Revisa consola (F12).')
                     }}
+                    onCancel={() => {
+                      console.log('PAYPAL cancel (popup closed by user or blocked)')
+                      alert('PayPal se cerró/canceló. Revisa si tu navegador bloquea popups.')
+                    }}
                   />
                 )}
               </PayPalScriptProvider>
