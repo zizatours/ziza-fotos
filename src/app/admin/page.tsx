@@ -542,16 +542,12 @@ return (
             <button
               onClick={uploadFiles}
               disabled={uploading || !selectedEventSlug || !files || files.length === 0}
-              className={`w-full bg-black text-white py-3 rounded-full mt-4 border border-black/10 dark:border-white/30 ${
+              className={`w-full py-3 rounded-full mt-4 border border-black/10 dark:border-white/30 bg-black text-white dark:bg-transparent dark:text-white dark:border-white ${
                 uploading || !selectedEventSlug || !files || files.length === 0 ? 'opacity-50' : ''
               }`}
-
-              bg-black text-white border-black
-              dark:bg-transparent dark:text-white dark:border-white`}
             >
               {uploading ? `Subiendo ${uploadDone}/${uploadTotal}…` : 'Subir fotos'}
             </button>
-
             {uploading && (
               <div className="mt-4">
                 <div className="text-sm text-gray-700 dark:text-zinc-300">
