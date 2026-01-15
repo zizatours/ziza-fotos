@@ -12,6 +12,7 @@
     "@aws-sdk/client-rekognition": "^3.956.0",
     "@azure/cognitiveservices-face": "^5.0.0",
     "@azure/ms-rest-azure-js": "^2.1.0",
+    "@paypal/react-paypal-js": "^8.9.2",
     "@sanity/client": "^7.13.2",
     "@supabase/supabase-js": "^2.89.0",
     "dotenv": "^17.2.3",
