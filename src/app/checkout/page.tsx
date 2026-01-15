@@ -1,9 +1,11 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js'
 
 export default function CheckoutPage() {
   const [images, setImages] = useState<string[]>([])
   const [eventSlug, setEventSlug] = useState<string | null>(null)
+  const paypalClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || ''
   
   const getPreviewUrl = (url: string) =>
     `/api/preview?path=${encodeURIComponent(url)}`
@@ -91,36 +93,77 @@ export default function CheckoutPage() {
               </p>
             </div>
 
-            {/* CTA */}
-            <button
-              disabled={
-                loading ||
-                !email ||
-                email !== emailConfirm ||
-                images.length === 0
-              }
-              onClick={async () => {
-                setLoading(true)
+            {/* CTA (PayPal) */}
+            {(!paypalClientId || !email || email !== emailConfirm || images.length === 0) ? (
+              <button
+                disabled
+                className="w-full bg-black text-white rounded-full py-4 text-sm disabled:opacity-40"
+              >
+                Continuar al pago
+              </button>
+            ) : (
+              <PayPalScriptProvider
+                options={{
+                  clientId: paypalClientId,
+                  currency: 'BRL',
+                  intent: 'capture',
+                }}
+              >
+                <div className="w-full">
+                  <PayPalButtons
+                    style={{ layout: 'vertical' }}
+                    createOrder={async () => {
+                      setLoading(true)
 
-                const res = await fetch('/api/checkout/create-order', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    event_slug: eventSlug,
-                    images,
-                    email,
-                  }),
-                })
+                      const res = await fetch('/api/paypal/create-order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          total,
+                          currency: 'BRL',
+                          event_slug: eventSlug,
+                          images,
+                          email,
+                        }),
+                      })
 
-                const data = await res.json()
-                console.log('ORDER CREATED:', data)
+                      const data = await res.json()
+                      setLoading(false)
 
-                setLoading(false)
-              }}
-              className="w-full bg-black text-white rounded-full py-4 text-sm disabled:opacity-40"
-            >
-              {loading ? 'Procesando…' : 'Continuar al pago'}
-            </button>
+                      if (!res.ok) throw new Error('No se pudo crear la orden de PayPal')
+                      return data.id
+                    }}
+                    onApprove={async (data) => {
+                      setLoading(true)
+
+                      const res = await fetch('/api/paypal/capture-order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          orderID: data.orderID,
+                          event_slug: eventSlug,
+                          images,
+                          email,
+                        }),
+                      })
+
+                      const out = await res.json()
+                      setLoading(false)
+
+                      if (!res.ok) {
+                        console.log('CAPTURE ERROR:', out)
+                        alert('Hubo un problema al confirmar el pago.')
+                        return
+                      }
+
+                      // TODO: aquí puedes redirigir a /gracias o mostrar “Pago ok”
+                      console.log('PAGO OK:', out)
+                      alert('¡Pago confirmado! (Ahora toca habilitar entrega/descarga)')
+                    }}
+                  />
+                </div>
+              </PayPalScriptProvider>
+            )}
 
             <p className="text-xs text-gray-400 mt-3 text-center">
               No se realizará ningún cargo sin tu confirmación
