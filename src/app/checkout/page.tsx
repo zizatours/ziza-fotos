@@ -164,14 +164,30 @@ export default function CheckoutPage() {
                     onApprove={async (data: { orderID?: string }) => {
                       const orderID = data?.orderID
                       if (!orderID) return
+
                       const res = await fetch('/api/paypal/capture-order', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ orderID, event_slug: eventSlug, images, email }),
+                        body: JSON.stringify({
+                          orderID,
+                          event_slug: eventSlug,
+                          images,
+                          email,
+                          total,
+                          currency: 'BRL',
+                        }),
                       })
-                      if (!res.ok) alert('Hubo un problema al confirmar el pago.')
-                      else alert('¡Pago confirmado!')
-                      window.location.href = '/gracias'
+
+                      const out = await res.json().catch(() => ({} as any))
+
+                      if (!res.ok) {
+                        console.log('CAPTURE ERROR:', out)
+                        alert('Hubo un problema al confirmar el pago.')
+                        return
+                      }
+
+                      alert('¡Pago confirmado!')
+                      window.location.href = `/gracias?order=${encodeURIComponent(out.order_id)}`
                     }}
                     onError={(err) => {
                       console.log('PAYPAL BUTTONS ERROR:', err)
