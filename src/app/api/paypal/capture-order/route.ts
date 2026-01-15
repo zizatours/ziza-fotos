@@ -65,7 +65,7 @@ export async function POST(req: Request) {
       event_slug: event_slug ?? null,
       email,
       selected_images: images,
-      total_amount: typeof total === "number" ? total : 0,
+      total_amount: Math.round(Number(total) * 100),
       currency,
       paypal_order_id: orderID,
       paypal_capture_id: paypalCaptureId,
