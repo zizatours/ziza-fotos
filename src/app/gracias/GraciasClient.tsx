@@ -93,6 +93,10 @@ export default function GraciasClient() {
           Orden: <span className="font-mono text-sm">{order.id}</span>
         </p>
 
+        <p className="text-sm text-gray-600 mb-6">
+          Fotos enviadas a su correo. Si no llegan, favor revisar la carpeta <span className="font-semibold">Spam</span>.
+        </p>
+
         <div className="mb-6 flex flex-wrap gap-3 items-center">
           <button
             onClick={async () => {
