@@ -11,7 +11,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false)
 
   const quantity = images.length
-  const unitPrice = 18
+  const unitPrice = 1
 
   const subtotal = quantity * unitPrice
   const discountPercent =
