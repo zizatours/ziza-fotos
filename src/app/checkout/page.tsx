@@ -171,6 +171,7 @@ export default function CheckoutPage() {
                       })
                       if (!res.ok) alert('Hubo un problema al confirmar el pago.')
                       else alert('¡Pago confirmado!')
+                      window.location.href = '/gracias'
                     }}
                     onError={(err) => {
                       console.log('PAYPAL BUTTONS ERROR:', err)
