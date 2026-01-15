@@ -18,6 +18,32 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+function extractEventPhotoPath(imageUrlOrPath: string) {
+  if (!imageUrlOrPath) return ''
+
+  // Si ya viene como path ("evento/archivo.jpg"), lo devolvemos limpio
+  if (!/^https?:\/\//i.test(imageUrlOrPath)) {
+    return imageUrlOrPath.replace(/^\/+/, '')
+  }
+
+  // Si viene como URL completa, extraemos el path dentro del bucket
+  try {
+    const url = new URL(imageUrlOrPath)
+    const prefix = '/storage/v1/object/public/event-photos/'
+    const pathname = url.pathname
+
+    if (pathname.includes(prefix)) {
+      return pathname.replace(prefix, '').replace(/^\/+/, '')
+    }
+
+    // fallback: devolvemos el pathname sin slash inicial
+    return pathname.replace(/^\/+/, '')
+  } catch {
+    // fallback extremo: si algo raro viene, no reventamos
+    return imageUrlOrPath.replace(/^\/+/, '')
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const formData = await req.formData()
@@ -68,7 +94,8 @@ export async function POST(req: Request) {
       searchResult.FaceMatches
         ?.map(m => m.Face?.FaceId)
         .filter(Boolean) ?? []
-        console.log('🔍 MATCHED FACE IDS:', matchedFaceIds)
+
+    console.log('🔍 MATCHED FACE IDS:', matchedFaceIds)
 
     if (matchedFaceIds.length === 0) {
       return NextResponse.json({ results: [] })
@@ -80,7 +107,8 @@ export async function POST(req: Request) {
       .select('image_url')
       .eq('event_slug', event_slug)
       .in('face_id', matchedFaceIds)
-      console.log('🖼️ PHOTOS FROM DB:', photos)
+
+    console.log('🖼️ PHOTOS FROM DB:', photos)
 
     if (error) {
       console.error('SUPABASE ERROR:', error)
@@ -91,14 +119,10 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({
-      results: photos?.map(p => {
-        const url = new URL(p.image_url)
-        const path = url.pathname.replace(
-          '/storage/v1/object/public/event-photos/',
-          ''
-        )
-        return path
-      }) ?? [],
+      results:
+        photos
+          ?.map(p => extractEventPhotoPath(p.image_url))
+          .filter(Boolean) ?? [],
     })
 
   } catch (err) {
