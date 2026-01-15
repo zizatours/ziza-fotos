@@ -281,12 +281,7 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
 return (
   <div
     id="admin-root"
-    className="
-      min-h-screen w-full px-4
-      bg-white text-black
-      dark:bg-black dark:text-white
-      dark:[color-scheme:dark]
-    "
+    className="min-h-screen w-full px-4"
   >
     {/* ✅ Toggle SIEMPRE visible (login + admin) */}
     <div className="fixed top-20 right-4 z-50">
@@ -549,7 +544,7 @@ return (
             <button
               onClick={uploadFiles}
               disabled={uploading || !selectedEventSlug || !files || files.length === 0}
-              className={`w-full py-3 rounded-full mt-4 border border-black/10 dark:border-white/30 bg-black text-white dark:bg-transparent dark:text-white dark:border-white ${
+              className={`w-full py-3 rounded-full mt-4 border border-white/70 bg-black text-white dark:bg-transparent dark:text-white dark:border-white/50 ${
                 uploading || !selectedEventSlug || !files || files.length === 0 ? 'opacity-50' : ''
               }`}
             >
