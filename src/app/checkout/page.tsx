@@ -117,97 +117,57 @@ export default function CheckoutPage() {
 
             {/* CTA / PAYPAL */}
             {!paypalClientId ? (
-              <div className="text-sm text-red-600">
-                Falta configurar <b>NEXT_PUBLIC_PAYPAL_CLIENT_ID</b> en Vercel.
-              </div>
-            ) : !canPay ? (
               <button
                 disabled
                 className="w-full bg-black text-white rounded-full py-4 text-sm disabled:opacity-40"
               >
-                Continuar al pago
+                Falta configurar PayPal
               </button>
             ) : (
               <PayPalScriptProvider
                 options={{ clientId: paypalClientId, currency: 'BRL', intent: 'capture' }}
+                deferLoading={!canPay}   // 👈 clave: no carga script hasta que sea “pagable”
               >
-                <div className="w-full">
+                {!canPay ? (
+                  <button
+                    disabled
+                    className="w-full bg-black text-white rounded-full py-4 text-sm disabled:opacity-40"
+                  >
+                    Continuar al pago
+                  </button>
+                ) : (
                   <PayPalButtons
                     style={{ layout: 'vertical' }}
                     createOrder={async () => {
-                      try {
-                        setLoading(true)
-
-                        const res = await fetch('/api/paypal/create-order', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            total,
-                            currency: 'BRL',
-                            event_slug: eventSlug,
-                            images,
-                            email,
-                          }),
-                        })
-
-                        const data = await res.json().catch(() => ({}))
-                        setLoading(false)
-
-                        console.log('CREATE ORDER status:', res.status, data)
-
-                        if (!res.ok || !data?.id) {
-                          alert('Error creando orden PayPal. Revisa consola (F12) y logs de Vercel.')
-                          throw new Error('create-order failed')
-                        }
-
-                        return data.id
-                      } catch (e) {
-                        setLoading(false)
-                        console.log('CREATE ORDER EXCEPTION:', e)
-                        alert('No se pudo iniciar PayPal (createOrder falló).')
-                        throw e
-                      }
+                      const res = await fetch('/api/paypal/create-order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ total, currency: 'BRL', event_slug: eventSlug, images, email }),
+                      })
+                      const data = await res.json()
+                      if (!res.ok || !data?.id) throw new Error('create-order failed')
+                      return data.id
+                    }}
+                    onApprove={async (data: { orderID?: string }) => {
+                      const orderID = data?.orderID
+                      if (!orderID) return
+                      const res = await fetch('/api/paypal/capture-order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderID, event_slug: eventSlug, images, email }),
+                      })
+                      if (!res.ok) alert('Hubo un problema al confirmar el pago.')
+                      else alert('¡Pago confirmado!')
                     }}
                     onError={(err) => {
                       console.log('PAYPAL BUTTONS ERROR:', err)
                       alert('PayPal dio un error. Revisa consola (F12).')
                     }}
-                    onApprove={async (data: { orderID?: string }) => {
-                      const orderID = data?.orderID
-                      if (!orderID) {
-                        alert('No se recibió orderID de PayPal.')
-                        return
-                      }
-
-                      setLoading(true)
-
-                      const res = await fetch('/api/paypal/capture-order', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          orderID,
-                          event_slug: eventSlug,
-                          images,
-                          email,
-                        }),
-                      })
-
-                      const out = await res.json()
-                      setLoading(false)
-
-                      if (!res.ok) {
-                        console.log('CAPTURE ERROR:', out)
-                        alert('Hubo un problema al confirmar el pago.')
-                        return
-                      }
-
-                      console.log('PAGO OK:', out)
-                      alert('¡Pago confirmado! (falta implementar entrega/descarga)')
-                    }}
                   />
-                </div>
+                )}
               </PayPalScriptProvider>
             )}
+
 
             <p className="text-xs text-gray-400 mt-3 text-center">
               No se realizará ningún cargo sin tu confirmación
