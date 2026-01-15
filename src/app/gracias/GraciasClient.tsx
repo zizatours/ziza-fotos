@@ -114,6 +114,12 @@ export default function GraciasClient() {
             disabled={downloading}
           >
             {downloading ? 'Generando links…' : 'Descargar fotos'}
+            <a
+              href={`/api/orders/download-zip?order=${encodeURIComponent(order.id)}`}
+              className="inline-block bg-black text-white rounded-full px-6 py-3 text-sm ml-3"
+            >
+              Descargar todo (ZIP)
+            </a>
           </button>
 
           {!!downloadUrls.length && (
