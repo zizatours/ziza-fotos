@@ -220,9 +220,13 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
         }
 
         if (msg.type === 'start') {
-          setIndexTotal(msg.totalFiles ?? 0)
+          const total = msg.total ?? 0
+          setIndexTotal(total)
           setIndexDone(0)
-          setStatus(`Archivos indexados 0/${msg.totalFiles ?? 0}`)
+          setIndexIndexed(0)
+          setIndexSkipped(0)
+          setIndexFailed(0)
+          setStatus(`Archivos indexados 0/${total}`)
         }
 
         if (msg.type === 'file') {
@@ -236,33 +240,36 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
 
         if (msg.type === 'progress') {
           const done = msg.done ?? 0
-          const total = msg.totalFiles ?? indexTotal
+          const skipped = msg.skipped ?? 0
+          const failed = msg.failed ?? 0
+          const total = indexTotal
+
+          const okFiles = Math.max(0, done - skipped - failed)
 
           setIndexDone(done)
-          if (typeof total === 'number') setIndexTotal(total)
-
-          // contadores por archivo (del backend)
-          setIndexIndexed(msg.filesOk ?? 0)
-          setIndexSkipped(msg.filesSkipped ?? 0)
-          setIndexFailed(msg.filesFailed ?? 0)
+          setIndexSkipped(skipped)
+          setIndexFailed(failed)
+          setIndexIndexed(okFiles)
 
           setStatus(`Archivos indexados ${done}/${total}`)
         }
 
         if (msg.type === 'done') {
           setIndexCurrent('')
-
-          const total = msg.totalFiles ?? indexTotal
-          const ok = msg.filesOk ?? 0
-          const skip = msg.filesSkipped ?? 0
-          const fail = msg.filesFailed ?? 0
+          const skipped = msg.skipped ?? 0
+          const failed = msg.failed ?? 0
+          const total = indexTotal
+          const okFiles = Math.max(0, total - skipped - failed)
 
           setIndexDone(total)
+          setIndexSkipped(skipped)
+          setIndexFailed(failed)
+          setIndexIndexed(okFiles)
 
           setStatus(
-            fail > 0
-              ? `Terminó con errores ⚠️ Archivos ${total}/${total} (ok:${ok} skip:${skip} fail:${fail})`
-              : `Indexación lista ✅ Archivos ${total}/${total} (ok:${ok} skip:${skip})`
+            failed > 0
+              ? `Terminó con errores ⚠️ Archivos ${total}/${total} (ok:${okFiles} skip:${skipped} fail:${failed})`
+              : `Indexación lista ✅ Archivos ${total}/${total} (ok:${okFiles} skip:${skipped})`
           )
         }
       }
@@ -612,7 +619,7 @@ return (
                 </div>
 
                 <div className="text-xs text-gray-600 dark:text-zinc-400 mt-2">
-                  {indexIndexed} caras · {indexSkipped} saltadas · {indexFailed} fallidas
+                  {indexIndexed} ok · {indexSkipped} saltadas · {indexFailed} fallidas
                 </div>
 
                 {indexFailedFiles.length > 0 && (
