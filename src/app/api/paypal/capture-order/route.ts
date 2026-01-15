@@ -64,7 +64,7 @@ export async function POST(req: Request) {
     .insert({
       event_slug: event_slug ?? null,
       email,
-      images,
+      selected_images: images,
       total: typeof total === "number" ? total : 0,
       currency,
       paypal_order_id: orderID,
