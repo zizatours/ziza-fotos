@@ -135,29 +135,42 @@ export default function CheckoutPage() {
                   <PayPalButtons
                     style={{ layout: 'vertical' }}
                     createOrder={async () => {
-                      setLoading(true)
+                      try {
+                        setLoading(true)
 
-                      const res = await fetch('/api/paypal/create-order', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          total,
-                          currency: 'BRL',
-                          event_slug: eventSlug,
-                          images,
-                          email,
-                        }),
-                      })
+                        const res = await fetch('/api/paypal/create-order', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            total,
+                            currency: 'BRL',
+                            event_slug: eventSlug,
+                            images,
+                            email,
+                          }),
+                        })
 
-                      const data = await res.json()
-                      setLoading(false)
+                        const data = await res.json().catch(() => ({}))
+                        setLoading(false)
 
-                      if (!res.ok) {
-                        console.log('CREATE ORDER ERROR:', data)
-                        throw new Error('No se pudo crear la orden de PayPal')
+                        console.log('CREATE ORDER status:', res.status, data)
+
+                        if (!res.ok || !data?.id) {
+                          alert('Error creando orden PayPal. Revisa consola (F12) y logs de Vercel.')
+                          throw new Error('create-order failed')
+                        }
+
+                        return data.id
+                      } catch (e) {
+                        setLoading(false)
+                        console.log('CREATE ORDER EXCEPTION:', e)
+                        alert('No se pudo iniciar PayPal (createOrder falló).')
+                        throw e
                       }
-
-                      return data.id
+                    }}
+                    onError={(err) => {
+                      console.log('PAYPAL BUTTONS ERROR:', err)
+                      alert('PayPal dio un error. Revisa consola (F12).')
                     }}
                     onApprove={async (data: { orderID?: string }) => {
                       const orderID = data?.orderID
