@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { Resend } from 'resend'
+import { renderOrderEmail } from '@/lib/orderEmail'
 
 export const runtime = "nodejs";
 
@@ -81,5 +83,21 @@ export async function POST(req: Request) {
     );
   }
 
-  return NextResponse.json({ ok: true, order_id: saved.id });
+  // ---- enviar email (si falla, NO rompe el pago) ----
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY!)
+    const siteUrl = process.env.SITE_URL || 'https://zizaphotography.com.br'
+    const from = process.env.EMAIL_FROM || 'Ziza Photography <fotos@zizaphotography.com.br>'
+
+    await resend.emails.send({
+      from,
+      to: email,
+      subject: 'Tus fotos están listas — Ziza Fotos',
+      html: renderOrderEmail({ siteUrl, orderId: saved.id }),
+    })
+  } catch (e) {
+    console.log('EMAIL SEND ERROR:', e)
+  }
+
+  return NextResponse.json({ ok: true, order_id: saved.id })
 }
