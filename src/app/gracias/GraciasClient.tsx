@@ -8,7 +8,8 @@ type Order = {
   created_at: string
   event_slug: string | null
   email: string
-  images: string[]
+  images?: string[]
+  selected_images?: string[]
   total: number
   currency: string
   status: string
@@ -17,6 +18,8 @@ type Order = {
 export default function GraciasClient() {
   const [order, setOrder] = useState<Order | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [downloadUrls, setDownloadUrls] = useState<string[]>([])
+  const [downloading, setDownloading] = useState(false)
 
   const searchParams = useSearchParams()
   const orderId = searchParams.get('order') || ''
@@ -30,6 +33,11 @@ export default function GraciasClient() {
     if (!supabaseUrl) return pathOrUrl
     const clean = pathOrUrl.replace(/^\/+/, '')
     return `${supabaseUrl}/storage/v1/object/public/${bucket}/${clean}`
+  }
+
+  const getPreviewUrl = (pathOrUrl: string) => {
+    const publicUrl = toPublicUrl(pathOrUrl)
+    return `/api/preview?src=${encodeURIComponent(publicUrl)}`
   }
 
   useEffect(() => {
@@ -75,6 +83,8 @@ export default function GraciasClient() {
     )
   }
 
+  const pics = (order.selected_images || order.images || []).filter(Boolean)
+
   return (
     <main className="min-h-screen bg-white">
       <div className="max-w-4xl mx-auto px-6 py-12">
@@ -83,11 +93,51 @@ export default function GraciasClient() {
           Orden: <span className="font-mono text-sm">{order.id}</span>
         </p>
 
+        <div className="mb-6">
+          <button
+            onClick={async () => {
+              setDownloading(true)
+              const res = await fetch(
+                `/api/orders/download-links?order=${encodeURIComponent(order.id)}`
+              )
+              const data = await res.json().catch(() => ({} as any))
+              setDownloading(false)
+
+              if (!res.ok) {
+                alert(`No se pudieron generar links: ${data?.error || 'desconocido'}`)
+                return
+              }
+
+              setDownloadUrls(data.urls || [])
+            }}
+            className="bg-black text-white rounded-full px-6 py-3 text-sm disabled:opacity-50"
+            disabled={downloading}
+          >
+            {downloading ? 'Generando links…' : 'Descargar fotos'}
+          </button>
+
+          {!!downloadUrls.length && (
+            <div className="mt-4 space-y-2">
+              {downloadUrls.map((u, i) => (
+                <a
+                  key={i}
+                  href={u}
+                  className="block text-sm underline"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Descargar foto {i + 1}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-10">
-          {(order.images || []).slice(0, 30).map((p, i) => (
+          {pics.slice(0, 30).map((p, i) => (
             <a key={i} href={toPublicUrl(p)} target="_blank" rel="noreferrer">
               <img
-                src={toPublicUrl(p)}
+                src={getPreviewUrl(p)}
                 className="aspect-square object-cover rounded-lg"
                 alt="Foto"
               />
