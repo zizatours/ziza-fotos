@@ -93,7 +93,7 @@ export default function GraciasClient() {
           Orden: <span className="font-mono text-sm">{order.id}</span>
         </p>
 
-        <div className="mb-6">
+        <div className="mb-6 flex flex-wrap gap-3 items-center">
           <button
             onClick={async () => {
               setDownloading(true)
@@ -114,30 +114,31 @@ export default function GraciasClient() {
             disabled={downloading}
           >
             {downloading ? 'Generando links…' : 'Descargar fotos'}
-            <a
-              href={`/api/orders/download-zip?order=${encodeURIComponent(order.id)}`}
-              className="inline-block bg-black text-white rounded-full px-6 py-3 text-sm ml-3"
-            >
-              Descargar todo (ZIP)
-            </a>
           </button>
 
-          {!!downloadUrls.length && (
-            <div className="mt-4 space-y-2">
-              {downloadUrls.map((u, i) => (
-                <a
-                  key={i}
-                  href={u}
-                  className="block text-sm underline"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Descargar foto {i + 1}
-                </a>
-              ))}
-            </div>
-          )}
+          <a
+            href={`/api/orders/download-zip?order=${encodeURIComponent(order.id)}`}
+            className="bg-black text-white rounded-full px-6 py-3 text-sm"
+          >
+            Descargar todo (ZIP)
+          </a>
         </div>
+
+        {!!downloadUrls.length && (
+          <div className="mt-4 space-y-2">
+            {downloadUrls.map((u, i) => (
+              <a
+                key={i}
+                href={u}
+                className="block text-sm underline"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Descargar foto {i + 1}
+              </a>
+            ))}
+          </div>
+        )}
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-10">
           {pics.slice(0, 30).map((p, i) => (
