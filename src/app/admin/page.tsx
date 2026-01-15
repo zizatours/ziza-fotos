@@ -310,8 +310,6 @@ return (
         </div>
       </div>
     ) : (
-
-    ) : (
       // ===== PANEL =====
       <div className="w-full max-w-md mx-auto px-4 py-8">
         {/* TODO lo que tenías dentro del <div id="admin-root"...> va acá */}
