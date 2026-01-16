@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import GoogleReviews from '@/components/GoogleReviews'
 
 import Image from 'next/image'
 import Link from 'next/link'
@@ -187,11 +188,8 @@ export default function HomePage() {
 
       {/* BLOQUE DE RESPIRO */}
       <section className="bg-yellow-50 border-t border-b">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-          <p className="text-center text-gray-700">
-            Revive tus recuerdos cuando quieras ✨
-          </p>
-        </div>
+        {/* REVIEWS */}
+        <GoogleReviews />
       </section>
 
       {/* FOOTER */}
