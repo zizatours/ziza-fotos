@@ -20,7 +20,7 @@ export async function GET() {
       "X-Goog-FieldMask": "displayName,rating,userRatingCount,reviews",
     },
     // cachea un rato para no gastar cuota a cada visita
-    next: { revalidate: 60 * 30 }, // 30 min
+    next: { revalidate: 60 * 60 * 12 }, // 12 horas
   });
 
   const data = await res.json();
@@ -37,10 +37,18 @@ export async function GET() {
     time: r.relativePublishTimeDescription || "",
   }));
 
-  return NextResponse.json({
-    name: data.displayName?.text || "Ziza",
-    rating: data.rating || null,
-    total: data.userRatingCount || null,
-    reviews,
-  });
+  return NextResponse.json(
+    {
+      name: data.displayName?.text || "Ziza",
+      rating: data.rating || null,
+      total: data.userRatingCount || null,
+      reviews,
+    },
+    {
+      headers: {
+        // 12 horas cache en CDN (Vercel)
+        "Cache-Control": "public, s-maxage=43200, stale-while-revalidate=3600",
+      },
+    }
+  );
 }
