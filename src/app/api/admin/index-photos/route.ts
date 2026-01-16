@@ -85,6 +85,32 @@ export async function POST(req: Request) {
 
     const totalFiles = candidates.length
 
+    // ===== evitar reindexación: traer archivos ya procesados (incluye 0 caras) =====
+    const alreadyIndexed = new Set<string>()
+    let from = 0
+    const pageSize = 1000
+
+    while (true) {
+      const { data, error } = await supabase
+        .from('event_indexed_files')
+        .select('image_url')
+        .eq('event_slug', event_slug)
+        .range(from, from + pageSize - 1)
+
+      if (error) {
+        console.error('Error leyendo event_indexed_files para dedupe:', error)
+        break
+      }
+
+      const rows = data ?? []
+      for (const r of rows as any[]) {
+        if (r?.image_url) alreadyIndexed.add(r.image_url)
+      }
+
+      if (rows.length < pageSize) break
+      from += pageSize
+    }
+
     const stream = new ReadableStream({
       async start(controller) {
         write(controller, { type: 'start', totalFiles })
@@ -97,6 +123,27 @@ export async function POST(req: Request) {
 
         for (const file of candidates) {
           const objectPath = `${event_slug}/${file.name}`
+
+          // ===== skip si ya está indexada =====
+          if (alreadyIndexed.has(objectPath)) {
+            done++
+            filesSkipped++
+
+            write(controller, {
+              type: 'progress',
+              done,
+              totalFiles,
+              file: objectPath,
+              status: 'skipped',
+              filesOk,
+              filesSkipped,
+              filesFailed,
+              facesIndexedTotal,
+              reason: 'already_indexed',
+            })
+
+            continue
+          }
 
           try {
             // descargar
@@ -152,7 +199,7 @@ export async function POST(req: Request) {
             })
 
             const result = await rekognition.send(cmd)
-
+            
             const faceRecords =
               (result.FaceRecords ?? [])
                 .map((r) => ({
@@ -191,6 +238,26 @@ export async function POST(req: Request) {
 
               facesIndexedTotal += faceRecords.length
             }
+
+            // ===== marcar archivo como procesado (aunque tenga 0 caras) =====
+            const { error: markErr } = await supabase
+              .from('event_indexed_files')
+              .upsert(
+                {
+                  event_slug,
+                  image_url: objectPath,
+                  faces_count: faceRecords.length,
+                  indexed_at: new Date().toISOString(),
+                },
+                { onConflict: 'event_slug,image_url' }
+              )
+
+            if (markErr) {
+              console.error('event_indexed_files upsert error:', objectPath, markErr)
+            }
+
+            // también lo marcamos en memoria para esta misma corrida
+            alreadyIndexed.add(objectPath)
 
             // ✅ ARCHIVO OK (aunque tenga 0 caras, el archivo igual fue procesado)
             done++
