@@ -19,7 +19,7 @@ export default function ResendOrderEmail({ adminKey }: { adminKey: string }) {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
-          'x-admin-key': adminPassword || '',
+          'x-admin-key': adminKey || '',
         },
         body: JSON.stringify({
           orderId: orderId.trim(),
