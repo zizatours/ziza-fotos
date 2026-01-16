@@ -72,8 +72,8 @@ export default function Header() {
             <Image
               src="/logo.png"
               alt="Ziza"
-              width={140}
-              height={40}
+              width={120}
+              height={34}
               priority
             />
           </Link>
