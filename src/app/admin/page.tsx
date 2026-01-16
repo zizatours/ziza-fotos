@@ -234,6 +234,7 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
     const reader = res.body.getReader()
     const decoder = new TextDecoder()
     let buf = ''
+    let totalLocal = 0
 
     while (true) {
       const { value, done } = await reader.read()
@@ -254,17 +255,20 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
         }
 
         if (msg.type === 'start') {
-          const total = msg.total ?? 0
+          const total = msg.total ?? msg.totalFiles ?? 0
+          totalLocal = total
+
           setIndexTotal(total)
           setIndexDone(0)
           setIndexIndexed(0)
           setIndexSkipped(0)
           setIndexFailed(0)
+
           setStatus(`Archivos indexados 0/${total}`)
         }
 
         if (msg.type === 'file') {
-          setIndexCurrent(msg.name ?? '')
+          setIndexCurrent(msg.name ?? msg.file ?? '')
         }
 
         if (msg.type === 'failed') {
@@ -273,28 +277,41 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
         }
 
         if (msg.type === 'progress') {
+          // soporta ambos formatos:
+          // - viejo: done / skipped / failed / name
+          // - nuevo: done / filesOk / filesSkipped / filesFailed / file / totalFiles
           const done = msg.done ?? 0
-          const skipped = msg.skipped ?? 0
-          const failed = msg.failed ?? 0
-          const total = indexTotal
+          const skipped = msg.skipped ?? msg.filesSkipped ?? 0
+          const failed = msg.failed ?? msg.filesFailed ?? 0
 
-          const okFiles = Math.max(0, done - skipped - failed)
+          const total = msg.total ?? msg.totalFiles ?? totalLocal
+          if (typeof total === 'number') totalLocal = total
 
+          const okFiles = msg.filesOk ?? Math.max(0, done - skipped - failed)
+
+          // si viene el nombre dentro de progress (formato nuevo), lo mostramos
+          if (msg.name || msg.file) setIndexCurrent(msg.name ?? msg.file ?? '')
+
+          setIndexTotal(totalLocal)
           setIndexDone(done)
           setIndexSkipped(skipped)
           setIndexFailed(failed)
           setIndexIndexed(okFiles)
 
-          setStatus(`Archivos indexados ${done}/${total}`)
+          setStatus(`Archivos indexados ${done}/${totalLocal}`)
         }
 
         if (msg.type === 'done') {
           setIndexCurrent('')
-          const skipped = msg.skipped ?? 0
-          const failed = msg.failed ?? 0
-          const total = indexTotal
-          const okFiles = Math.max(0, total - skipped - failed)
 
+          const total = msg.total ?? msg.totalFiles ?? totalLocal ?? 0
+          totalLocal = total
+
+          const skipped = msg.skipped ?? msg.filesSkipped ?? 0
+          const failed = msg.failed ?? msg.filesFailed ?? 0
+          const okFiles = msg.ok ?? msg.filesOk ?? Math.max(0, total - skipped - failed)
+
+          setIndexTotal(total)
           setIndexDone(total)
           setIndexSkipped(skipped)
           setIndexFailed(failed)
