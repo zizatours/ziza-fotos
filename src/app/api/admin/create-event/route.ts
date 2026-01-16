@@ -1,6 +1,39 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-server'
 
+// ===== helper: normalizar fecha a ISO (YYYY-MM-DD) =====
+const normalizeEventDateToISO = (raw: string) => {
+  const s = (raw || '').trim()
+
+  // Ya viene en ISO
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+
+  // Formato esperado: DD/MM/YYYY
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  if (!m) return null
+
+  const dd = m[1].padStart(2, '0')
+  const mm = m[2].padStart(2, '0')
+  const yyyy = m[3]
+
+  const month = Number(mm)
+  const day = Number(dd)
+  if (month < 1 || month > 12) return null
+  if (day < 1 || day > 31) return null
+
+  const iso = `${yyyy}-${mm}-${dd}`
+
+  // valida fecha real (evita 31/02, etc.)
+  const d = new Date(`${iso}T00:00:00Z`)
+  if (Number.isNaN(d.getTime())) return null
+
+  const check =
+    `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
+  if (check !== iso) return null
+
+  return iso
+}
+
 export async function POST(req: Request) {
   try {
     const supabase = createAdminClient()
@@ -9,6 +42,20 @@ export async function POST(req: Request) {
     const title = formData.get('title') as string
     const location = formData.get('location') as string
     const eventDate = formData.get('event_date') as string
+    if (!eventDate) {
+      return NextResponse.json(
+        { error: 'Falta fecha del evento' },
+        { status: 400 }
+      )
+    }
+
+    const eventDateISO = normalizeEventDateToISO(eventDate)
+    if (!eventDateISO) {
+      return NextResponse.json(
+        { error: 'Fecha inválida. Usa DD/MM/YYYY (ej: 20/10/2025) o YYYY-MM-DD.' },
+        { status: 400 }
+      )
+    }
 
     const image = formData.get('image') as File | null
 
@@ -49,7 +96,7 @@ export async function POST(req: Request) {
       name: title,
         slug,
         location,
-        event_date: eventDate,
+        event_date: eventDateISO,
         image_url: imageUrl,
       })
 

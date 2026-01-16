@@ -11,6 +11,39 @@ const sanitizeFileName = (name: string) =>
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-zA-Z0-9._-]/g, '_')
 
+// ===== helper: normalizar fecha a ISO (YYYY-MM-DD) =====
+const normalizeEventDateToISO = (raw: string) => {
+  const s = (raw || '').trim()
+
+  // Ya viene en ISO
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+
+  // Formato esperado: DD/MM/YYYY
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  if (!m) return null
+
+  const dd = m[1].padStart(2, '0')
+  const mm = m[2].padStart(2, '0')
+  const yyyy = m[3]
+
+  // validación básica de rangos
+  const day = Number(dd)
+  const month = Number(mm)
+  if (month < 1 || month > 12) return null
+  if (day < 1 || day > 31) return null
+
+  const iso = `${yyyy}-${mm}-${dd}`
+
+  // validación real de fecha (evita 31/02, etc.)
+  const d = new Date(`${iso}T00:00:00Z`)
+  if (Number.isNaN(d.getTime())) return null
+
+  const check =
+    `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
+  if (check !== iso) return null
+
+  return iso
+}
 export default function AdminPage() {
   const [password, setPassword] = useState('')
   const [authed, setAuthed] = useState(false)
@@ -356,8 +389,7 @@ return (
               />
 
               <input
-                type="text"
-                placeholder="Fecha del evento (ej: 21/12/2025)"
+                type="date"
                 value={eventDate}
                 onChange={(e) => setEventDate(e.target.value)}
                 className="w-full border px-3 py-2 rounded mb-3
@@ -376,14 +408,20 @@ return (
 
               <button
                 onClick={async () => {
-                  if (!eventTitle) return
+                  if (!eventTitle || !eventDate) return
 
                   setStatus('Creando evento...')
 
                   const formData = new FormData()
                   formData.append('title', eventTitle)
                   formData.append('location', eventLocation)
-                  formData.append('event_date', eventDate)
+
+                  const eventDateISO = normalizeEventDateToISO(eventDate)
+                  if (!eventDateISO) {
+                    setStatus('Fecha inválida. Usa DD/MM/YYYY (ej: 20/10/2025) o YYYY-MM-DD.')
+                    return
+                  }
+                  formData.append('event_date', eventDateISO)
 
                   if (eventImage) formData.append('image', eventImage)
 
