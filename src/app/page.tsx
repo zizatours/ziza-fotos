@@ -191,22 +191,60 @@ export default function HomePage() {
       <footer className="max-w-6xl mx-auto px-4 sm:px-6 py-12 text-gray-900">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
           <div>
-            <h3 className="font-semibold mb-3">
-              Redes sociales
-            </h3>
-            <ul className="space-y-2 text-gray-600">
-              <li>Instagram</li>
-              <li>TikTok</li>
+            <h3 className="font-semibold mb-3">Redes sociales</h3>
+
+            <ul className="flex items-center gap-4 text-gray-600">
+              <li>
+                <a
+                  href={"https://www.instagram.com/zizaphotography"}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Instagram"
+                  className="inline-flex items-center justify-center rounded-lg p-2 hover:bg-black/5 transition"
+                >
+                  {/* Instagram icon */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    className="h-6 w-6"
+                    fill="currentColor"
+                  >
+                    <path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9A5.5 5.5 0 0 1 16.5 22h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2Zm0 2A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4h-9Zm10.25 1.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" />
+                  </svg>
+                </a>
+              </li>
+
+              <li>
+                <a
+                  href={"https://web.facebook.com/zizaphotography"}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Facebook"
+                  className="inline-flex items-center justify-center rounded-lg p-2 hover:bg-black/5 transition"
+                >
+                  {/* Facebook icon */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    className="h-6 w-6"
+                    fill="currentColor"
+                  >
+                    <path d="M13.5 22v-8h2.5l.5-3h-3V9.5c0-.9.3-1.5 1.6-1.5H16.7V5.1c-.3 0-1.4-.1-2.7-.1-2.7 0-4.5 1.6-4.5 4.6V11H7v3h2.5v8h4Z" />
+                  </svg>
+                </a>
+              </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="font-semibold mb-3">
-              Info contacto
-            </h3>
-            <p className="text-gray-600">
-              contacto@ziza.cl
-            </p>
+            <h3 className="font-semibold mb-3">Info contacto</h3>
+
+            <a
+              href="mailto:zizatours@gmail.com"
+              className="text-gray-600 hover:underline"
+            >
+              zizatours@gmail.com
+            </a>
           </div>
         </div>
       </footer>
