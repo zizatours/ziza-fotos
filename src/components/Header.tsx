@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+
 
 type EventRow = {
   id: string
@@ -66,8 +68,14 @@ export default function Header() {
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* IZQUIERDA */}
         <div className="flex items-center gap-6">
-          <Link href="/" className="font-semibold text-lg">
-            Logo
+          <Link href="/" className="inline-flex items-center" aria-label="Ir al inicio">
+            <Image
+              src="/logo.png"
+              alt="Ziza"
+              width={140}
+              height={40}
+              priority
+            />
           </Link>
 
           <Link href="/" className="text-sm text-gray-700 hover:text-black">
