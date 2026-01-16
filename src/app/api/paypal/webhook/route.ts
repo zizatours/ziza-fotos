@@ -81,6 +81,13 @@ function extractOrderIdFromCaptureEvent(event: any) {
 export async function POST(req: Request) {
   const rawBody = await req.text()
 
+  let event: any
+  try {
+    event = JSON.parse(rawBody)
+  } catch {
+    return NextResponse.json({ error: 'invalid_json' }, { status: 400 })
+  }
+
   // 1) Verificar firma (seguridad)
   try {
     const ok = await verifyPayPalWebhookSignature(rawBody, req.headers)
@@ -89,8 +96,6 @@ export async function POST(req: Request) {
     console.log('WEBHOOK VERIFY ERROR:', e?.message || e)
     return NextResponse.json({ error: 'verify_error' }, { status: 400 })
   }
-
-  const event = JSON.parse(rawBody)
 
   // 2) Solo nos interesa el pago completado
   if (event?.event_type !== 'PAYMENT.CAPTURE.COMPLETED') {
@@ -122,12 +127,32 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true })
   }
 
+  // 2.5) Anti-duplicados: PayPal puede reenviar el mismo evento
+  const eventId = event?.id
+  if (eventId) {
+    const { error: dedupErr } = await supabase.from('paypal_webhook_events').insert({ event_id: eventId })
+
+    // Si ya existe (duplicado), terminamos OK
+    if (dedupErr) {
+      if ((dedupErr as any).code === '23505') return NextResponse.json({ ok: true, duplicate: true })
+      console.log('WEBHOOK DEDUP ERROR:', dedupErr)
+    }
+  }
+
   await supabase
     .from('orders')
     .update({ status: 'paid', paypal_capture_id: captureId })
     .eq('id', order.id)
 
-  if (!order.email_sent) {
+  const { data: lock } = await supabase
+    .from('orders')
+    .update({ email_sent: true })
+    .eq('id', order.id)
+    .eq('email_sent', false)
+    .select('id')
+    .single()
+
+  if (lock?.id) {
     try {
       const resend = new Resend(process.env.RESEND_API_KEY!)
       const siteUrl = process.env.SITE_URL || 'https://zizaphotography.com.br'
@@ -139,10 +164,9 @@ export async function POST(req: Request) {
         subject: 'Tus fotos están listas — Ziza Fotos',
         html: renderOrderEmail({ siteUrl, orderId: order.id }),
       })
-
-      await supabase.from('orders').update({ email_sent: true }).eq('id', order.id)
     } catch (e) {
       console.log('WEBHOOK EMAIL ERROR:', e)
+      // opcional: si quieres reintentar después, aquí revertir email_sent a false
     }
   }
 
