@@ -1,101 +1,150 @@
-// src/app/api/paypal/webhook/route.ts
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+import { Resend } from 'resend'
+import { renderOrderEmail } from '@/lib/orderEmail'
 
-export const runtime = "nodejs"; // importante en Vercel para crypto/fetch estable
+export const runtime = 'nodejs'
 
-export async function POST(req: Request) {
-  // 1) Leer el body (PayPal manda JSON)
-  const bodyText = await req.text();
-  const event = JSON.parse(bodyText);
+async function getPayPalAccessToken() {
+  const base = process.env.PAYPAL_BASE_URL!
+  const clientId = process.env.PAYPAL_CLIENT_ID!
+  const secret = process.env.PAYPAL_CLIENT_SECRET!
 
-  // 2) (MUY recomendado) Verificar firma del webhook antes de confiar
-  const ok = await verifyPayPalWebhookSignature(req, bodyText);
-  if (!ok) {
-    return NextResponse.json({ ok: false, reason: "invalid_signature" }, { status: 400 });
-  }
-
-  // 3) Procesar eventos relevantes
-  // Tip: el evento trae event_type
-  const eventType = event?.event_type;
-
-  // EJEMPLOS típicos:
-  // - PAYMENT.CAPTURE.COMPLETED => pago capturado (este suele ser el "pago real")
-  // - CHECKOUT.ORDER.APPROVED => el cliente aprobó, pero aún podría faltar capturar en backend
-  if (eventType === "PAYMENT.CAPTURE.COMPLETED") {
-    // Aquí marcas la compra como pagada en tu DB (Supabase),
-    // y habilitas descarga / entrega.
-    // event.resource suele traer info de la captura.
-  }
-
-  if (eventType === "PAYMENT.CAPTURE.REFUNDED") {
-    // Aquí podrías marcar como reembolsado, etc.
-  }
-
-  // 4) Responder 200 rápido
-  return NextResponse.json({ ok: true });
+  const auth = Buffer.from(`${clientId}:${secret}`).toString('base64')
+  const res = await fetch(`${base}/v1/oauth2/token`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${auth}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'grant_type=client_credentials',
+  })
+  const data = await res.json().catch(() => ({} as any))
+  if (!res.ok || !data?.access_token) throw new Error(`paypal_token_failed: ${data?.error || res.status}`)
+  return data.access_token as string
 }
 
-async function verifyPayPalWebhookSignature(req: Request, bodyText: string) {
-  const paypalWebhookId = process.env.PAYPAL_WEBHOOK_ID;
-  const paypalClientId = process.env.PAYPAL_CLIENT_ID;
-  const paypalClientSecret = process.env.PAYPAL_CLIENT_SECRET;
-  const paypalBase = process.env.PAYPAL_BASE_URL || "https://api-m.paypal.com";
+async function verifyPayPalWebhookSignature(rawBody: string, headers: Headers) {
+  const base = process.env.PAYPAL_BASE_URL!
+  const webhookId = process.env.PAYPAL_WEBHOOK_ID!
+  const token = await getPayPalAccessToken()
 
-  if (!paypalWebhookId || !paypalClientId || !paypalClientSecret) {
-    // Si falta config, NO aceptes webhooks como válidos
-    return false;
-  }
-
-  // Headers que PayPal envía (necesarios para verificar)
-  const transmissionId = req.headers.get("paypal-transmission-id");
-  const transmissionTime = req.headers.get("paypal-transmission-time");
-  const certUrl = req.headers.get("paypal-cert-url");
-  const authAlgo = req.headers.get("paypal-auth-algo");
-  const transmissionSig = req.headers.get("paypal-transmission-sig");
+  const transmissionId = headers.get('paypal-transmission-id')
+  const transmissionTime = headers.get('paypal-transmission-time')
+  const certUrl = headers.get('paypal-cert-url')
+  const authAlgo = headers.get('paypal-auth-algo')
+  const transmissionSig = headers.get('paypal-transmission-sig')
 
   if (!transmissionId || !transmissionTime || !certUrl || !authAlgo || !transmissionSig) {
-    return false;
+    throw new Error('missing_paypal_headers')
   }
 
-  // 1) Obtener access token (client_credentials)
-  const basic = Buffer.from(`${paypalClientId}:${paypalClientSecret}`).toString("base64");
+  const body = {
+    auth_algo: authAlgo,
+    cert_url: certUrl,
+    transmission_id: transmissionId,
+    transmission_sig: transmissionSig,
+    transmission_time: transmissionTime,
+    webhook_id: webhookId,
+    webhook_event: JSON.parse(rawBody),
+  }
 
-  const tokenRes = await fetch(`${paypalBase}/v1/oauth2/token`, {
-    method: "POST",
+  const res = await fetch(`${base}/v1/notifications/verify-webhook-signature`, {
+    method: 'POST',
     headers: {
-      Authorization: `Basic ${basic}`,
-      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
     },
-    body: "grant_type=client_credentials",
-  });
+    body: JSON.stringify(body),
+  })
 
-  if (!tokenRes.ok) return false;
-  const tokenJson = await tokenRes.json();
-  const accessToken = tokenJson.access_token;
-  if (!accessToken) return false;
+  const out = await res.json().catch(() => ({} as any))
+  if (!res.ok) throw new Error(`verify_failed: ${out?.name || out?.message || res.status}`)
+  return out?.verification_status === 'SUCCESS'
+}
 
-  // 2) Llamar a verify-webhook-signature
-  // (PayPal recomienda verificar los webhooks) :contentReference[oaicite:1]{index=1}
-  const verifyRes = await fetch(`${paypalBase}/v1/notifications/verify-webhook-signature`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      auth_algo: authAlgo,
-      cert_url: certUrl,
-      transmission_id: transmissionId,
-      transmission_sig: transmissionSig,
-      transmission_time: transmissionTime,
-      webhook_id: paypalWebhookId,
-      webhook_event: JSON.parse(bodyText),
-    }),
-  });
+function extractOrderIdFromCaptureEvent(event: any) {
+  // A veces viene aquí:
+  const a = event?.resource?.supplementary_data?.related_ids?.order_id
+  if (a) return a
 
-  if (!verifyRes.ok) return false;
-  const verifyJson = await verifyRes.json();
+  // O viene como link rel="up" hacia /v2/checkout/orders/{id}
+  const up = (event?.resource?.links || []).find((l: any) => l?.rel === 'up')?.href
+  if (up) {
+    const parts = String(up).split('/')
+    return parts[parts.length - 1] || null
+  }
 
-  // PayPal retorna verification_status: "SUCCESS" cuando es válido :contentReference[oaicite:2]{index=2}
-  return verifyJson.verification_status === "SUCCESS";
+  return null
+}
+
+export async function POST(req: Request) {
+  const rawBody = await req.text()
+
+  // 1) Verificar firma (seguridad)
+  try {
+    const ok = await verifyPayPalWebhookSignature(rawBody, req.headers)
+    if (!ok) return NextResponse.json({ error: 'invalid_signature' }, { status: 400 })
+  } catch (e: any) {
+    console.log('WEBHOOK VERIFY ERROR:', e?.message || e)
+    return NextResponse.json({ error: 'verify_error' }, { status: 400 })
+  }
+
+  const event = JSON.parse(rawBody)
+
+  // 2) Solo nos interesa el pago completado
+  if (event?.event_type !== 'PAYMENT.CAPTURE.COMPLETED') {
+    return NextResponse.json({ ok: true })
+  }
+
+  const orderId = extractOrderIdFromCaptureEvent(event)
+  const captureId = event?.resource?.id
+
+  if (!orderId) {
+    console.log('WEBHOOK: missing orderId in event')
+    return NextResponse.json({ ok: true })
+  }
+
+  // 3) Buscar orden por paypal_order_id y marcar pagada + enviar email (si falta)
+  const supabaseUrl = process.env.SUPABASE_URL!
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+  const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
+
+  const { data: order, error } = await supabase
+    .from('orders')
+    .select('id, email, email_sent')
+    .eq('paypal_order_id', orderId)
+    .single()
+
+  if (error || !order) {
+    // Si no existe, no podemos adivinar email/fotos; esto igual evita que falle el webhook
+    console.log('WEBHOOK: order not found for paypal_order_id', orderId)
+    return NextResponse.json({ ok: true })
+  }
+
+  await supabase
+    .from('orders')
+    .update({ status: 'paid', paypal_capture_id: captureId })
+    .eq('id', order.id)
+
+  if (!order.email_sent) {
+    try {
+      const resend = new Resend(process.env.RESEND_API_KEY!)
+      const siteUrl = process.env.SITE_URL || 'https://zizaphotography.com.br'
+      const from = process.env.EMAIL_FROM || 'Ziza Fotos <onboarding@resend.dev>'
+
+      await resend.emails.send({
+        from,
+        to: order.email,
+        subject: 'Tus fotos están listas — Ziza Fotos',
+        html: renderOrderEmail({ siteUrl, orderId: order.id }),
+      })
+
+      await supabase.from('orders').update({ email_sent: true }).eq('id', order.id)
+    } catch (e) {
+      console.log('WEBHOOK EMAIL ERROR:', e)
+    }
+  }
+
+  return NextResponse.json({ ok: true })
 }
