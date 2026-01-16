@@ -57,9 +57,9 @@ export default function GoogleReviews() {
       </div>
 
       {/* MOBILE: carrusel */}
-      <div className="md:hidden -mx-4 px-4 flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2">
+      <div className="-mx-4 px-4 flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2">
         {data.reviews.map((r, i) => (
-          <div key={i} className="snap-start min-w-[85%] border rounded-xl p-4 bg-white">
+          <div key={i} className="snap-start min-w-[85%] md:min-w-[48%] lg:min-w-[32%] border rounded-xl p-4 bg-white">
             <div className="flex items-center justify-between mb-2">
               <div className="font-medium">{r.author}</div>
               <div className="text-sm">⭐ {r.rating}</div>
@@ -70,19 +70,6 @@ export default function GoogleReviews() {
         ))}
       </div>
 
-      {/* DESKTOP: 2 columnas */}
-      <div className="hidden md:grid grid-cols-2 gap-4">
-        {data.reviews.map((r, i) => (
-          <div key={i} className="border rounded-xl p-4 bg-white">
-            <div className="flex items-center justify-between mb-2">
-              <div className="font-medium">{r.author}</div>
-              <div className="text-sm">⭐ {r.rating}</div>
-            </div>
-            {r.time && <div className="text-xs text-gray-500 mb-2">{r.time}</div>}
-            {r.text && <p className="text-sm text-gray-700">{r.text}</p>}
-          </div>
-        ))}
-      </div>
     </section>
   )
 }
