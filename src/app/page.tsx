@@ -149,11 +149,6 @@ export default function HomePage() {
           <p className="text-lg text-gray-200 mb-8">
             Sube una selfie y descubre todas las fotos donde apareces
           </p>
-
-          {/* Buscador visual (el real está en el Header) */}
-          <div className="mx-auto max-w-xl bg-white rounded-full px-6 py-4 text-gray-500 text-left shadow-lg">
-            Buscar evento…
-          </div>
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-b from-transparent to-[#f6f3ee]" />
       </section>
