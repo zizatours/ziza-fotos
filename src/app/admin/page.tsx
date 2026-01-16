@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import ThemeToggle from '@/components/ThemeToggle'
+import ResendOrderEmail from '@/components/admin/ResendOrderEmail'
 
 // ===== helper: sanear nombres de archivo =====
 const sanitizeFileName = (name: string) =>
@@ -629,36 +630,40 @@ return (
 
         {/* ===== Eliminar evento ===== */}
         {activeTab === 'peligro' && (
-          <button
-            onClick={async () => {
-              if (!selectedEventSlug) return
+          <div className="mt-6 space-y-4">
+            <ResendOrderEmail adminKey={password} />
 
-              const confirmDelete = confirm(
-                '⚠️ Esto eliminará el evento, sus fotos y sus caras. ¿Continuar?'
-              )
-              if (!confirmDelete) return
+            <button
+              onClick={async () => {
+                if (!selectedEventSlug) return
 
-              setStatus('Eliminando evento...')
+                const confirmDelete = confirm(
+                  '⚠️ Esto eliminará el evento, sus fotos y sus caras. ¿Continuar?'
+                )
+                if (!confirmDelete) return
 
-              const res = await fetch('/api/admin/delete-event', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ event_slug: selectedEventSlug }),
-              })
+                setStatus('Eliminando evento.')
 
-              const data = await res.json()
+                const res = await fetch('/api/admin/delete-event', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ event_slug: selectedEventSlug }),
+                })
 
-              if (res.ok) {
-                setStatus('Evento eliminado correctamente ✅')
-                window.location.reload()
-              } else {
-                setStatus(data.error || 'Error eliminando evento')
-              }
-            }}
-            className="w-full border border-red-500 text-red-600 py-3 rounded-full mb-6 mt-6"
-          >
-            Eliminar evento
-          </button>
+                const data = await res.json()
+
+                if (res.ok) {
+                  setStatus('Evento eliminado correctamente ✅')
+                  window.location.reload()
+                } else {
+                  setStatus(data.error || 'Error eliminando evento')
+                }
+              }}
+              className="w-full border border-red-500 text-red-600 py-3 rounded-full"
+            >
+              Eliminar evento
+            </button>
+          </div>
         )}
 
         {status && (
