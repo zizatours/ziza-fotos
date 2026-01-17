@@ -50,7 +50,7 @@ export default function SelfieUploader({
         <div className="max-w-md mx-auto border rounded-2xl p-8 shadow-sm">
           {!searching && !searched && (
             <p className="text-center text-gray-500 text-sm mb-4">
-              Sube una selfie para buscar tus fotos 📸
+              Envie uma selfie para encontrar suas fotos 📸
             </p>
           )}
 
@@ -58,14 +58,14 @@ export default function SelfieUploader({
             <div className="flex flex-col items-center justify-center mb-6">
               <div className="h-8 w-8 mb-4 animate-spin rounded-full border-2 border-gray-300 border-t-black" />
               <p className="text-center text-gray-600 text-sm">
-                {statusText ?? 'Buscando tus fotos…'}
+                {statusText ?? 'Procurando suas fotos…'}
               </p>
             </div>
           )}
 
           {!searching && (
             <label className="block w-full border rounded-full py-3 text-gray-700 cursor-pointer mb-4">
-              Seleccionar selfie
+              Selecionar selfie
               <input
                 type="file"
                 accept="image/*"
@@ -86,7 +86,7 @@ export default function SelfieUploader({
                 if (!fileRef.current) return
 
                 setSearching(true)
-                setStatusText('Analizando tu selfie…')
+                setStatusText('Analisando sua selfie…')
                 setErrorMsg(null)
                 setMatches([])
                 setSelected([])
@@ -96,7 +96,7 @@ export default function SelfieUploader({
                 formData.append('selfie', fileRef.current)
 
                 try {
-                  setStatusText('Analizando tu selfie…')
+                  setStatusText('Analisando sua selfie…')
 
                   formData.append('event_slug', eventSlug)
 
@@ -107,14 +107,14 @@ export default function SelfieUploader({
                   
                   const data = await res.json()
 
-                  setStatusText('Comparando con las fotos del evento…')
+                  setStatusText('Comparando com as fotos do evento…')
 
                   setMatches(data.results || [])
 
                   setResults(true)
                   setSearched(true)
                 } catch (err) {
-                  setErrorMsg('Ocurrió un error al buscar tus fotos')
+                  setErrorMsg('Ocorreu um erro ao procurar suas fotos')
                 } finally {
                   setSearching(false)
                   setStatusText(null)
@@ -122,7 +122,7 @@ export default function SelfieUploader({
               }}
               className="w-full bg-black text-white rounded-full py-3 mb-4"
             >
-              Buscar mis fotos
+              Procurar minhas fotos
             </button>
           )}
         </div>
@@ -155,18 +155,18 @@ export default function SelfieUploader({
           {searched && !searching && matches.length === 0 && !errorMsg && (
             <div className="text-gray-600 text-sm">
               <p className="mb-2">
-                No encontramos fotos donde aparezcas 😢
+                Não encontramos fotos em que você apareça 😢
               </p>
               <p className="text-xs">
-                Puede que las fotos del evento aún se estén procesando
-                o que no aparezcas en ellas.
+                Pode ser que as fotos do evento ainda estejam sendo processadas
+                ou que você não apareça nelas.
               </p>
             </div>
           )}
 
           <p className="text-center text-gray-600 text-sm mb-4">
             Encontramos {matches.length} foto
-            {matches.length > 1 ? 's' : ''} donde apareces 🎉
+            {matches.length > 1 ? 's' : ''} em que você aparece 🎉
           </p>
 
           {matches.length > 0 && (
@@ -181,7 +181,7 @@ export default function SelfieUploader({
                   >
                     <img
                       src={`/api/preview?path=${encodeURIComponent(m)}`}
-                      alt="Foto del evento"
+                      alt="Foto do evento"
                       className="w-full h-40 object-cover cursor-pointer"
                       onClick={() => toggleSelect(m)}
                     />
@@ -190,7 +190,7 @@ export default function SelfieUploader({
               </div>
 
               <p className="text-sm text-gray-600 my-4">
-                {selected.length} fotos seleccionadas
+                {selected.length} fotos selecionadas
               </p>
 
               <button
@@ -210,15 +210,15 @@ export default function SelfieUploader({
                 }}
                 className="w-full bg-black text-white rounded-full py-3 disabled:opacity-40"
               >
-                Continuar y pagar
+                Continuar e pagar
               </button>
             </>
           )}
         </>
       )}
       <p className="text-xs text-gray-400 mt-6">
-        Tu selfie se usa solo para encontrar tus fotos.
-        No se publica ni se guarda
+        Sua selfie é usada apenas para encontrar suas fotos.
+        Ela não é publicada nem armazenada.
       </p>
     </div>
   )
