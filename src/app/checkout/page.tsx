@@ -77,18 +77,18 @@ export default function CheckoutPage() {
             </h1>
 
             <p className="text-sm text-gray-500 mb-8">
-              Solo tomará unos segundos
+              Levará apenas alguns segundos
             </p>
 
             {/* CONTACTO */}
             <div className="mb-8">
               <h2 className="text-sm font-medium mb-2 text-gray-900">
-                Contacto
+                Contato
               </h2>
 
               <input
                 type="email"
-                placeholder="Correo electrónico"
+                placeholder="E-mail"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 className="w-full border rounded-lg px-4 py-3 mb-2 text-gray-900"
@@ -96,21 +96,21 @@ export default function CheckoutPage() {
 
               <input
                 type="email"
-                placeholder="Confirmar correo electrónico"
+                placeholder="Confirmar e-mail"
                 value={emailConfirm}
                 onChange={e => setEmailConfirm(e.target.value)}
                 className="w-full border rounded-lg px-4 py-3 mb-4 text-gray-900"
               />
 
               <p className="text-xs text-gray-500">
-                Te enviaremos aquí el acceso a tus fotos (por si cierras esta ventana)
+                Vamos enviar aqui o acesso às suas fotos (caso você feche esta janela)
               </p>
             </div>
 
             {/* PAGO */}
             <div className="mb-8">
               <h2 className="text-sm font-medium mb-3 text-gray-900">
-                Pago
+                Pagamento
               </h2>
 
               <div className="border rounded-lg p-4 flex items-center gap-3">
@@ -119,13 +119,13 @@ export default function CheckoutPage() {
               </div>
 
               <p className="text-xs text-gray-500 mt-2">
-                PayPal permite pagar con tarjeta o cuenta PayPal
+                O PayPal permite pagar com cartão ou com sua conta PayPal
               </p>
             </div>
 
             {/* PROPINA */}
             <div className="mb-8">
-              <h2 className="text-sm font-medium mb-2 text-gray-900">Propina (opcional)</h2>
+              <h2 className="text-sm font-medium mb-2 text-gray-900">Gorjeta (opcional)</h2>
               <input
                 inputMode="decimal"
                 placeholder="0.00"
@@ -134,20 +134,22 @@ export default function CheckoutPage() {
                 className="w-full border rounded-lg px-4 py-3 text-gray-900"
               />
               <p className="text-xs text-gray-500 mt-2">
-                Si quieres apoyar al fotógrafo, puedes agregar una propina. (Opcional)
+                Se você quiser apoiar o fotógrafo, pode adicionar uma gorjeta. (Opcional)
               </p>
             </div>
 
-            <div className="text-xs opacity-70 mb-2">
-              paypalClientId: {paypalClientId ? `OK (${paypalClientId.slice(0, 6)}...)` : 'VACÍO'}
-            </div>
+            {process.env.NODE_ENV !== 'production' && (
+              <div className="text-xs opacity-70 mb-2">
+                paypalClientId: {paypalClientId ? `OK (${paypalClientId.slice(0, 6)}...)` : 'Vazio'}
+              </div>
+            )}
             {/* CTA / PAYPAL */}
             {!paypalClientId ? (
               <button
                 disabled
                 className="w-full bg-black text-white rounded-full py-4 text-sm disabled:opacity-40"
               >
-                Falta configurar PayPal
+                PayPal ainda não foi configurado
               </button>
             ) : (
               <PayPalScriptProvider
@@ -159,7 +161,7 @@ export default function CheckoutPage() {
                     disabled
                     className="w-full bg-black text-white rounded-full py-4 text-sm disabled:opacity-40"
                   >
-                    Continuar al pago
+                    Continuar para o pagamento
                   </button>
                 ) : (
                   <PayPalButtons
@@ -177,7 +179,7 @@ export default function CheckoutPage() {
                       console.log('PAYPAL createOrder response', res.status, data)
 
                       if (!res.ok || !data?.id) {
-                        alert('No se pudo crear la orden de PayPal (revisa consola F12 y logs de Vercel).')
+                        alert('Não foi possível criar o pedido no PayPal.')
                         throw new Error('create-order failed')
                       }
 
@@ -205,20 +207,20 @@ export default function CheckoutPage() {
 
                       if (!res.ok) {
                         console.log('CAPTURE ERROR:', out)
-                        alert('Hubo un problema al confirmar el pago.')
+                        alert('Houve um problema ao confirmar o pagamento.')
                         return
                       }
 
-                      alert('¡Pago confirmado!')
+                      alert('Pagamento confirmado!')
                       window.location.href = `/gracias?order=${encodeURIComponent(out.order_id)}`
                     }}
                     onError={(err) => {
                       console.log('PAYPAL BUTTONS ERROR:', err)
-                      alert('PayPal dio un error. Revisa consola (F12).')
+                      alert('O PayPal apresentou um erro.')
                     }}
                     onCancel={() => {
                       console.log('PAYPAL cancel (popup closed by user or blocked)')
-                      alert('PayPal se cerró/canceló. Revisa si tu navegador bloquea popups.')
+                      alert('O PayPal foi fechado/cancelado. Verifique se o navegador está bloqueando pop-ups.')
                     }}
                   />
                 )}
@@ -227,14 +229,14 @@ export default function CheckoutPage() {
 
 
             <p className="text-xs text-gray-400 mt-3 text-center">
-              No se realizará ningún cargo sin tu confirmación
+              Nenhuma cobrança será realizada sem a sua confirmação
             </p>
           </section>
 
           {/* COLUMNA DERECHA */}
           <aside className="bg-gray-50 rounded-xl p-6 h-fit text-gray-900">
             <h2 className="text-sm font-medium mb-4">
-              Resumen de tu selección
+              Resumo da sua seleção
             </h2>
 
             <div className="grid grid-cols-3 gap-2 mb-6">
@@ -245,7 +247,7 @@ export default function CheckoutPage() {
                   <img
                     key={i}
                     src={getPreviewUrl(url)}
-                    alt="Foto seleccionada"
+                    alt="Foto selecionada"
                     className="aspect-square object-cover rounded-md"
                   />
                 ))}
@@ -258,7 +260,7 @@ export default function CheckoutPage() {
               </div>
 
               <div className="flex justify-between">
-                <span>Propina (opcional)</span>
+                <span>Gorjeta (opcional)</span>
                 <span>R$ {tip.toFixed(2)}</span>
               </div>
 
@@ -269,7 +271,7 @@ export default function CheckoutPage() {
             </div>
 
             <p className="text-xs text-gray-500">
-              Tus fotos son privadas. Solo tú podrás descargarlas después del pago.
+              Suas fotos são privadas. Apenas você poderá baixá-las após o pagamento.
             </p>
           </aside>
 
