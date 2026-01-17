@@ -240,10 +240,10 @@ export default function HomePage() {
             <h3 className="font-semibold mb-3">Info contacto</h3>
 
             <a
-              href="mailto:zizatours@gmail.com"
+              href="mailto:zizadrone@gmail.com"
               className="text-gray-600 hover:underline"
             >
-              zizatours@gmail.com
+              zizadrone@gmail.com
             </a>
           </div>
         </div>
