@@ -35,18 +35,18 @@ export default function GoogleReviews() {
     })()
   }, [])
 
-  if (loading) return <div className="text-sm text-gray-500">Cargando opiniones…</div>
+  if (loading) return <div className="text-sm text-gray-500">Carregando avaliações…</div>
 
   if (!data || data.error) {
-    return <div className="text-sm text-gray-500">No se pudieron cargar las opiniones.</div>
+    return <div className="text-sm text-gray-500">Não foi possível carregar as avaliações.</div>
   }
 
   return (
-    <section className="max-w-4xl mx-auto px-4 py-10">
-      <h2 className="text-2xl font-semibold mb-2">Opiniones</h2>
+    <section className="max-w-4xl mx-auto px-4 py-10 text-gray-900">
+      <h2 className="text-2xl font-semibold mb-2 text-gray-900">Opiniões</h2>
 
       <div className="text-sm text-gray-600 mb-6">
-        <span className="font-medium">{data.name}</span>
+        <span className="font-medium text-gray-900">{data.name}</span>
         {data.rating != null && (
           <>
             {' '}
@@ -61,8 +61,8 @@ export default function GoogleReviews() {
         {data.reviews.map((r, i) => (
           <div key={i} className="snap-start min-w-[85%] md:min-w-[48%] lg:min-w-[32%] border rounded-xl p-4 bg-white">
             <div className="flex items-center justify-between mb-2">
-              <div className="font-medium">{r.author}</div>
-              <div className="text-sm">⭐ {r.rating}</div>
+              <div className="font-medium text-gray-900">{r.author}</div>
+              <div className="text-sm text-gray-900">⭐ {r.rating}</div>
             </div>
             {r.time && <div className="text-xs text-gray-500 mb-2">{r.time}</div>}
             {r.text && <p className="text-sm text-gray-700">{r.text}</p>}
