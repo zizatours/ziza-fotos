@@ -24,7 +24,29 @@ async function getAccessToken() {
 }
 
 export async function POST(req: Request) {
-  const { total, currency = "BRL" } = await req.json();
+  const { images, tip, currency = "BRL" } = await req.json();
+
+  if (!Array.isArray(images) || images.length === 0) {
+    return NextResponse.json({ error: "missing_images" }, { status: 400 });
+  }
+
+  const quantity = images.length;
+  const unitPriceCents = 10 * 100; // R$ 10 por foto
+
+  const tipRaw = tip ?? 0;
+  const tipNumber =
+    typeof tipRaw === "string" ? Number(tipRaw.replace(",", ".")) : Number(tipRaw);
+
+  const tipCents = Number.isFinite(tipNumber) && tipNumber > 0 ? Math.round(tipNumber * 100) : 0;
+
+  // tope opcional anti-troll: max R$500 de propina
+  if (tipCents > 500 * 100) {
+    return NextResponse.json({ error: "tip_too_large" }, { status: 400 });
+  }
+
+  const subtotalCents = quantity * unitPriceCents;
+  const totalCents = subtotalCents + tipCents;
+  const totalValue = (totalCents / 100).toFixed(2); // PayPal quiere string con 2 decimales
 
   const base = process.env.PAYPAL_BASE_URL!;
   const accessToken = await getAccessToken();
@@ -42,7 +64,7 @@ export async function POST(req: Request) {
         {
           amount: {
             currency_code: currency,
-            value: String(total),
+            value: totalValue,
           },
         },
       ],

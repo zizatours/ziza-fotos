@@ -32,12 +32,28 @@ async function getAccessToken() {
 }
 
 export async function POST(req: Request) {
-  const { orderID, event_slug, images, email, total, currency = "BRL" } =
-    await req.json();
+  const { orderID, event_slug, images, email, tip, currency = "BRL" } = await req.json();
 
   if (!orderID || !email || !Array.isArray(images)) {
     return NextResponse.json({ error: "missing_fields" }, { status: 400 });
   }
+
+  const quantity = images.length;
+  const unitPriceCents = 10 * 100; // R$10 por foto
+
+  const tipRaw = tip ?? 0;
+  const tipNumber =
+    typeof tipRaw === "string" ? Number(tipRaw.replace(",", ".")) : Number(tipRaw);
+
+  const tipCents = Number.isFinite(tipNumber) && tipNumber > 0 ? Math.round(tipNumber * 100) : 0;
+
+  // tope opcional anti-troll: max R$500
+  if (tipCents > 500 * 100) {
+    return NextResponse.json({ error: "tip_too_large" }, { status: 400 });
+  }
+
+  const subtotalCents = quantity * unitPriceCents;
+  const totalCents = subtotalCents + tipCents;
 
   const base = process.env.PAYPAL_BASE_URL!;
   const accessToken = await getAccessToken();
@@ -67,7 +83,8 @@ export async function POST(req: Request) {
       event_slug: event_slug ?? null,
       email,
       selected_images: images,
-      total_amount: Math.round(Number(total) * 100),
+      total_amount: totalCents,
+      tip_amount: tipCents,
       currency,
       paypal_order_id: orderID,
       paypal_capture_id: paypalCaptureId,

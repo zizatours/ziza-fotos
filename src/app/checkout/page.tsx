@@ -11,13 +11,21 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false)
 
   const quantity = images.length
-  const unitPrice = 1
+  const unitPrice = 10
 
-  const subtotal = quantity * unitPrice
-  const discountPercent =
-    quantity >= 10 ? 20 : quantity >= 5 ? 10 : quantity >= 2 ? 5 : 0
-  const discountAmount = +(subtotal * (discountPercent / 100)).toFixed(2)
-  const total = +(subtotal - discountAmount).toFixed(2)
+  // Propina (input tipo texto para soportar coma o punto)
+  const [tipInput, setTipInput] = useState('0')
+
+  const tip = (() => {
+    const raw = (tipInput || '').replace(',', '.').trim()
+    const n = Number(raw)
+    if (!Number.isFinite(n) || n < 0) return 0
+    // opcional: tope para evitar cosas raras
+    return Math.min(n, 500)
+  })()
+
+  const subtotal = +(quantity * unitPrice).toFixed(2)
+  const total = +(subtotal + tip).toFixed(2)
 
   // ✅ PayPal Client ID (PUBLIC)
   const paypalClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || ''
@@ -115,6 +123,21 @@ export default function CheckoutPage() {
               </p>
             </div>
 
+            {/* PROPINA */}
+            <div className="mb-8">
+              <h2 className="text-sm font-medium mb-2 text-gray-900">Propina (opcional)</h2>
+              <input
+                inputMode="decimal"
+                placeholder="0.00"
+                value={tipInput}
+                onChange={(e) => setTipInput(e.target.value)}
+                className="w-full border rounded-lg px-4 py-3 text-gray-900"
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                Si quieres apoyar al fotógrafo, puedes agregar una propina. (Opcional)
+              </p>
+            </div>
+
             <div className="text-xs opacity-70 mb-2">
               paypalClientId: {paypalClientId ? `OK (${paypalClientId.slice(0, 6)}...)` : 'VACÍO'}
             </div>
@@ -147,7 +170,7 @@ export default function CheckoutPage() {
                       const res = await fetch('/api/paypal/create-order', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ total, currency: 'BRL', event_slug: eventSlug, images, email }),
+                        body: JSON.stringify({ currency: 'BRL', event_slug: eventSlug, images, email, tip }),
                       })
 
                       const data = await res.json().catch(() => ({} as any))
@@ -173,7 +196,7 @@ export default function CheckoutPage() {
                           event_slug: eventSlug,
                           images,
                           email,
-                          total,
+                          tip, // nuevo
                           currency: 'BRL',
                         }),
                       })
@@ -234,12 +257,10 @@ export default function CheckoutPage() {
                 <span>R$ {subtotal.toFixed(2)}</span>
               </div>
 
-              {discountPercent > 0 && (
-                <div className="flex justify-between text-green-600">
-                  <span>Descuento {discountPercent}%</span>
-                  <span>-R$ {discountAmount.toFixed(2)}</span>
-                </div>
-              )}
+              <div className="flex justify-between">
+                <span>Propina (opcional)</span>
+                <span>R$ {tip.toFixed(2)}</span>
+              </div>
 
               <div className="flex justify-between font-medium border-t pt-2">
                 <span>Total</span>
