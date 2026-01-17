@@ -34,14 +34,14 @@ export const metadata: Metadata = {
     locale: "pt_BR",
     type: "website",
     // Se depois você subir uma imagem OG em /public/og.jpg, descomente:
-    // images: [{ url: "/og.jpg", width: 1200, height: 630, alt: "Ziza Photography" }],
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Ziza Photography" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Ziza Photography",
     description:
       "Encontre e baixe suas fotos por evento. Busca por selfie e entrega digital rápida.",
-    // images: ["/og.jpg"],
+    images: ["/og.png"],
   },
 };
 
