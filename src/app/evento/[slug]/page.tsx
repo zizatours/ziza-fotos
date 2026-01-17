@@ -21,7 +21,7 @@ export default async function EventoPage({
   if (!event) {
     return (
       <main className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Evento no encontrado</p>
+        <p className="text-gray-500">Evento não encontrado</p>
       </main>
     )
   }
@@ -60,7 +60,7 @@ export default async function EventoPage({
       {/* SELFIE CARD */}
       <section className="max-w-6xl mx-auto px-6 pb-24 pt-8 text-center">
         <h2 className="text-lg font-medium mb-1 text-gray-900">
-          Encuentra tus fotos
+          Encontre suas fotos
         </h2>
 
         <SelfieUploader eventSlug={slug} />
