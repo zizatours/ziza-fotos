@@ -42,7 +42,7 @@ export default function GraciasClient() {
 
   useEffect(() => {
     if (!orderId) {
-      setError('Falta el parámetro order.')
+      setError('Falta o parâmetro "order')
       return
     }
 
@@ -51,7 +51,7 @@ export default function GraciasClient() {
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data?.error || 'No se pudo cargar la orden.')
+        setError(data?.error || 'Não foi possível carregar o pedido.')
         return
       }
 
@@ -63,10 +63,10 @@ export default function GraciasClient() {
     return (
       <main className="min-h-screen bg-white">
         <div className="max-w-2xl mx-auto px-6 py-16 text-center">
-          <h1 className="text-2xl font-semibold text-gray-900 mb-3">Ups</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 mb-3">Ops</h1>
           <p className="text-gray-600 mb-8">{error}</p>
           <a href="/" className="inline-block bg-black text-white rounded-full px-6 py-3 text-sm">
-            Volver al inicio
+            Voltar ao início
           </a>
         </div>
       </main>
@@ -77,7 +77,7 @@ export default function GraciasClient() {
     return (
       <main className="min-h-screen bg-white">
         <div className="max-w-2xl mx-auto px-6 py-16 text-center">
-          <p className="text-gray-600">Cargando tu compra…</p>
+          <p className="text-gray-600">Carregando sua compra…</p>
         </div>
       </main>
     )
@@ -88,13 +88,13 @@ export default function GraciasClient() {
   return (
     <main className="min-h-screen bg-white">
       <div className="max-w-4xl mx-auto px-6 py-12">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">¡Pago confirmado!</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 mb-2">Pagamento confirmado!</h1>
         <p className="text-gray-600 mb-6">
           Orden: <span className="font-mono text-sm">{order.id}</span>
         </p>
 
         <p className="text-sm text-gray-600 mb-6">
-          Fotos enviadas a su correo. Si no llegan, favor revisar la carpeta <span className="font-semibold">Spam</span>.
+          As fotos foram enviadas para o seu e-mail. Se não chegarem, verifique a pasta <span className="font-semibold">Spam</span>.
         </p>
 
         <div className="mb-6 flex flex-wrap gap-3 items-center">
@@ -108,7 +108,7 @@ export default function GraciasClient() {
               setDownloading(false)
 
               if (!res.ok) {
-                alert(`No se pudieron generar links: ${data?.error || 'desconocido'}`)
+                alert(`Não foi possível gerar os links: ${data?.error || 'desconhecido'}`)
                 return
               }
 
@@ -117,14 +117,14 @@ export default function GraciasClient() {
             className="bg-black text-white rounded-full px-6 py-3 text-sm disabled:opacity-50"
             disabled={downloading}
           >
-            {downloading ? 'Generando links…' : 'Descargar fotos'}
+            {downloading ? 'Gerando links…' : 'Baixar fotos'}
           </button>
 
           <a
             href={`/api/orders/download-zip?order=${encodeURIComponent(order.id)}`}
             className="bg-black text-white rounded-full px-6 py-3 text-sm"
           >
-            Descargar todo (ZIP)
+            Baixar tudo (ZIP)
           </a>
         </div>
 
@@ -138,7 +138,7 @@ export default function GraciasClient() {
                 target="_blank"
                 rel="noreferrer"
               >
-                Descargar foto {i + 1}
+                Baixar foto {i + 1}
               </a>
             ))}
           </div>
@@ -157,7 +157,7 @@ export default function GraciasClient() {
         </div>
 
         <a href="/" className="inline-block bg-black text-white rounded-full px-6 py-3 text-sm">
-          Volver al inicio
+          Voltar ao início
         </a>
       </div>
     </main>

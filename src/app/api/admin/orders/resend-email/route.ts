@@ -57,7 +57,7 @@ export async function POST(req: Request) {
   await resend.emails.send({
     from,
     to: finalEmail,
-    subject: 'Tus fotos están listas — Ziza Fotos',
+    subject: 'Pagamento confirmado — Suas fotos estão prontas',
     html: renderOrderEmail({ siteUrl, orderId }),
   })
 

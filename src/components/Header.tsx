@@ -79,7 +79,7 @@ export default function Header() {
           </Link>
 
           <Link href="/" className="text-sm text-gray-700 hover:text-black">
-            Inicio
+            Início
           </Link>
         </div>
 
@@ -110,7 +110,7 @@ export default function Header() {
               <div className="mt-2 border rounded bg-white shadow-sm max-h-64 overflow-auto">
                 {results.length === 0 ? (
                   <div className="p-3 text-sm text-gray-500">
-                    Sin resultados
+                    Nenhum resultado
                   </div>
                 ) : (
                   results.slice(0, 5).map((ev) => (

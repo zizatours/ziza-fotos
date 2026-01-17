@@ -51,7 +51,7 @@ function EventCard({ event }: { event: EventRow }) {
         </div>
 
         <span className="inline-block rounded-full bg-[#f6f3ee] px-4 py-2 text-sm text-gray-900">
-          Encontrar mis fotos →
+          Encontrar minhas fotos →
         </span>
       </div>
     </Link>
@@ -143,11 +143,11 @@ export default function HomePage() {
 
         <div className="relative z-10 max-w-3xl px-6">
           <h1 className="text-4xl sm:text-5xl font-semibold mb-6 tracking-wide">
-            Explora tus recuerdos de eventos
+            Explore suas memórias de eventos
           </h1>
 
           <p className="text-lg text-gray-200 mb-8">
-            Sube una selfie y descubre todas las fotos donde apareces
+            Envie uma selfie e descubra todas as fotos em que você aparece
           </p>
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-b from-transparent to-[#f6f3ee]" />
@@ -159,7 +159,7 @@ export default function HomePage() {
           Últimos eventos
         </h2>
         <p className="text-center text-gray-600 mb-14">
-          Encuentra tus fotos en estos eventos:
+          Encontre suas fotos nestes eventos:
         </p>
 
         {loadingEvents ? (
@@ -170,7 +170,7 @@ export default function HomePage() {
           </div>
         ) : events.length === 0 ? (
           <p className="text-center text-gray-500">
-            Aún no hay eventos publicados.
+            Ainda não há eventos publicados.
           </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -191,7 +191,7 @@ export default function HomePage() {
       <footer className="max-w-6xl mx-auto px-4 sm:px-6 py-12 text-gray-900">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
           <div>
-            <h3 className="font-semibold mb-3">Redes sociales</h3>
+            <h3 className="font-semibold mb-3">Redes sociais</h3>
 
             <ul className="flex items-center gap-4 text-gray-600">
               <li>
@@ -237,7 +237,7 @@ export default function HomePage() {
           </div>
 
           <div>
-            <h3 className="font-semibold mb-3">Info contacto</h3>
+            <h3 className="font-semibold mb-3">Contato</h3>
 
             <a
               href="mailto:zizadrone@gmail.com"
