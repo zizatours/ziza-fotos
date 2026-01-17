@@ -233,6 +233,47 @@ export default function HomePage() {
                   </svg>
                 </a>
               </li>
+
+              <li>
+                <a
+                  href={"https://www.youtube.com/@Zizaphotography"}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="YouTube"
+                  className="inline-flex items-center justify-center rounded-lg p-2 hover:bg-black/5 transition"
+                >
+                  {/* YouTube icon */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    className="h-6 w-6"
+                    fill="currentColor"
+                  >
+                    <path d="M21.6 7.2a3 3 0 0 0-2.12-2.12C17.9 4.6 12 4.6 12 4.6s-5.9 0-7.48.48A3 3 0 0 0 2.4 7.2 31.6 31.6 0 0 0 2 12s.1 3.1.4 4.8a3 3 0 0 0 2.12 2.12c1.58.48 7.48.48 7.48.48s5.9 0 7.48-.48a3 3 0 0 0 2.12-2.12c.3-1.7.4-4.8.4-4.8s0-3.1-.4-4.8ZM10 15.3V8.7L15.8 12 10 15.3Z" />
+                  </svg>
+                </a>
+              </li>
+
+              <li>
+                <a
+                  href="https://www.google.com/maps/place/Ziza+Tours/@-22.0582336,-44.2428833,8z/data=!3m1!4b1!4m6!3m5!1s0x948854da284acb3:0x8137f5f1960b463!8m2!3d-22.0660686!4d-42.9236307!16s%2Fg%2F11ysbwn3vr?entry=ttu&g_ep=EgoyMDI2MDExMy4wIKXMDSoASAFQAw%3D%3D"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Avaliações no Google"
+                  className="inline-flex items-center justify-center rounded-lg p-2 hover:bg-black/5 transition"
+                >
+                  {/* Google "G" icon (monocromo para que combine con el resto) */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    className="h-6 w-6"
+                    fill="currentColor"
+                  >
+                    <path d="M12 10.2v3.6h5.02c-.22 1.3-1.5 3.82-5.02 3.82a5.98 5.98 0 0 1 0-11.96c1.74 0 2.9.74 3.56 1.38l2.42-2.33C16.58 3.33 14.47 2.4 12 2.4 6.92 2.4 2.8 6.52 2.8 11.6S6.92 20.8 12 20.8c6.92 0 8.6-4.86 8.6-7.38 0-.5-.06-.88-.14-1.22H12Z" />
+                  </svg>
+                </a>
+              </li>
+
             </ul>
           </div>
 
