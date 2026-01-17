@@ -86,8 +86,8 @@ export default function Header() {
         {/* DERECHA */}
         <button
           onClick={() => setOpen((v) => !v)}
-          className="text-sm text-gray-700 hover:text-black"
-          aria-label="Buscar"
+          className="text-sm text-gray-700 hover:text-gray-900"
+          aria-label="Buscar eventos"
         >
           🔍
         </button>
@@ -98,10 +98,10 @@ export default function Header() {
           <div className="max-w-6xl mx-auto px-4 py-3">
             <input
               type="search"
-              placeholder="Filtrar eventos…"
+              placeholder="Buscar eventos…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full border rounded px-3 py-2 text-base"
+              className="w-full border rounded px-3 py-2 text-base bg-white text-gray-900 border-gray-300 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black/10"
               autoFocus
             />
 
