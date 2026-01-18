@@ -170,6 +170,7 @@ export default function CheckoutPage() {
             <div className="mb-8">
               <h2 className="text-sm font-medium mb-2 text-gray-900">Gorjeta (opcional)</h2>
               <input
+                translate="no"
                 inputMode="decimal"
                 placeholder="0.00"
                 value={tipInput}
