@@ -2,6 +2,46 @@
 
 import { useState, useRef } from 'react'
 
+async function compressImage(file: File, maxW = 1280, quality = 0.75): Promise<File> {
+  // Solo imágenes
+  if (!file.type.startsWith('image/')) return file
+
+  const img = new Image()
+  const url = URL.createObjectURL(file)
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve()
+      img.onerror = () => reject(new Error('image_load_failed'))
+      img.src = url
+    })
+
+    const scale = Math.min(1, maxW / (img.width || maxW))
+    const w = Math.max(1, Math.round((img.width || maxW) * scale))
+    const h = Math.max(1, Math.round((img.height || maxW) * scale))
+
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return file
+
+    ctx.drawImage(img, 0, 0, w, h)
+
+    const blob: Blob = await new Promise((resolve) =>
+      canvas.toBlob((b) => resolve(b || file), 'image/jpeg', quality)
+    )
+
+    // Si no logramos comprimir (raro), devolvemos el original
+    if (!(blob instanceof Blob)) return file
+
+    return new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' })
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
+
 const fakePhotos = [
   'https://images.unsplash.com/photo-1508672019048-805c876b67e2',
   'https://images.unsplash.com/photo-1492684223066-81342ee5ff30',
@@ -98,7 +138,15 @@ export default function SelfieUploader({
                 setSearched(false)
 
                 const formData = new FormData()
-                formData.append('selfie', fileRef.current)
+
+                // 🔽 Comprimir para evitar 413 en Vercel (móvil/edge)
+                const original = fileRef.current
+                const compressed = await compressImage(original, 1280, 0.75)
+
+                // (opcional) si quieres, puedes mostrar tamaño:
+                // console.log('selfie original', original.size, 'compressed', compressed.size)
+
+                formData.append('selfie', compressed)
 
                 try {
                   setStatusText('Analisando sua selfie…')
