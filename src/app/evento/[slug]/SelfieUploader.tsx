@@ -201,10 +201,15 @@ export default function SelfieUploader({
                     images: selected,
                   }
 
-                  localStorage.setItem(
-                    'ziza_checkout_selection',
-                    JSON.stringify(payload)
-                  )
+                  try {
+                    localStorage.removeItem('ziza_checkout_selection')
+                    localStorage.setItem('ziza_checkout_selection', JSON.stringify(payload))
+                  } catch (err) {
+                    alert(
+                      'Não foi possível salvar sua seleção (o navegador pode estar bloqueando armazenamento). Tente em uma janela anônima ou desative bloqueadores.'
+                    )
+                    return
+                  }
 
                   window.location.href = '/checkout'
                 }}

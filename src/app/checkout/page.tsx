@@ -48,11 +48,32 @@ export default function CheckoutPage() {
   }
 
   useEffect(() => {
-    const raw = localStorage.getItem('ziza_checkout_selection')
-    if (!raw) return
-    const data = JSON.parse(raw)
-    setImages(data.images || [])
-    setEventSlug(data.event_slug || null)
+    try {
+      const raw = localStorage.getItem('ziza_checkout_selection')
+      if (!raw) return
+
+      const data = JSON.parse(raw)
+
+      const imgs = Array.isArray(data?.images)
+        ? data.images.filter((x: any) => typeof x === 'string' && x.length > 0)
+        : []
+
+      const slug = typeof data?.event_slug === 'string' && data.event_slug.length > 0
+        ? data.event_slug
+        : null
+
+      // Si está incompleto o corrupto, limpiamos para evitar “total 0”
+      if (!slug || imgs.length === 0) {
+        localStorage.removeItem('ziza_checkout_selection')
+        return
+      }
+
+      setImages(imgs)
+      setEventSlug(slug)
+    } catch (err) {
+      // JSON corrupto u otra excepción
+      localStorage.removeItem('ziza_checkout_selection')
+    }
   }, [])
 
   const canPay = useMemo(() => {
@@ -64,6 +85,8 @@ export default function CheckoutPage() {
       !!paypalClientId
     )
   }, [loading, email, emailConfirm, images.length, paypalClientId])
+
+  const missingSelection = images.length === 0 || !eventSlug
 
   return (
     <main className="min-h-screen bg-white">
@@ -79,6 +102,22 @@ export default function CheckoutPage() {
             <p className="text-sm text-gray-500 mb-8">
               Levará apenas alguns segundos
             </p>
+
+            {missingSelection && (
+              <div className="mb-8 border border-yellow-200 bg-yellow-50 rounded-xl p-4 text-sm text-gray-900">
+                <div className="font-medium mb-1">Nenhuma foto selecionada</div>
+                <div className="text-gray-700">
+                  Volte ao evento e selecione suas fotos novamente.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => window.history.back()}
+                  className="mt-3 inline-flex items-center justify-center rounded-full bg-black text-white px-4 py-2 text-xs"
+                >
+                  Voltar
+                </button>
+              </div>
+            )}
 
             {/* CONTACTO */}
             <div className="mb-8">
@@ -212,6 +251,7 @@ export default function CheckoutPage() {
                       }
 
                       alert('Pagamento confirmado!')
+                      try { localStorage.removeItem('ziza_checkout_selection') } catch {}
                       window.location.href = `/gracias?order=${encodeURIComponent(out.order_id)}`
                     }}
                     onError={(err) => {
