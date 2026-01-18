@@ -16,6 +16,15 @@ export default function CheckoutPage() {
   // Propina (input tipo texto para soportar coma o punto)
   const [tipInput, setTipInput] = useState('0')
 
+  // Estado de pago: cuando está true, congelamos la propina y mostramos PayPal
+  const [paymentOpen, setPaymentOpen] = useState(false)
+
+  // Propina “congelada” usada para crear/capturar la orden (la real del pago)
+  const [tipApplied, setTipApplied] = useState(0)
+
+  // Key para forzar “reset” del UI de PayPal al editar
+  const [paypalKey, setPaypalKey] = useState(0)
+
   const tip = useMemo(() => {
     const raw = (tipInput || '').replace(',', '.').trim()
     const n = Number(raw)
@@ -27,9 +36,13 @@ export default function CheckoutPage() {
     return +(quantity * unitPrice).toFixed(2)
   }, [quantity, unitPrice])
 
+  const effectiveTip = useMemo(() => {
+    return paymentOpen ? tipApplied : tip
+  }, [paymentOpen, tipApplied, tip])
+
   const total = useMemo(() => {
-    return +(subtotal + tip).toFixed(2)
-  }, [subtotal, tip])
+    return +(subtotal + effectiveTip).toFixed(2)
+  }, [subtotal, effectiveTip])
 
   // ✅ PayPal Client ID (PUBLIC)
   const paypalClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || ''
@@ -171,12 +184,25 @@ export default function CheckoutPage() {
               <h2 className="text-sm font-medium mb-2 text-gray-900">Gorjeta (opcional)</h2>
               <input
                 translate="no"
-                className="notranslate w-full border rounded-lg px-4 py-3 text-gray-900"
+                disabled={paymentOpen}
+                className="notranslate w-full border rounded-lg px-4 py-3 text-gray-900 disabled:bg-gray-100 disabled:text-gray-500"
                 inputMode="decimal"
                 placeholder="0.00"
                 value={tipInput}
                 onChange={(e) => setTipInput(e.target.value)}
               />
+              {paymentOpen && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPaymentOpen(false)
+                    setPaypalKey((k) => k + 1) // fuerza reset del UI PayPal
+                  }}
+                  className="mt-2 text-sm underline text-gray-700"
+                >
+                  Editar gorjeta
+                </button>
+              )}
               <p className="text-xs text-gray-500 mt-2">
                 Se você quiser apoiar o fotógrafo, pode adicionar uma gorjeta. (Opcional)
               </p>
@@ -197,7 +223,9 @@ export default function CheckoutPage() {
               </button>
             ) : (
               <PayPalScriptProvider
+                key={paypalKey}
                 options={{ clientId: paypalClientId, currency: 'BRL', intent: 'capture' }}
+                deferLoading={!canPay || !paymentOpen}
               >
                 {!canPay ? (
                   <button
@@ -206,72 +234,93 @@ export default function CheckoutPage() {
                   >
                     Continuar para o pagamento
                   </button>
+                ) : !paymentOpen ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Congelamos la propina para ESTA sesión de pago
+                      setTipApplied(tip)
+                      setPaymentOpen(true)
+                    }}
+                    className="w-full bg-black text-white rounded-full py-4 text-sm"
+                  >
+                    Continuar para o pagamento
+                  </button>
                 ) : (
-                  <PayPalButtons
-                    key={`${paypalClientId}-${eventSlug || 'no-event'}`}
-                    style={{ layout: 'vertical' }}
-                    createOrder={async () => {
-                      console.log('PAYPAL createOrder start', { total, eventSlug, imagesCount: images.length, email })
+                  <div translate="no" lang="zxx" className="notranslate">
+                    <PayPalButtons
+                      key={`${paypalClientId}-${eventSlug || 'no-event'}-${paypalKey}`}
+                      style={{ layout: 'vertical' }}
+                      createOrder={async () => {
+                        console.log('PAYPAL createOrder start', { total, eventSlug, imagesCount: images.length, email, tipApplied })
 
-                      const res = await fetch('/api/paypal/create-order', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ currency: 'BRL', event_slug: eventSlug, images, email, tip }),
-                      })
+                        const res = await fetch('/api/paypal/create-order', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            currency: 'BRL',
+                            event_slug: eventSlug,
+                            images,
+                            email,
+                            tip: tipApplied,
+                          }),
+                        })
 
-                      const data = await res.json().catch(() => ({} as any))
-                      console.log('PAYPAL createOrder response', res.status, data)
+                        const data = await res.json().catch(() => ({} as any))
+                        console.log('PAYPAL createOrder response', res.status, data)
 
-                      if (!res.ok || !data?.id) {
-                        alert('Não foi possível criar o pedido no PayPal.')
-                        throw new Error('create-order failed')
-                      }
+                        if (!res.ok || !data?.id) {
+                          alert('Não foi possível criar o pedido no PayPal.')
+                          throw new Error('create-order failed')
+                        }
 
-                      return data.id
-                    }}
+                        return data.id
+                      }}
+                      onApprove={async (data: { orderID?: string }) => {
+                        const orderID = data?.orderID
+                        if (!orderID) return
 
-                    onApprove={async (data: { orderID?: string }) => {
-                      const orderID = data?.orderID
-                      if (!orderID) return
+                        const res = await fetch('/api/paypal/capture-order', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            orderID,
+                            event_slug: eventSlug,
+                            images,
+                            email,
+                            tip: tipApplied,
+                            currency: 'BRL',
+                          }),
+                        })
 
-                      const res = await fetch('/api/paypal/capture-order', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          orderID,
-                          event_slug: eventSlug,
-                          images,
-                          email,
-                          tip, // nuevo
-                          currency: 'BRL',
-                        }),
-                      })
+                        const out = await res.json().catch(() => ({} as any))
 
-                      const out = await res.json().catch(() => ({} as any))
+                        if (!res.ok) {
+                          console.log('CAPTURE ERROR:', out)
+                          alert('Houve um problema ao confirmar o pagamento.')
+                          return
+                        }
 
-                      if (!res.ok) {
-                        console.log('CAPTURE ERROR:', out)
-                        alert('Houve um problema ao confirmar o pagamento.')
-                        return
-                      }
-
-                      alert('Pagamento confirmado!')
-                      try { localStorage.removeItem('ziza_checkout_selection') } catch {}
-                      window.location.href = `/gracias?order=${encodeURIComponent(out.order_id)}`
-                    }}
-                    onError={(err) => {
-                      console.log('PAYPAL BUTTONS ERROR:', err)
-                      alert('O PayPal apresentou um erro.')
-                    }}
-                    onCancel={() => {
-                      console.log('PAYPAL cancel (popup closed by user or blocked)')
-                      alert('O PayPal foi fechado/cancelado. Verifique se o navegador está bloqueando pop-ups.')
-                    }}
-                  />
+                        alert('Pagamento confirmado!')
+                        try { localStorage.removeItem('ziza_checkout_selection') } catch {}
+                        window.location.href = `/gracias?order=${encodeURIComponent(out.order_id)}`
+                      }}
+                      onError={(err) => {
+                        console.log('PAYPAL BUTTONS ERROR:', err)
+                        alert('O PayPal apresentou um erro.')
+                      }}
+                      onCancel={() => {
+                        console.log('PAYPAL cancel (popup closed by user or blocked)')
+                        alert('O PayPal foi fechado/cancelado. Verifique se o navegador está bloqueando pop-ups.')
+                        // opcional: permitir editar al cancelar
+                        setPaymentOpen(false)
+                        setPaypalKey((k) => k + 1)
+                      }}
+                    />
+                  </div>
                 )}
               </PayPalScriptProvider>
             )}
-
 
             <p className="text-xs text-gray-400 mt-3 text-center">
               Nenhuma cobrança será realizada sem a sua confirmação
@@ -310,7 +359,7 @@ export default function CheckoutPage() {
 
               <div className="flex justify-between">
                 <span>Gorjeta (opcional)</span>
-                <span>R$ {tip.toFixed(2)}</span>
+                <span>R$ {effectiveTip.toFixed(2)}</span>
               </div>
 
               <div className="flex justify-between font-medium border-t pt-2">
