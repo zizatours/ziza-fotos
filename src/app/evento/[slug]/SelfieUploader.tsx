@@ -66,6 +66,11 @@ export default function SelfieUploader({
           {!searching && (
             <label className="block w-full border rounded-full py-3 text-gray-700 cursor-pointer mb-4">
               Selecionar selfie
+              {errorMsg && (
+                <p className="text-red-500 text-sm mb-4">
+                  {errorMsg}
+                </p>
+              )}
               <input
                 type="file"
                 accept="image/*"
@@ -104,7 +109,12 @@ export default function SelfieUploader({
                     method: 'POST',
                     body: formData,
                   })
-                  
+
+                  if (!res.ok) {
+                    setErrorMsg(`Error al buscar fotos (HTTP ${res.status}).`)
+                    return
+                  }
+
                   const data = await res.json()
 
                   setStatusText('Comparando com as fotos do evento…')
