@@ -1,11 +1,13 @@
 'use client'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 import { useEffect, useRef, useState } from 'react'
 import GoogleReviews from '@/components/GoogleReviews'
 
 import Image from 'next/image'
 import Link from 'next/link'
-
-export const dynamic = 'force-dynamic'
 
 type EventRow = {
   id: string
