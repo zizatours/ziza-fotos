@@ -171,15 +171,11 @@ export default function CheckoutPage() {
               <h2 className="text-sm font-medium mb-2 text-gray-900">Gorjeta (opcional)</h2>
               <input
                 translate="no"
+                className="notranslate w-full border rounded-lg px-4 py-3 text-gray-900"
                 inputMode="decimal"
                 placeholder="0.00"
                 value={tipInput}
-                onChange={(e) => {
-                  // deja números + coma/punto, y máximo 1 separador decimal
-                  const v = e.target.value
-                  setTipInput(v)
-                }}
-                className="w-full border rounded-lg px-4 py-3 text-gray-900"
+                onChange={(e) => setTipInput(e.target.value)}
               />
               <p className="text-xs text-gray-500 mt-2">
                 Se você quiser apoiar o fotógrafo, pode adicionar uma gorjeta. (Opcional)
@@ -283,7 +279,11 @@ export default function CheckoutPage() {
           </section>
 
           {/* COLUMNA DERECHA */}
-          <aside className="bg-gray-50 rounded-xl p-6 h-fit text-gray-900">
+          <aside
+            translate="no"
+            lang="zxx"
+            className="notranslate bg-gray-50 rounded-xl p-6 h-fit text-gray-900"
+          >
             <h2 className="text-sm font-medium mb-4">
               Resumo da sua seleção
             </h2>
