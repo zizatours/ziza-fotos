@@ -52,8 +52,25 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <head>
+        <meta
+          name="ziza-build"
+          content={process.env.VERCEL_GIT_COMMIT_SHA || process.env.VERCEL_DEPLOYMENT_ID || "local"}
+        />
+      </head>
+      <body>
         <Header />
+
+        {/* DEBUG: stamp de versión (para saber si te están sirviendo HTML viejo) */}
+        <div
+          id="ziza-build-stamp"
+          data-deploy={process.env.VERCEL_DEPLOYMENT_ID || "no-vercel-deploy-id"}
+          data-commit={process.env.VERCEL_GIT_COMMIT_SHA || "no-commit-sha"}
+          style={{ position: "fixed", bottom: 8, right: 8, fontSize: 10, opacity: 0.35, zIndex: 9999 }}
+        >
+          {(process.env.VERCEL_GIT_COMMIT_SHA || process.env.VERCEL_DEPLOYMENT_ID || "local").slice(0, 8)}
+        </div>
+
         {children}
       </body>
     </html>
