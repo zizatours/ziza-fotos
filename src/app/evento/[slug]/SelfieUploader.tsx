@@ -248,7 +248,16 @@ export default function SelfieUploader({
               </div>
 
               <p className="text-sm text-gray-600 my-4">
-                {selected.length} fotos selecionadas
+                <span
+                  translate="no"
+                  className="notranslate tabular-nums"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  suppressHydrationWarning
+                >
+                  {selected.length}
+                </span>{' '}
+                fotos selecionadas
               </p>
 
               <button
