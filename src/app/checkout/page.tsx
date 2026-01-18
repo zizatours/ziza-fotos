@@ -16,16 +16,20 @@ export default function CheckoutPage() {
   // Propina (input tipo texto para soportar coma o punto)
   const [tipInput, setTipInput] = useState('0')
 
-  const tip = (() => {
+  const tip = useMemo(() => {
     const raw = (tipInput || '').replace(',', '.').trim()
     const n = Number(raw)
     if (!Number.isFinite(n) || n < 0) return 0
-    // opcional: tope para evitar cosas raras
     return Math.min(n, 500)
-  })()
+  }, [tipInput])
 
-  const subtotal = +(quantity * unitPrice).toFixed(2)
-  const total = +(subtotal + tip).toFixed(2)
+  const subtotal = useMemo(() => {
+    return +(quantity * unitPrice).toFixed(2)
+  }, [quantity, unitPrice])
+
+  const total = useMemo(() => {
+    return +(subtotal + tip).toFixed(2)
+  }, [subtotal, tip])
 
   // ✅ PayPal Client ID (PUBLIC)
   const paypalClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || ''
@@ -169,7 +173,11 @@ export default function CheckoutPage() {
                 inputMode="decimal"
                 placeholder="0.00"
                 value={tipInput}
-                onChange={(e) => setTipInput(e.target.value)}
+                onChange={(e) => {
+                  // deja números + coma/punto, y máximo 1 separador decimal
+                  const v = e.target.value
+                  setTipInput(v)
+                }}
                 className="w-full border rounded-lg px-4 py-3 text-gray-900"
               />
               <p className="text-xs text-gray-500 mt-2">
@@ -193,7 +201,6 @@ export default function CheckoutPage() {
             ) : (
               <PayPalScriptProvider
                 options={{ clientId: paypalClientId, currency: 'BRL', intent: 'capture' }}
-                deferLoading={!canPay}   // 👈 clave: no carga script hasta que sea “pagable”
               >
                 {!canPay ? (
                   <button
@@ -204,6 +211,7 @@ export default function CheckoutPage() {
                   </button>
                 ) : (
                   <PayPalButtons
+                    key={`${paypalClientId}-${eventSlug || 'no-event'}`}
                     style={{ layout: 'vertical' }}
                     createOrder={async () => {
                       console.log('PAYPAL createOrder start', { total, eventSlug, imagesCount: images.length, email })
