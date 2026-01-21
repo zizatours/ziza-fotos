@@ -49,10 +49,45 @@ export async function POST(req: Request) {
   }
 
   // 2) Generar THUMB (webp liviano para grillas)
-  const thumbBytes = await sharp(bytes)
+  const WIDTH = 900
+  const QUALITY = 70
+
+  // Texto watermark (puedes cambiarlo)
+  const wmText = 'ZIZA PHOTOGRAPHY'
+
+  // SVG watermark (se repite con composite + tile)
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="600" height="250">
+    <style>
+      .t { fill: rgba(255,255,255,0.35); font-size: 44px; font-family: Arial, sans-serif; font-weight: 700; }
+    </style>
+    <text x="20" y="140" class="t" transform="rotate(-20 20 140)">${wmText}</text>
+  </svg>
+  `
+  const wm = Buffer.from(svg)
+
+  const base = sharp(bytes)
     .rotate()
-    .resize({ width: 900, withoutEnlargement: true })
-    .webp({ quality: 70 })
+    .resize({ width: WIDTH, withoutEnlargement: true })
+
+  // Creamos una “capa” del mismo tamaño para poder tilear
+  const meta = await base.metadata()
+  const W = meta.width || WIDTH
+  const H = meta.height || Math.round((WIDTH * 3) / 4)
+
+  const tile = await sharp({
+    create: { width: W, height: H, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+  })
+    .composite([
+      { input: wm, top: 40, left: 40 },
+      { input: wm, top: Math.round(H / 2), left: Math.round(W / 3) },
+    ])
+    .png()
+    .toBuffer()
+
+  const thumbBytes = await base
+    .composite([{ input: tile, blend: 'over' }])
+    .webp({ quality: QUALITY })
     .toBuffer()
 
   // 3) Subir THUMB
