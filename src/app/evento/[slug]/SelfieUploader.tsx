@@ -255,7 +255,7 @@ export default function SelfieUploader({
                     }`}
                   >
                     <img
-                      src={`/api/thumb?path=${encodeURIComponent(m)}&w=520&q=60`}
+                      src={`/api/preview?path=${encodeURIComponent(m)}&w=520&q=60&fmt=webp`}
                       alt="Foto do evento"
                       className="w-full h-40 object-cover cursor-pointer"
                       onClick={() => toggleSelect(m)}

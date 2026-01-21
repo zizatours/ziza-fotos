@@ -24,6 +24,9 @@ function buildPublicUrl(pathOrUrl: string) {
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
+    const w = Math.max(200, Math.min(1600, Number(searchParams.get('w') || '0'))) // 0 = no resize
+    const q = Math.max(40, Math.min(90, Number(searchParams.get('q') || '70')))
+    const fmt = (searchParams.get('fmt') || 'jpeg').toLowerCase() // jpeg | webp
 
     // Acepta ambos: src o path (para que no se rompa si el front cambia)
     const raw = (searchParams.get('src') ?? searchParams.get('path') ?? '').trim()
@@ -53,17 +56,28 @@ export async function GET(req: Request) {
     const watermarkPath = path.join(process.cwd(), 'public', 'watermark.png')
     const watermarkBuffer = await readFile(watermarkPath)
 
-    // Aplicar watermark (tile)
-    const output = await sharp(inputBuffer)
-      .composite([{ input: watermarkBuffer, tile: true, blend: 'over' }])
-      .jpeg({ quality: 85 })
-      .toBuffer()
+    // Base
+    let img = sharp(inputBuffer).rotate()
+
+    // Resize opcional (si w > 0)
+    if (w > 0) {
+      img = img.resize({ width: w, withoutEnlargement: true })
+    }
+
+    // Watermark (tile) - la misma que ya usabas
+    img = img.composite([{ input: watermarkBuffer, tile: true, blend: 'over' }])
+
+    // Encode según fmt / calidad q
+    const isWebp = fmt === 'webp'
+    const output = isWebp
+      ? await img.webp({ quality: q }).toBuffer()
+      : await img.jpeg({ quality: q }).toBuffer()
 
     return new NextResponse(new Uint8Array(output), {
       headers: {
-        'Content-Type': 'image/jpeg',
-        // cache suave
-        'Cache-Control': 'public, max-age=60',
+        'Content-Type': isWebp ? 'image/webp' : 'image/jpeg',
+        // cache más fuerte (sube velocidad MUCHO)
+        'Cache-Control': 'public, s-maxage=86400, max-age=86400, stale-while-revalidate=604800',
       },
     })
   } catch (err) {
