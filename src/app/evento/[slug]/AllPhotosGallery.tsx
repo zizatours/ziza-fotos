@@ -64,7 +64,7 @@ export default function AllPhotosGallery({
       setItems((prev) => [...prev, ...newItems])
       setNextOffset(typeof json?.nextOffset === 'number' ? json.nextOffset : null)
     } catch (e: any) {
-      setError('No se pudieron cargar las fotos del evento.')
+      setError('Não foi possível carregar as fotos do evento.')
       setNextOffset(null)
     } finally {
       setLoading(false)
@@ -89,9 +89,9 @@ export default function AllPhotosGallery({
   return (
     <section className="mt-12 text-left">
       <div className="max-w-6xl mx-auto px-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">Todas las fotos del evento</h3>
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">Todas as fotos do evento</h3>
         <p className="text-sm text-gray-600 mb-6">
-          Puedes seleccionar fotos de paisajes aquí también (además de las que te aparecen por selfie).
+          Você também pode selecionar fotos aqui (além das que aparecem pela selfie).
         </p>
 
         {error && <div className="text-sm text-red-600 mb-4">{error}</div>}
@@ -126,7 +126,7 @@ export default function AllPhotosGallery({
             <span translate="no" className="notranslate font-medium">
               {selectedCount}
             </span>{' '}
-            fotos seleccionadas
+            fotos selecionadas
           </div>
 
           <div className="flex gap-3">
@@ -137,7 +137,7 @@ export default function AllPhotosGallery({
                 disabled={loading}
                 className="rounded-full border px-5 py-3 text-sm text-gray-900 disabled:opacity-50"
               >
-                {loading ? 'Cargando…' : 'Mostrar más'}
+                {loading ? 'Carregando…' : 'Mostrar mais'}
               </button>
             )}
 
@@ -147,7 +147,7 @@ export default function AllPhotosGallery({
               disabled={selectedCount === 0}
               className="rounded-full bg-black text-white px-6 py-3 text-sm disabled:opacity-40"
             >
-              Ir al checkout
+              Ir para o checkout
             </button>
           </div>
         </div>
