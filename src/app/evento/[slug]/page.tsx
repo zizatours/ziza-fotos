@@ -1,4 +1,4 @@
-import SelfieUploader from './SelfieUploader'
+import EventPhotosClient from './EventPhotosClient'
 import { createPublicClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
@@ -64,7 +64,7 @@ export default async function EventoPage({
           Encontre suas fotos
         </h2>
 
-        <SelfieUploader eventSlug={slug} />
+        <EventPhotosClient eventSlug={slug} />
       </section>
     </main>
   )
