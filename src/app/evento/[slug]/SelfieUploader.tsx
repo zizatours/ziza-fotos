@@ -2,6 +2,23 @@
 
 import { useState, useRef } from 'react'
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const bucket = "event-photos";
+
+function toPublicUrl(path: string) {
+  const clean = path.replace(/^\/+/, "");
+  return `${supabaseUrl}/storage/v1/object/public/${bucket}/${clean}`;
+}
+
+// Si NO guardaste thumb_path en BD, lo derivamos desde el path del original
+function toThumbPath(originalPath: string) {
+  // asumiendo original: eventos/<slug>/original/<name>.jpg
+  // thumb:            eventos/<slug>/thumb/<name>.webp
+  const clean = originalPath.replace(/^\/+/, "");
+  const replaced = clean.replace("/original/", "/thumb/");
+  return replaced.replace(/\.[^.]+$/, ".webp");
+}
+
 async function compressImage(file: File, maxW = 1280, quality = 0.75): Promise<File> {
   // Solo imágenes
   if (!file.type.startsWith('image/')) return file
@@ -238,7 +255,7 @@ export default function SelfieUploader({
                     }`}
                   >
                     <img
-                      src={`/api/preview?path=${encodeURIComponent(m)}`}
+                      src={`/api/thumb?path=${encodeURIComponent(m)}&w=520&q=60`}
                       alt="Foto do evento"
                       className="w-full h-40 object-cover cursor-pointer"
                       onClick={() => toggleSelect(m)}

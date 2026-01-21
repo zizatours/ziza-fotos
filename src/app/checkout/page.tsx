@@ -61,7 +61,7 @@ export default function CheckoutPage() {
 
   const getPreviewUrl = (pathOrUrl: string) => {
     const publicUrl = toPublicUrl(pathOrUrl)
-    return `/api/preview?src=${encodeURIComponent(publicUrl)}`
+    return `/api/thumb?src=${encodeURIComponent(publicUrl)}&w=420&q=60`
   }
 
   useEffect(() => {
