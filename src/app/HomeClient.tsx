@@ -248,7 +248,7 @@ export default function HomePage() {
   }, [])
 
   return (
-    <main className="w-full bg-[#f6f3ee] pb-20 md:pb-0">
+    <main className="w-full bg-[#f6f3ee] pb-[calc(96px+env(safe-area-inset-bottom))] md:pb-0">
       {/* HERO */}
       <section className="relative h-[80vh] flex items-center justify-center text-center text-white">
         <video
@@ -469,104 +469,65 @@ export default function HomePage() {
       </section>
 
       {/* FOOTER */}
-      <footer className="fixed bottom-0 left-0 right-0 z-40 bg-[#f6f3ee] border-t md:static md:border-0 max-w-6xl mx-auto px-4 sm:px-6 py-3 md:py-12 text-gray-900">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-          <div>
-            <h3 className="font-semibold mb-3">Redes sociais</h3>
+      <footer className="fixed bottom-0 left-0 right-0 z-40 bg-[#f6f3ee] border-t md:static md:border-0">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-2 md:py-12 text-gray-900">
+          <div className="flex items-center justify-between md:grid md:grid-cols-2 md:gap-8">
+            {/* Redes sociais */}
+            <div className="flex items-center gap-3 md:block">
+              <h3 className="hidden md:block font-semibold mb-3">Redes sociais</h3>
 
-            <ul className="flex items-center gap-4 text-gray-600">
-              <li>
-                <a
-                  href={"https://www.instagram.com/zizaphotography"}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Instagram"
-                  className="inline-flex items-center justify-center rounded-lg p-2 hover:bg-black/5 transition"
-                >
-                  {/* Instagram icon */}
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    className="h-6 w-6"
-                    fill="currentColor"
+              <ul className="flex items-center gap-3 text-gray-600">
+                <li>
+                  <a
+                    href={"https://www.instagram.com/zizaphotography"}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Instagram"
+                    className="inline-flex items-center justify-center rounded-lg p-2 hover:bg-black/5 transition"
                   >
-                    <path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9A5.5 5.5 0 0 1 16.5 22h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2Zm0 2A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4h-9Zm10.25 1.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" />
-                  </svg>
-                </a>
-              </li>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-5 w-5 md:h-6 md:w-6" fill="currentColor">
+                      <path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9A5.5 5.5 0 0 1 16.5 22h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2Zm0 2A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4h-9Zm10.25 1.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" />
+                    </svg>
+                  </a>
+                </li>
 
-              <li>
-                <a
-                  href={"https://web.facebook.com/zizaphotography"}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Facebook"
-                  className="inline-flex items-center justify-center rounded-lg p-2 hover:bg-black/5 transition"
-                >
-                  {/* Facebook icon */}
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    className="h-6 w-6"
-                    fill="currentColor"
+                <li>
+                  <a
+                    href={"https://web.facebook.com/zizaphotography"}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Facebook"
+                    className="inline-flex items-center justify-center rounded-lg p-2 hover:bg-black/5 transition"
                   >
-                    <path d="M13.5 22v-8h2.5l.5-3h-3V9.5c0-.9.3-1.5 1.6-1.5H16.7V5.1c-.3 0-1.4-.1-2.7-.1-2.7 0-4.5 1.6-4.5 4.6V11H7v3h2.5v8h4Z" />
-                  </svg>
-                </a>
-              </li>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-5 w-5 md:h-6 md:w-6" fill="currentColor">
+                      <path d="M13.5 22v-8h2.5l.5-3h-3V9.5c0-.9.3-1.5 1.6-1.5H16.7V5.1c-.3 0-1.4-.1-2.7-.1-2.7 0-4.5 1.6-4.5 4.6V11H7v3h2.5v8h4Z" />
+                    </svg>
+                  </a>
+                </li>
 
-              <li>
-                <a
-                  href={"https://www.youtube.com/@Zizaphotography"}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="YouTube"
-                  className="inline-flex items-center justify-center rounded-lg p-2 hover:bg-black/5 transition"
-                >
-                  {/* YouTube icon */}
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    className="h-6 w-6"
-                    fill="currentColor"
+                <li>
+                  <a
+                    href={"https://www.youtube.com/@Zizaphotography"}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="YouTube"
+                    className="inline-flex items-center justify-center rounded-lg p-2 hover:bg-black/5 transition"
                   >
-                    <path d="M21.6 7.2a3 3 0 0 0-2.12-2.12C17.9 4.6 12 4.6 12 4.6s-5.9 0-7.48.48A3 3 0 0 0 2.4 7.2 31.6 31.6 0 0 0 2 12s.1 3.1.4 4.8a3 3 0 0 0 2.12 2.12c1.58.48 7.48.48 7.48.48s5.9 0 7.48-.48a3 3 0 0 0 2.12-2.12c.3-1.7.4-4.8.4-4.8s0-3.1-.4-4.8ZM10 15.3V8.7L15.8 12 10 15.3Z" />
-                  </svg>
-                </a>
-              </li>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-5 w-5 md:h-6 md:w-6" fill="currentColor">
+                      <path d="M21.6 7.2a3 3 0 0 0-2.12-2.12C17.9 4.6 12 4.6 12 4.6s-5.9 0-7.48.48A3 3 0 0 0 2.4 7.2 31.6 31.6 0 0 0 2 12s.1 3.1.4 4.8a3 3 0 0 0 2.12 2.12c1.58.48 7.48.48 7.48.48s5.9 0 7.48-.48a3 3 0 0 0 2.12-2.12c.3-1.7.4-4.8.4-4.8s0-3.1-.4-4.8ZM10 15.3V8.7L15.8 12 10 15.3Z" />
+                    </svg>
+                  </a>
+                </li>
+              </ul>
+            </div>
 
-              <li>
-                <a
-                  href="https://www.google.com/maps/place/Ziza+Tours/@-22.0582336,-44.2428833,8z/data=!3m1!4b1!4m6!3m5!1s0x948854da284acb3:0x8137f5f1960b463!8m2!3d-22.0660686!4d-42.9236307!16s%2Fg%2F11ysbwn3vr?entry=ttu&g_ep=EgoyMDI2MDExMy4wIKXMDSoASAFQAw%3D%3D"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Avaliações no Google"
-                  className="inline-flex items-center justify-center rounded-lg p-2 hover:bg-black/5 transition"
-                >
-                  {/* Google "G" icon (monocromo para que combine con el resto) */}
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    className="h-6 w-6"
-                    fill="currentColor"
-                  >
-                    <path d="M12 10.2v3.6h5.02c-.22 1.3-1.5 3.82-5.02 3.82a5.98 5.98 0 0 1 0-11.96c1.74 0 2.9.74 3.56 1.38l2.42-2.33C16.58 3.33 14.47 2.4 12 2.4 6.92 2.4 2.8 6.52 2.8 11.6S6.92 20.8 12 20.8c6.92 0 8.6-4.86 8.6-7.38 0-.5-.06-.88-.14-1.22H12Z" />
-                  </svg>
-                </a>
-              </li>
-
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="font-semibold mb-3">Contato</h3>
-
-            <a
-              href="mailto:zizadrone@gmail.com"
-              className="text-gray-600 hover:underline"
-            >
-              zizadrone@gmail.com
-            </a>
+            {/* Contato */}
+            <div className="text-right md:text-left">
+              <h3 className="hidden md:block font-semibold mb-3">Contato</h3>
+              <a href="mailto:zizadrone@gmail.com" className="text-xs md:text-base text-gray-600 hover:underline">
+                zizadrone@gmail.com
+              </a>
+            </div>
           </div>
         </div>
       </footer>
