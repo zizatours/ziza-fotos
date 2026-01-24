@@ -248,7 +248,7 @@ export default function HomePage() {
   }, [])
 
   return (
-    <main className="w-full bg-[#f6f3ee]">
+    <main className="w-full bg-[#f6f3ee] pb-20 md:pb-0">
       {/* HERO */}
       <section className="relative h-[80vh] flex items-center justify-center text-center text-white">
         <video
@@ -469,7 +469,7 @@ export default function HomePage() {
       </section>
 
       {/* FOOTER */}
-      <footer className="max-w-6xl mx-auto px-4 sm:px-6 py-12 text-gray-900">
+      <footer className="fixed bottom-0 left-0 right-0 z-40 bg-[#f6f3ee] border-t md:static md:border-0 max-w-6xl mx-auto px-4 sm:px-6 py-3 md:py-12 text-gray-900">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
           <div>
             <h3 className="font-semibold mb-3">Redes sociais</h3>

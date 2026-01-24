@@ -44,20 +44,40 @@ export default function SelfieUploader({
           )}
 
           {!searching && (
-            <label className="block w-full border rounded-full py-3 text-gray-700 cursor-pointer mb-4">
-              Seleccionar selfie
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files?.[0]) {
-                    setFileName(e.target.files[0].name)
-                    fileRef.current = e.target.files[0]
-                  }
-                }}
-              />
-            </label>
+            <div className="space-y-3 mb-4">
+              {/* 1) Tomar foto (câmera) */}
+              <label className="block w-full border rounded-full py-3 text-gray-700 cursor-pointer">
+                Tirar foto (câmera)
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      setFileName(e.target.files[0].name)
+                      fileRef.current = e.target.files[0]
+                    }
+                  }}
+                />
+              </label>
+
+              {/* 2) Escolher da galeria */}
+              <label className="block w-full border rounded-full py-3 text-gray-700 cursor-pointer">
+                Escolher da galeria
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      setFileName(e.target.files[0].name)
+                      fileRef.current = e.target.files[0]
+                    }
+                  }}
+                />
+              </label>
+            </div>
           )}
 
           {fileName && !searching && (
