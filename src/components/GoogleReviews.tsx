@@ -81,17 +81,6 @@ export default function GoogleReviews() {
         </a>
       </div>
 
-      <div className="text-sm text-gray-600 mb-6">
-        <span className="font-medium text-gray-900">{data.name}</span>
-        {data.rating != null && (
-          <>
-            {' '}
-            · ⭐ {data.rating}
-            {data.total != null ? ` (${data.total})` : ''}
-          </>
-        )}
-      </div>
-
       {/* 1) DESTACADO (el más largo) */}
       {featured && featured.text && (
         <div className="hidden md:block mb-6 border rounded-2xl p-5 bg-white">
@@ -118,22 +107,38 @@ export default function GoogleReviews() {
         ))}
       </div>
 
-      {/* 3) DESKTOP: “colunas” (cortos se apilan) */}
+      {/* 3) DESKTOP: colunas infinitas (2 comentários por coluna) */}
       <div className="hidden md:block">
-        <div className="columns-2 lg:columns-3 gap-4">
-          {rest.map((r, i) => (
-            <div key={i} className="mb-4 break-inside-avoid border rounded-xl p-4 bg-white">
-              <div className="flex items-center justify-between mb-2">
-                <div className="font-medium text-gray-900">{r.author}</div>
-                <div className="text-sm text-gray-900">⭐ {r.rating}</div>
-              </div>
-              {r.time && <div className="text-xs text-gray-500 mb-2">{r.time}</div>}
-              {r.text && <p className="text-sm text-gray-700">{r.text}</p>}
-            </div>
-          ))}
-        </div>
-      </div>
+        {(() => {
+          // Columnas: 2 reviews por coluna (A+B, C+D, E+F...)
+          const columns: Review[][] = []
+          for (let i = 0; i < rest.length; i += 2) {
+            columns.push(rest.slice(i, i + 2))
+          }
 
+          return (
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {columns.map((col, ci) => (
+                <div
+                  key={ci}
+                  className="min-w-[320px] max-w-[360px] flex flex-col gap-4"
+                >
+                  {col.map((r, i) => (
+                    <div key={i} className="border rounded-xl p-4 bg-white">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="font-medium text-gray-900">{r.author}</div>
+                        <div className="text-sm text-gray-900">⭐ {r.rating}</div>
+                      </div>
+                      {r.time && <div className="text-xs text-gray-500 mb-2">{r.time}</div>}
+                      {r.text && <p className="text-sm text-gray-700">{r.text}</p>}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )
+        })()}
+      </div>
     </section>
   )
 }
