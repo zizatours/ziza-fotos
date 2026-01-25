@@ -82,15 +82,6 @@ export default function Header() {
             Início
           </Link>
         </div>
-
-        {/* DERECHA */}
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="text-sm text-gray-700 hover:text-gray-900"
-          aria-label="Procurar eventos"
-        >
-          🔍
-        </button>
       </div>
 
       {open && (
