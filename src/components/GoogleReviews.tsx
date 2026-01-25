@@ -48,10 +48,6 @@ export default function GoogleReviews() {
     return lb - la
   })
 
-  // 1 review “destacada” (la más larga) + el resto
-  const featured = reviewsSorted[0]
-  const rest = reviewsSorted.slice(1)
-
   return (
     <section className="max-w-4xl mx-auto px-4 py-10 text-gray-900">
       <div className="flex items-start justify-between gap-4 mb-6">
@@ -81,18 +77,6 @@ export default function GoogleReviews() {
         </a>
       </div>
 
-      {/* 1) DESTACADO (el más largo) */}
-      {featured && featured.text && (
-        <div className="hidden md:block mb-6 border rounded-2xl p-5 bg-white">
-          <div className="flex items-center justify-between mb-2">
-            <div className="font-semibold text-gray-900">{featured.author}</div>
-            <div className="text-sm text-gray-900">⭐ {featured.rating}</div>
-          </div>
-          {featured.time && <div className="text-xs text-gray-500 mb-2">{featured.time}</div>}
-          <p className="text-sm text-gray-700">{featured.text}</p>
-        </div>
-      )}
-
       {/* 2) MOBILE: carrusel (todos, ordenados) */}
       <div className="md:hidden -mx-4 px-4 flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2">
         {reviewsSorted.map((r, i) => (
@@ -107,22 +91,19 @@ export default function GoogleReviews() {
         ))}
       </div>
 
-      {/* 3) DESKTOP: colunas infinitas (2 comentários por coluna) */}
+      {/* 3) DESKTOP: colunas (2 comentários por coluna) e “colunas” automáticas */}
       <div className="hidden md:block">
         {(() => {
           // Columnas: 2 reviews por coluna (A+B, C+D, E+F...)
           const columns: Review[][] = []
-          for (let i = 0; i < rest.length; i += 2) {
-            columns.push(rest.slice(i, i + 2))
+          for (let i = 0; i < reviewsSorted.length; i += 2) {
+            columns.push(reviewsSorted.slice(i, i + 2))
           }
 
           return (
-            <div className="flex gap-4 overflow-x-auto pb-2">
+            <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))]">
               {columns.map((col, ci) => (
-                <div
-                  key={ci}
-                  className="min-w-[320px] max-w-[360px] flex flex-col gap-4"
-                >
+                <div key={ci} className="flex flex-col gap-4">
                   {col.map((r, i) => (
                     <div key={i} className="border rounded-xl p-4 bg-white">
                       <div className="flex items-center justify-between mb-2">
@@ -130,7 +111,11 @@ export default function GoogleReviews() {
                         <div className="text-sm text-gray-900">⭐ {r.rating}</div>
                       </div>
                       {r.time && <div className="text-xs text-gray-500 mb-2">{r.time}</div>}
-                      {r.text && <p className="text-sm text-gray-700">{r.text}</p>}
+                      {r.text && (
+                        <p className="text-sm text-gray-700 break-words">
+                          {r.text}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
