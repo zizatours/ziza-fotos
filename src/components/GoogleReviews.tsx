@@ -48,23 +48,16 @@ export default function GoogleReviews() {
     })()
   }, [])
 
-  if (loading) return <div className="text-sm text-gray-500">Carregando avaliações…</div>
+  // ✅ Hooks SIEMPRE arriba (para que no cambie el orden entre renders)
+  const reviewsRaw = data?.reviews ?? []
 
-  if (!data || data.error) {
-    return <div className="text-sm text-gray-500">Não foi possível carregar as avaliações.</div>
-  }
-
-  // Ordenamos por largo (primero el más largo) para que los “grandes” se vayan solos en columnas.
   const reviewsSorted = useMemo(() => {
-    return [...(data.reviews || [])].sort((a, b) => (b.text || '').length - (a.text || '').length)
-  }, [data.reviews])
+    return [...reviewsRaw].sort((a, b) => (b.text || '').length - (a.text || '').length)
+  }, [reviewsRaw])
 
   // 🔧 Ajusta este umbral si quieres que “largo” sea más/menos frecuente
   const LONG_THRESHOLD = 220
 
-  // Empaquetado a columnas:
-  // - Si es LARGO => columna con 1
-  // - Si es corto/normal => se agrupan de a 2 por columna
   const columns: Review[][] = useMemo(() => {
     const out: Review[][] = []
     let pending: Review | null = null
@@ -74,7 +67,6 @@ export default function GoogleReviews() {
       const isLong = len >= LONG_THRESHOLD
 
       if (isLong) {
-        // si había uno pendiente corto, que vaya solo
         if (pending) {
           out.push([pending])
           pending = null
@@ -83,7 +75,6 @@ export default function GoogleReviews() {
         continue
       }
 
-      // corto/normal
       if (!pending) {
         pending = r
       } else {
@@ -95,6 +86,13 @@ export default function GoogleReviews() {
     if (pending) out.push([pending])
     return out
   }, [reviewsSorted])
+
+  // ✅ Ahora sí: returns tempranos (después de los hooks)
+  if (loading) return <div className="text-sm text-gray-500">Carregando avaliações…</div>
+
+  if (!data || data.error) {
+    return <div className="text-sm text-gray-500">Não foi possível carregar as avaliações.</div>
+  }
 
   return (
     <section className="max-w-6xl mx-auto px-4 py-10 text-gray-900">
