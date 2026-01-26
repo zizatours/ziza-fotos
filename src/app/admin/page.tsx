@@ -495,7 +495,7 @@ return (
 
         {/* ===== Selector de evento ===== */}
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-2">
+          <label className="block text-sm font-medium mb-2 text-gray-800 dark:text-zinc-200">
             Evento seleccionado
           </label>
 
@@ -568,8 +568,8 @@ return (
           <button
             className={`flex-1 border py-2 rounded ${
               activeTab === 'imagen'
-                ? 'bg-black text-white dark:bg-white dark:text-black'
-                : 'dark:border-zinc-700'
+                ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50 dark:bg-zinc-900 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-800'
             }`}
             onClick={() => setActiveTab('imagen')}
           >
@@ -579,8 +579,8 @@ return (
           <button
             className={`flex-1 border py-2 rounded ${
               activeTab === 'fotos'
-                ? 'bg-black text-white dark:bg-white dark:text-black'
-                : 'dark:border-zinc-700'
+                ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50 dark:bg-zinc-900 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-800'
             }`}
             onClick={() => setActiveTab('fotos')}
           >
@@ -590,8 +590,8 @@ return (
           <button
             className={`flex-1 border py-2 rounded ${
               activeTab === 'index'
-                ? 'bg-black text-white dark:bg-white dark:text-black'
-                : 'dark:border-zinc-700'
+                ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50 dark:bg-zinc-900 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-800'
             }`}
             onClick={() => setActiveTab('index')}
           >
