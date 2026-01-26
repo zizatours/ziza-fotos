@@ -44,6 +44,25 @@ const normalizeEventDateToISO = (raw: string) => {
 
   return iso
 }
+
+const cardClass =
+  "rounded-3xl border p-6 shadow-sm " +
+  "bg-white/95 border-gray-200 " +
+  "dark:bg-zinc-950/70 dark:border-zinc-800"
+
+const inputClass =
+  "w-full rounded-lg px-3 py-2 border " +
+  "bg-white text-black border-gray-300 placeholder:text-gray-500 " +
+  "dark:bg-zinc-900 dark:text-white dark:border-zinc-700 dark:placeholder:text-zinc-400"
+
+const primaryBtnClass =
+  "w-full py-3 rounded-full border shadow-sm transition " +
+  "bg-black text-white border-black hover:opacity-90 " +
+  "dark:bg-white dark:text-black dark:border-white"
+
+const subtleText =
+  "text-sm text-gray-600 dark:text-zinc-400"
+
 export default function AdminPage() {
   const [password, setPassword] = useState('')
   const [authed, setAuthed] = useState(false)
@@ -370,8 +389,9 @@ return (
     ) : (
       // ===== ADMIN =====
       <div className="w-full max-w-xl mx-auto pt-28 pb-16">
-        {/* ===== Crear evento (colapsable) ===== */}
-        <div className="mb-6 border-b pb-6 dark:border-zinc-800">
+        <div className={cardClass}>
+          {/* ===== Crear evento (colapsable) ===== */}
+          <div className="mb-6 border-b pb-6 dark:border-zinc-800">
           <button
             type="button"
             onClick={() => setShowCreate((v) => !v)}
@@ -746,6 +766,7 @@ return (
           </p>
         )}
       </div>
+    </div>
     )}
   </div>
 )}
