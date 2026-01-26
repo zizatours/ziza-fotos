@@ -276,8 +276,20 @@ export default function HomePage() {
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-b from-transparent to-[#f6f3ee]" />
       </section>
 
-      {/* TÍTULO (donde antes estaba el buscador) */}
+      {/* TÍTULO */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-10 text-center text-gray-900">
+        {/* LOGO */}
+        <div className="flex justify-center mb-4">
+          <Image
+            src="/logo.png"
+            alt="Ziza"
+            width={140}
+            height={40}
+            className="h-auto w-auto"
+            priority
+          />
+        </div>
+
         <h1 className="text-3xl sm:text-4xl font-semibold tracking-wide">
           Explore suas memórias de eventos
         </h1>
@@ -524,8 +536,8 @@ export default function HomePage() {
             {/* Contato */}
             <div className="text-right md:text-left">
               <h3 className="hidden md:block font-semibold mb-3">Contato</h3>
-              <a href="mailto:zizadrone@gmail.com" className="text-xs md:text-base text-gray-600 hover:underline">
-                zizadrone@gmail.com
+              <a href="mailto:zizaphotography.com.br@gmail.com" className="text-xs md:text-base text-gray-600 hover:underline">
+                zizaphotography.com.br@gmail.com
               </a>
             </div>
           </div>

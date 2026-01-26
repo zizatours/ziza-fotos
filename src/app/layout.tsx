@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "react-day-picker/style.css";
-import Header from '@/components/Header'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -60,17 +59,16 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <Header />
-
-        {/* DEBUG: stamp de versión (para saber si te están sirviendo HTML viejo) */}
-        <div
-          id="ziza-build-stamp"
-          data-deploy={process.env.VERCEL_DEPLOYMENT_ID || "no-vercel-deploy-id"}
-          data-commit={process.env.VERCEL_GIT_COMMIT_SHA || "no-commit-sha"}
-          style={{ position: "fixed", bottom: 8, right: 8, fontSize: 10, opacity: 0.35, zIndex: 9999 }}
-        >
-          {(process.env.VERCEL_GIT_COMMIT_SHA || process.env.VERCEL_DEPLOYMENT_ID || "local").slice(0, 8)}
-        </div>
+        {process.env.NODE_ENV !== "production" && (
+          <div
+            id="ziza-build-stamp"
+            data-deploy={process.env.VERCEL_DEPLOYMENT_ID || "no-vercel-deploy-id"}
+            data-commit={process.env.VERCEL_GIT_COMMIT_SHA || "no-commit-sha"}
+            style={{ position: "fixed", bottom: 8, right: 8, fontSize: 10, opacity: 0.35, zIndex: 9999 }}
+          >
+            {(process.env.VERCEL_GIT_COMMIT_SHA || process.env.VERCEL_DEPLOYMENT_ID || "local").slice(0, 8)}
+          </div>
+        )}
 
         {children}
       </body>
