@@ -443,7 +443,7 @@ export default function HomePage() {
       </section>
 
       {/* ÚLTIMOS EVENTOS */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-10 text-gray-900">
+      <section className="w-full px-6 md:px-12 py-10 text-gray-900">
         <h2 className="text-center text-2xl sm:text-3xl font-semibold mb-1 text-gray-900">
           Últimos eventos
         </h2>
