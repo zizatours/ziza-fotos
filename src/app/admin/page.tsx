@@ -398,7 +398,7 @@ return (
             onClick={() => setShowCreate((v) => !v)}
             className="w-full flex items-center justify-between"
           >
-            <h2 className="text-lg font-semibold text-black dark:text-black">
+            <h2 className="text-lg font-semibold text-black dark:text-white">
               Crear evento
             </h2>
             <span className={subtleText}>
@@ -483,9 +483,7 @@ return (
                     setStatus(data.error || 'Error creando evento')
                   }
                 }}
-                className="w-full py-3 rounded-full
-                          bg-black text-white
-                          dark:bg-white dark:text-black"
+                className={primaryBtnClass}
               >
                 Crear evento
               </button>
@@ -613,7 +611,7 @@ return (
         {/* ===== Subir fotos ===== */}
         {activeTab === 'fotos' && (
           <>
-            <h1 className="text-xl font-semibold mb-4 mt-6 text-black dark:text-black">
+            <h1 className="text-xl font-semibold mb-4 mt-6 text-black dark:text-white">
               Subir fotos del evento
             </h1>
 
@@ -634,10 +632,11 @@ return (
             <button
               onClick={uploadFiles}
               disabled={uploading || !selectedEventSlug || !files || files.length === 0}
-              className={`w-full py-3 rounded-full mt-4 border
-                bg-black text-white border-black hover:opacity-90
-                dark:bg-white dark:text-black dark:border-white
-                ${uploading || !selectedEventSlug || !files || files.length === 0 ? 'opacity-60 cursor-not-allowed' : ''}`}
+              className={`${primaryBtnClass} mt-4 ${
+                uploading || !selectedEventSlug || !files || files.length === 0
+                  ? 'opacity-60 cursor-not-allowed'
+                  : ''
+              }`}
             >
               {uploading ? `Subiendo ${uploadDone}/${uploadTotal}…` : 'Subir fotos'}
             </button>
