@@ -19,6 +19,9 @@ export default function CheckoutPage() {
   // Estado de pago: cuando está true, congelamos la propina y mostramos PayPal
   const [paymentOpen, setPaymentOpen] = useState(false)
 
+  // Método de pago (PayPal o Tarjeta vía PayPal)
+  const [payMethod, setPayMethod] = useState<'paypal' | 'card'>('paypal')
+
   // Propina “congelada” usada para crear/capturar la orden (la real del pago)
   const [tipApplied, setTipApplied] = useState(0)
 
@@ -169,13 +172,32 @@ export default function CheckoutPage() {
                 Pagamento
               </h2>
 
-              <div className="border rounded-lg p-4 flex items-center gap-3">
-                <input type="radio" checked readOnly />
-                <span className="text-sm text-gray-600">PayPal</span>
+              <div className="space-y-2">
+                <label className="border rounded-lg p-4 flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="payMethod"
+                    checked={payMethod === 'paypal'}
+                    onChange={() => setPayMethod('paypal')}
+                  />
+                  <span className="text-sm text-gray-600">PayPal</span>
+                </label>
+
+                <label className="border rounded-lg p-4 flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="payMethod"
+                    checked={payMethod === 'card'}
+                    onChange={() => setPayMethod('card')}
+                  />
+                  <span className="text-sm text-gray-600">
+                    Cartão de crédito (via PayPal)
+                  </span>
+                </label>
               </div>
 
               <p className="text-xs text-gray-500 mt-2">
-                O PayPal permite pagar com cartão ou com sua conta PayPal
+                Você pode pagar com sua conta PayPal ou com cartão via PayPal.
               </p>
             </div>
 
@@ -224,7 +246,13 @@ export default function CheckoutPage() {
             ) : (
               <PayPalScriptProvider
                 key={paypalKey}
-                options={{ clientId: paypalClientId, currency: 'BRL', intent: 'capture' }}
+                options={{
+                  clientId: paypalClientId,
+                  currency: 'BRL',
+                  intent: 'capture',
+                  components: 'buttons',
+                  'enable-funding': 'card',
+                }}
                 deferLoading={!canPay || !paymentOpen}
               >
                 {!canPay ? (
@@ -249,7 +277,8 @@ export default function CheckoutPage() {
                 ) : (
                   <div translate="no" lang="zxx" className="notranslate">
                     <PayPalButtons
-                      key={`${paypalClientId}-${eventSlug || 'no-event'}-${paypalKey}`}
+                      fundingSource={payMethod}
+                      key={`${payMethod}-${paypalClientId}-${eventSlug || 'no-event'}-${paypalKey}`}
                       style={{ layout: 'vertical' }}
                       createOrder={async () => {
                         console.log('PAYPAL createOrder start', { total, eventSlug, imagesCount: images.length, email, tipApplied })
