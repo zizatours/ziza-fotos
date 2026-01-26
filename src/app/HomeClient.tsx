@@ -452,7 +452,7 @@ export default function HomePage() {
         </p>
 
         {loadingEvents ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <EventCardSkeleton key={i} />
             ))}
@@ -462,7 +462,7 @@ export default function HomePage() {
             Ainda não há eventos publicados.
           </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {filteredEvents.slice(0, 6).map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
@@ -478,7 +478,7 @@ export default function HomePage() {
 
       {/* FOOTER */}
       <footer className="fixed bottom-0 left-0 right-0 z-40 bg-[#f6f3ee] border-t md:static md:border-0">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-2 md:py-12 text-gray-900">
+        <div className="w-full px-4 sm:px-10 lg:px-16 py-2 md:py-12 text-gray-900">
           <div className="flex items-center justify-between md:grid md:grid-cols-2 md:gap-8">
             {/* Redes sociais */}
             <div className="flex items-center gap-3 md:block">
