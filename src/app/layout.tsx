@@ -13,22 +13,24 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// ✅ WHATSAPP (global)
+const whatsappNumber = "5521970864545";
+const whatsappHref = `https://wa.me/${whatsappNumber}`;
+
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.SITE_URL || "https://zizaphotography.com.br"),
   title: {
     default: "Ziza Photography",
     template: "%s | Ziza Photography",
   },
-  description:
-    "Encontre e baixe suas fotos por evento. Busca por selfie e entrega digital rápida.",
+  description: "Encontre e baixe suas fotos por evento. Busca por selfie e entrega digital rápida.",
   robots: {
     index: true,
     follow: true,
   },
   openGraph: {
     title: "Ziza Photography",
-    description:
-      "Encontre e baixe suas fotos por evento. Busca por selfie e entrega digital rápida.",
+    description: "Encontre e baixe suas fotos por evento. Busca por selfie e entrega digital rápida.",
     url: "/",
     siteName: "Ziza Photography",
     locale: "pt_BR",
@@ -38,14 +40,10 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Ziza Photography",
-    description:
-      "Encontre e baixe suas fotos por evento. Busca por selfie e entrega digital rápida.",
+    description: "Encontre e baixe suas fotos por evento. Busca por selfie e entrega digital rápida.",
     images: ["/og.jpg"],
   },
 };
-
-const whatsappNumber = "5521970864545";
-const whatsappHref = `https://wa.me/${whatsappNumber}`;
 
 export default function RootLayout({
   children,
@@ -57,47 +55,24 @@ export default function RootLayout({
       <head>
         <meta
           name="ziza-build"
-          content={
-            process.env.VERCEL_GIT_COMMIT_SHA ||
-            process.env.VERCEL_DEPLOYMENT_ID ||
-            "local"
-          }
+          content={process.env.VERCEL_GIT_COMMIT_SHA || process.env.VERCEL_DEPLOYMENT_ID || "local"}
         />
       </head>
-      <body>
-        {process.env.NODE_ENV !== "production" && (
-          <div
-            id="ziza-build-stamp"
-            data-deploy={
-              process.env.VERCEL_DEPLOYMENT_ID || "no-vercel-deploy-id"
-            }
-            data-commit={process.env.VERCEL_GIT_COMMIT_SHA || "no-commit-sha"}
-            style={{
-              position: "fixed",
-              bottom: 8,
-              right: 8,
-              fontSize: 10,
-              opacity: 0.35,
-              zIndex: 9999,
-            }}
-          >
-            {(
-              process.env.VERCEL_GIT_COMMIT_SHA ||
-              process.env.VERCEL_DEPLOYMENT_ID ||
-              "local"
-            ).slice(0, 8)}
-          </div>
-        )}
 
+      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+        {/* ✅ BOTÃO WHATSAPP (ícone clássico) */}
         <a
           href={whatsappHref}
           target="_blank"
           rel="noreferrer"
-          className="fixed bottom-5 right-5 z-[9999] inline-flex items-center gap-2 rounded-full bg-green-500 px-4 py-3 text-white shadow-lg hover:opacity-90"
           aria-label="WhatsApp"
+          className="fixed bottom-5 right-5 z-[9999] h-14 w-14 rounded-full shadow-lg hover:opacity-95 active:scale-95 transition"
         >
-          <span className="text-lg">🟢</span>
-          <span className="text-sm font-medium">WhatsApp</span>
+          <img
+            src="/whatsapp.png"
+            alt="WhatsApp"
+            className="h-full w-full rounded-full"
+          />
         </a>
 
         {children}
