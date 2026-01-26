@@ -478,10 +478,10 @@ export default function HomePage() {
 
       {/* FOOTER */}
       <footer className="fixed bottom-0 left-0 right-0 z-40 bg-[#f6f3ee] border-t md:static md:border-0">
-        <div className="w-full px-4 sm:px-10 lg:px-16 py-2 md:py-12 text-gray-900">
-          <div className="flex items-center justify-between md:grid md:grid-cols-2 md:gap-8">
+        <div className="w-full px-6 md:px-12 py-2 md:py-12 text-gray-900">
+          <div className="flex items-center justify-between md:items-start">
             {/* Redes sociais */}
-            <div className="flex items-center gap-3 md:block">
+            <div className="flex items-center gap-3 md:flex md:flex-col md:items-start">
               <h3 className="hidden md:block font-semibold mb-3">Redes sociais</h3>
 
               <ul className="flex items-center gap-3 text-gray-600">
@@ -530,7 +530,7 @@ export default function HomePage() {
             </div>
 
             {/* Contato */}
-            <div className="text-right md:text-left">
+            <div className="text-right">
               <h3 className="hidden md:block font-semibold mb-3">Contato</h3>
               <a href="mailto:zizaphotography.com.br@gmail.com" className="text-xs md:text-base text-gray-600 hover:underline">
                 zizaphotography.com.br@gmail.com
