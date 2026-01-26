@@ -46,22 +46,16 @@ const normalizeEventDateToISO = (raw: string) => {
 }
 
 const cardClass =
-  "rounded-3xl border p-6 shadow-sm " +
-  "bg-white border-gray-200 " +
-  "dark:bg-zinc-900 dark:border-zinc-700"
+  "rounded-3xl border p-6 shadow-sm bg-white border-gray-200"
 
 const inputClass =
-  "w-full rounded-lg px-3 py-2 border " +
-  "bg-white text-black border-gray-300 placeholder:text-gray-500 " +
-  "dark:bg-zinc-950 dark:text-white dark:border-zinc-700 dark:placeholder:text-zinc-400"
+  "w-full rounded-lg px-3 py-2 border bg-white text-black border-gray-300 placeholder:text-gray-500"
 
 const primaryBtnClass =
-  "w-full py-3 rounded-full border shadow-sm transition " +
-  "bg-black text-white border-black hover:opacity-90 " +
-  "dark:bg-black dark:text-white dark:border-zinc-700"
+  "w-full py-3 rounded-full border shadow-sm transition bg-black text-white border-black hover:opacity-90"
 
 const subtleText =
-  "text-sm text-gray-600 dark:text-zinc-600"
+  "text-sm text-gray-600"
 
 export default function AdminPage() {
   const [password, setPassword] = useState('')
@@ -351,8 +345,7 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
 return (
   <div
     id="admin-root"
-    className="min-h-screen w-full px-4 bg-white text-black dark:bg-zinc-950 dark:text-white
-              [color-scheme:light] dark:[color-scheme:dark]"
+    className="min-h-screen w-full px-4 bg-white text-black [color-scheme:light]"
   >
     {/* ✅ Toggle SIEMPRE visible (login + admin) */}
     <div className="fixed top-20 right-4 z-50">
@@ -430,7 +423,7 @@ return (
                 type="date"
                 value={eventDate}
                 onChange={(e) => setEventDate(e.target.value)}
-                className={`${inputClass} mb-3 dark:[color-scheme:light] dark:bg-white dark:text-black dark:border-gray-300`}
+                className={`${inputClass} mb-3`}
               />
 
               <input
@@ -567,7 +560,7 @@ return (
             className={`flex-1 border py-2 rounded ${
               activeTab === 'imagen'
                 ? 'bg-black text-white border-black'
-                : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50 dark:bg-zinc-900 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-800'
+                : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50'
             }`}
             onClick={() => setActiveTab('imagen')}
           >
