@@ -332,7 +332,7 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
 return (
   <div
     id="admin-root"
-    className="min-h-screen w-full px-4"
+    className="min-h-screen w-full px-4 bg-white text-black dark:bg-zinc-950 dark:text-white"
   >
     {/* ✅ Toggle SIEMPRE visible (login + admin) */}
     <div className="fixed top-20 right-4 z-50">
@@ -420,7 +420,13 @@ return (
                 onChange={(e) => {
                   if (e.target.files?.[0]) setEventImage(e.target.files[0])
                 }}
-                className="w-full mb-3"
+                className="w-full mb-3 text-sm text-gray-700
+                          file:mr-3 file:rounded-lg file:border file:border-gray-300 file:bg-white
+                          file:px-4 file:py-2 file:text-sm file:font-medium file:text-gray-900
+                          hover:file:bg-gray-50
+                          dark:text-zinc-200
+                          dark:file:border-zinc-700 dark:file:bg-zinc-900 dark:file:text-white
+                          dark:hover:file:bg-zinc-800"
               />
 
               <button
@@ -507,7 +513,13 @@ return (
                 onChange={(e) => {
                   if (e.target.files?.[0]) setImageToUpload(e.target.files[0])
                 }}
-                className="mb-3"
+                className="mb-3 w-full text-sm text-gray-700
+                          file:mr-3 file:rounded-lg file:border file:border-gray-300 file:bg-white
+                          file:px-4 file:py-2 file:text-sm file:font-medium file:text-gray-900
+                          hover:file:bg-gray-50
+                          dark:text-zinc-200
+                          dark:file:border-zinc-700 dark:file:bg-zinc-900 dark:file:text-white
+                          dark:hover:file:bg-zinc-800"
               />
 
               <button
@@ -594,15 +606,22 @@ return (
               multiple
               accept="image/*"
               onChange={(e) => setFiles(e.target.files ?? null)}
-              className="block"
+              className="block w-full text-sm text-gray-700
+                        file:mr-3 file:rounded-lg file:border file:border-gray-300 file:bg-white
+                        file:px-4 file:py-2 file:text-sm file:font-medium file:text-gray-900
+                        hover:file:bg-gray-50
+                        dark:text-zinc-200
+                        dark:file:border-zinc-700 dark:file:bg-zinc-900 dark:file:text-white
+                        dark:hover:file:bg-zinc-800"
             />
 
             <button
               onClick={uploadFiles}
               disabled={uploading || !selectedEventSlug || !files || files.length === 0}
-              className={`w-full py-3 rounded-full mt-4 border border-white/70 bg-black text-white dark:bg-transparent dark:text-white dark:border-white/50 ${
-                uploading || !selectedEventSlug || !files || files.length === 0 ? 'opacity-50' : ''
-              }`}
+              className={`w-full py-3 rounded-full mt-4 border
+                bg-black text-white border-black
+                dark:bg-white dark:text-black dark:border-white
+                ${uploading || !selectedEventSlug || !files || files.length === 0 ? 'opacity-50' : ''}`}
             >
               {uploading ? `Subiendo ${uploadDone}/${uploadTotal}…` : 'Subir fotos'}
             </button>
