@@ -21,38 +21,46 @@ function EventCard({ event }: { event: EventRow }) {
   return (
     <Link
       href={`/evento/${event.slug}`}
-      className="block overflow-hidden rounded-2xl bg-white shadow-[0_20px_40px_rgba(0,0,0,0.08)]"
+      className="group relative block overflow-hidden rounded-3xl shadow-[0_20px_40px_rgba(0,0,0,0.14)]"
     >
       {/* Imagen */}
-      <div className="relative h-44">
+      <div className="relative aspect-square w-full">
         <Image
-          src={event.image_url || '/hero.jpg'}
+          src={event.image_url || "/hero.jpg"}
           alt={event.name}
           fill
-          className="object-cover"
+          className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           unoptimized
         />
-      </div>
 
-      {/* Info debajo de la imagen */}
-      <div className="p-4">
-        <h3 className="text-xl font-semibold leading-tight mb-2 text-gray-900">
-          {event.name}
-        </h3>
+        {/* Oscurecer portada (como tonomaraca) */}
+        <div className="absolute inset-0 bg-black/35" />
 
-        <div className="text-base text-gray-600 space-y-1 mb-4">
-          <div className="flex items-center gap-2">
-            📍 <span>{event.location}</span>
-          </div>
+        {/* Gradiente para que el texto siempre se lea */}
+        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
 
-          <div className="flex items-center gap-2">
-            📅 <span>{event.event_date}</span>
+        {/* Texto sobre la imagen */}
+        <div className="absolute inset-x-0 bottom-0 p-5 text-white">
+          <h3 className="text-xl font-semibold leading-tight drop-shadow-sm">
+            {event.name}
+          </h3>
+
+          <div className="mt-3 space-y-2 text-sm text-white/90">
+            {event.location && (
+              <div className="flex items-center gap-2">
+                <span className="opacity-95">📍</span>
+                <span className="truncate">{event.location}</span>
+              </div>
+            )}
+
+            {event.event_date && (
+              <div className="flex items-center gap-2">
+                <span className="opacity-95">📅</span>
+                <span className="truncate">{event.event_date}</span>
+              </div>
+            )}
           </div>
         </div>
-
-        <span className="inline-block rounded-full bg-[#f6f3ee] px-4 py-2 text-sm text-gray-900">
-          Encontrar minhas fotos →
-        </span>
       </div>
     </Link>
   )
@@ -60,14 +68,8 @@ function EventCard({ event }: { event: EventRow }) {
 
 function EventCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-[0_20px_40px_rgba(0,0,0,0.08)]">
-      <div className="h-56 bg-gray-200 animate-pulse" />
-      <div className="p-5 space-y-3">
-        <div className="h-5 bg-gray-200 rounded animate-pulse" />
-        <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse" />
-        <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse" />
-        <div className="h-8 bg-gray-200 rounded-full w-32 animate-pulse mt-4" />
-      </div>
+    <div className="overflow-hidden rounded-3xl bg-gray-200 animate-pulse shadow-[0_20px_40px_rgba(0,0,0,0.10)]">
+      <div className="aspect-square w-full bg-gray-300" />
     </div>
   )
 }
@@ -450,7 +452,7 @@ export default function HomePage() {
         </p>
 
         {loadingEvents ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <EventCardSkeleton key={i} />
             ))}
@@ -460,7 +462,7 @@ export default function HomePage() {
             Ainda não há eventos publicados.
           </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {filteredEvents.slice(0, 6).map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
