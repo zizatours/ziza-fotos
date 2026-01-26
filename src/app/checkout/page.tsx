@@ -191,7 +191,7 @@ export default function CheckoutPage() {
                     onChange={() => setPayMethod('card')}
                   />
                   <span className="text-sm text-gray-600">
-                    Cartão de crédito (via PayPal)
+                    Cartão de crédito
                   </span>
                 </label>
               </div>
