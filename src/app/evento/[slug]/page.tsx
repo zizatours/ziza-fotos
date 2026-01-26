@@ -42,16 +42,21 @@ export default async function EventoPage({
         <div className="absolute inset-0 bg-black/50" />
 
         <div className="relative z-10 max-w-3xl px-6">
-          <h1 className="text-4xl sm:text-5xl font-semibold mb-4">
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-semibold mb-4 leading-tight">
             {event.name}
           </h1>
 
-          <div className="flex flex-wrap justify-center gap-6 text-sm text-white/90 mt-2">
-            <span>📍 {event.location}</span>
-            <span>
-              📅 {event.event_date
-                ? new Date(event.event_date).toLocaleDateString()
-                : ''}
+          <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 text-base sm:text-lg lg:text-xl text-white/95 mt-3">
+            <span className="flex items-center gap-2 font-medium">
+              <span className="text-lg sm:text-xl lg:text-2xl">📍</span>
+              <span>{event.location}</span>
+            </span>
+
+            <span className="flex items-center gap-2 font-medium">
+              <span className="text-lg sm:text-xl lg:text-2xl">📅</span>
+              <span>
+                {event.event_date ? new Date(event.event_date).toLocaleDateString() : ''}
+              </span>
             </span>
           </div>
 
