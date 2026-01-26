@@ -430,7 +430,7 @@ return (
                 type="date"
                 value={eventDate}
                 onChange={(e) => setEventDate(e.target.value)}
-                className={`${inputClass} mb-3 dark:[color-scheme:dark]`}
+                className={`${inputClass} mb-3 dark:[color-scheme:light] dark:bg-white dark:text-black dark:border-gray-300`}
               />
 
               <input
@@ -566,7 +566,7 @@ return (
           <button
             className={`flex-1 border py-2 rounded ${
               activeTab === 'imagen'
-                ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                ? 'bg-black text-white border-black'
                 : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50 dark:bg-zinc-900 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-800'
             }`}
             onClick={() => setActiveTab('imagen')}
