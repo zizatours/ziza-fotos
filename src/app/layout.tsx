@@ -66,7 +66,7 @@ export default function RootLayout({
           target="_blank"
           rel="noreferrer"
           aria-label="WhatsApp"
-          className="fixed bottom-5 right-5 z-[9999] h-14 w-14 rounded-full shadow-lg hover:opacity-95 active:scale-95 transition"
+          className="fixed bottom-24 md:bottom-5 right-5 z-[9999] h-14 w-14 rounded-full shadow-lg hover:opacity-95 active:scale-95 transition"
         >
           <img
             src="/whatsapp.png"
