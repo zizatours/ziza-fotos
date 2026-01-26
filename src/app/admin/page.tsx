@@ -47,8 +47,8 @@ const normalizeEventDateToISO = (raw: string) => {
 
 const cardClass =
   "rounded-3xl border p-6 shadow-sm " +
-  "bg-white/95 border-gray-200 " +
-  "dark:bg-zinc-950/70 dark:border-zinc-800"
+  "bg-white border-gray-200 " +
+  "dark:bg-zinc-900 dark:border-zinc-700"
 
 const inputClass =
   "w-full rounded-lg px-3 py-2 border " +
@@ -351,7 +351,8 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
 return (
   <div
     id="admin-root"
-    className="min-h-screen w-full px-4 bg-white text-black dark:bg-zinc-950 dark:text-white"
+    className="min-h-screen w-full px-4 bg-white text-black dark:bg-zinc-950 dark:text-white
+              [color-scheme:light] dark:[color-scheme:dark]"
   >
     {/* ✅ Toggle SIEMPRE visible (login + admin) */}
     <div className="fixed top-20 right-4 z-50">
@@ -429,9 +430,7 @@ return (
                 type="date"
                 value={eventDate}
                 onChange={(e) => setEventDate(e.target.value)}
-                className="w-full border px-3 py-2 rounded mb-3
-                          bg-white text-black border-gray-300
-                          dark:bg-zinc-950 dark:text-white dark:border-zinc-700"
+                className={`${inputClass} mb-3 dark:[color-scheme:dark]`}
               />
 
               <input
