@@ -53,7 +53,7 @@ const cardClass =
 const inputClass =
   "w-full rounded-lg px-3 py-2 border " +
   "bg-white text-black border-gray-300 placeholder:text-gray-500 " +
-  "dark:bg-zinc-900 dark:text-white dark:border-zinc-700 dark:placeholder:text-zinc-400"
+  "dark:bg-white dark:text-black dark:border-gray-300 dark:placeholder:text-gray-500"
 
 const primaryBtnClass =
   "w-full py-3 rounded-full border shadow-sm transition " +
@@ -61,7 +61,7 @@ const primaryBtnClass =
   "dark:bg-white dark:text-black dark:border-white"
 
 const subtleText =
-  "text-sm text-gray-600 dark:text-zinc-400"
+  "text-sm text-gray-600 dark:text-zinc-600"
 
 export default function AdminPage() {
   const [password, setPassword] = useState('')
@@ -398,8 +398,10 @@ return (
             onClick={() => setShowCreate((v) => !v)}
             className="w-full flex items-center justify-between"
           >
-            <h2 className="text-lg font-semibold">Crear evento</h2>
-            <span className="text-sm text-gray-600 dark:text-zinc-400">
+            <h2 className="text-lg font-semibold text-black dark:text-black">
+              Crear evento
+            </h2>
+            <span className={subtleText}>
               {showCreate ? 'Ocultar' : 'Mostrar'}
             </span>
           </button>
@@ -411,9 +413,8 @@ return (
                 placeholder="Nombre del evento"
                 value={eventTitle}
                 onChange={(e) => setEventTitle(e.target.value)}
-                className="w-full border px-3 py-2 rounded mb-3
-                          bg-white text-black border-gray-300
-                          dark:bg-zinc-950 dark:text-white dark:border-zinc-700"
+                className={`${inputClass} mb-3`}
+
               />
 
               <input
@@ -421,9 +422,8 @@ return (
                 placeholder="Ubicación del evento (ej: Maracanã, Rio de Janeiro)"
                 value={eventLocation}
                 onChange={(e) => setEventLocation(e.target.value)}
-                className="w-full border px-3 py-2 rounded mb-3
-                          bg-white text-black border-gray-300
-                          dark:bg-zinc-950 dark:text-white dark:border-zinc-700"
+                className={`${inputClass} mb-3`}
+
               />
 
               <input
@@ -500,10 +500,7 @@ return (
           </label>
 
           <select
-            className="w-full border px-3 py-2 rounded
-                      bg-white text-black border-gray-300
-                      dark:bg-zinc-950 dark:text-white dark:border-zinc-700
-                      dark:[&>option]:bg-zinc-950 dark:[&>option]:text-white"
+            className={`${inputClass} dark:[&>option]:bg-zinc-900 dark:[&>option]:text-white`}
             value={selectedEventSlug}
             onChange={(e) => {
               setSelectedEventSlug(e.target.value)
@@ -616,7 +613,7 @@ return (
         {/* ===== Subir fotos ===== */}
         {activeTab === 'fotos' && (
           <>
-            <h1 className="text-xl font-semibold mb-4 mt-6">
+            <h1 className="text-xl font-semibold mb-4 mt-6 text-black dark:text-black">
               Subir fotos del evento
             </h1>
 
@@ -638,9 +635,9 @@ return (
               onClick={uploadFiles}
               disabled={uploading || !selectedEventSlug || !files || files.length === 0}
               className={`w-full py-3 rounded-full mt-4 border
-                bg-black text-white border-black
+                bg-black text-white border-black hover:opacity-90
                 dark:bg-white dark:text-black dark:border-white
-                ${uploading || !selectedEventSlug || !files || files.length === 0 ? 'opacity-50' : ''}`}
+                ${uploading || !selectedEventSlug || !files || files.length === 0 ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
               {uploading ? `Subiendo ${uploadDone}/${uploadTotal}…` : 'Subir fotos'}
             </button>
