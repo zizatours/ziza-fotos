@@ -53,12 +53,12 @@ const cardClass =
 const inputClass =
   "w-full rounded-lg px-3 py-2 border " +
   "bg-white text-black border-gray-300 placeholder:text-gray-500 " +
-  "dark:bg-white dark:text-black dark:border-gray-300 dark:placeholder:text-gray-500"
+  "dark:bg-zinc-950 dark:text-white dark:border-zinc-700 dark:placeholder:text-zinc-400"
 
 const primaryBtnClass =
   "w-full py-3 rounded-full border shadow-sm transition " +
   "bg-black text-white border-black hover:opacity-90 " +
-  "dark:bg-white dark:text-black dark:border-white"
+  "dark:bg-black dark:text-white dark:border-zinc-700"
 
 const subtleText =
   "text-sm text-gray-600 dark:text-zinc-600"
