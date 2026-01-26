@@ -33,7 +33,6 @@ export const metadata: Metadata = {
     siteName: "Ziza Photography",
     locale: "pt_BR",
     type: "website",
-    // Se depois você subir uma imagem OG em /public/og.jpg, descomente:
     images: [{ url: "/og.jpg", width: 1200, height: 630, alt: "Ziza Photography" }],
   },
   twitter: {
@@ -45,6 +44,9 @@ export const metadata: Metadata = {
   },
 };
 
+const whatsappNumber = "5521970864545";
+const whatsappHref = `https://wa.me/${whatsappNumber}`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -55,20 +57,48 @@ export default function RootLayout({
       <head>
         <meta
           name="ziza-build"
-          content={process.env.VERCEL_GIT_COMMIT_SHA || process.env.VERCEL_DEPLOYMENT_ID || "local"}
+          content={
+            process.env.VERCEL_GIT_COMMIT_SHA ||
+            process.env.VERCEL_DEPLOYMENT_ID ||
+            "local"
+          }
         />
       </head>
       <body>
         {process.env.NODE_ENV !== "production" && (
           <div
             id="ziza-build-stamp"
-            data-deploy={process.env.VERCEL_DEPLOYMENT_ID || "no-vercel-deploy-id"}
+            data-deploy={
+              process.env.VERCEL_DEPLOYMENT_ID || "no-vercel-deploy-id"
+            }
             data-commit={process.env.VERCEL_GIT_COMMIT_SHA || "no-commit-sha"}
-            style={{ position: "fixed", bottom: 8, right: 8, fontSize: 10, opacity: 0.35, zIndex: 9999 }}
+            style={{
+              position: "fixed",
+              bottom: 8,
+              right: 8,
+              fontSize: 10,
+              opacity: 0.35,
+              zIndex: 9999,
+            }}
           >
-            {(process.env.VERCEL_GIT_COMMIT_SHA || process.env.VERCEL_DEPLOYMENT_ID || "local").slice(0, 8)}
+            {(
+              process.env.VERCEL_GIT_COMMIT_SHA ||
+              process.env.VERCEL_DEPLOYMENT_ID ||
+              "local"
+            ).slice(0, 8)}
           </div>
         )}
+
+        <a
+          href={whatsappHref}
+          target="_blank"
+          rel="noreferrer"
+          className="fixed bottom-5 right-5 z-[9999] inline-flex items-center gap-2 rounded-full bg-green-500 px-4 py-3 text-white shadow-lg hover:opacity-90"
+          aria-label="WhatsApp"
+        >
+          <span className="text-lg">🟢</span>
+          <span className="text-sm font-medium">WhatsApp</span>
+        </a>
 
         {children}
       </body>

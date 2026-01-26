@@ -24,7 +24,7 @@ function EventCard({ event }: { event: EventRow }) {
       className="block overflow-hidden rounded-2xl bg-white shadow-[0_20px_40px_rgba(0,0,0,0.08)]"
     >
       {/* Imagen */}
-      <div className="relative h-56">
+      <div className="relative h-44">
         <Image
           src={event.image_url || '/hero.jpg'}
           alt={event.name}
@@ -35,12 +35,12 @@ function EventCard({ event }: { event: EventRow }) {
       </div>
 
       {/* Info debajo de la imagen */}
-      <div className="p-5">
-        <h3 className="text-lg font-semibold leading-tight mb-2 text-gray-900">
+      <div className="p-4">
+        <h3 className="text-xl font-semibold leading-tight mb-2 text-gray-900">
           {event.name}
         </h3>
 
-        <div className="text-sm text-gray-600 space-y-1 mb-4">
+        <div className="text-base text-gray-600 space-y-1 mb-4">
           <div className="flex items-center gap-2">
             📍 <span>{event.location}</span>
           </div>
@@ -271,183 +271,178 @@ export default function HomePage() {
         {/* Overlay SIN blur (para que no se vea borroso) */}
         <div className="absolute inset-0 bg-black/30" />
 
+        {/* LOGO sobre el video (abajo-izquierda) */}
+        <div className="absolute bottom-6 left-6 z-10">
+          <Image
+            src="/logo.png"
+            alt="Ziza Photography"
+            width={180}
+            height={60}
+            priority
+            className="h-auto w-auto"
+          />
+        </div>
+
+
         {/* (removido: título/subtítulo del hero) */}
 
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-b from-transparent to-[#f6f3ee]" />
       </section>
 
-      {/* TÍTULO */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-10 text-center text-gray-900">
-        {/* LOGO */}
-        <div className="flex justify-center mb-4">
-          <Image
-            src="/logo.png"
-            alt="Ziza"
-            width={140}
-            height={40}
-            className="h-auto w-auto"
-            priority
-          />
-        </div>
+      {/* BUSCADORES (debajo del video) */}
+      <section className="mb-10">
+        <div className="bg-white rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.10)] p-4 sm:p-5 text-gray-900">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Buscar por nome */}
+            <div ref={nameBoxRef} className="relative">
+              <label className="text-xs text-gray-500 block mb-1">
+                Buscar por nome do evento
+              </label>
 
-        <h1 className="text-3xl sm:text-4xl font-semibold tracking-wide">
-          Explore suas memórias de eventos
-        </h1>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 opacity-60">🔎</span>
+                <input
+                  value={qName}
+                  onChange={(e) => {
+                    setQName(e.target.value)
+                    setNameOpen(true)
+                  }}
+                  onFocus={() => setNameOpen(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && nameMatches[0]) goToEvent(nameMatches[0].slug)
+                  }}
+                  placeholder="Buscar pelo nome do evento"
+                  className="w-full border rounded-xl pl-10 pr-4 py-3 text-gray-900"
+                />
+              </div>
+
+              {nameOpen && qName.trim() && (
+                <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-black/10">
+                  {nameMatches.length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-gray-600">
+                      Nenhum evento encontrado.
+                    </div>
+                  ) : (
+                    <ul className="max-h-72 overflow-auto">
+                      {nameMatches.map((ev) => (
+                        <li key={ev.id}>
+                          <button
+                            type="button"
+                            onClick={() => goToEvent(ev.slug)}
+                            className="w-full text-left px-4 py-3 hover:bg-black/5"
+                          >
+                            <div className="text-sm font-medium text-gray-900">{ev.name}</div>
+                            <div className="text-xs text-gray-600">
+                              {ev.location ? `📍 ${ev.location} · ` : ''}{ev.event_date ?? ''}
+                            </div>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Buscar por data (calendário) */}
+            <div ref={dateBoxRef} className="relative">
+              <label className="text-xs text-gray-500 block mb-1">
+                Buscar por data
+              </label>
+
+              <button
+                type="button"
+                onClick={() => setCalendarOpen(v => !v)}
+                className="w-full border rounded-xl px-4 py-3 text-left bg-white text-gray-900"
+              >
+                {dateSelected ? `📅 ${toDateKey(dateSelected)}` : '📅 Selecionar data'}
+              </button>
+
+              {calendarOpen && (
+                <div className="absolute right-0 mt-2 w-[340px] max-w-full bg-white border rounded-2xl shadow-lg p-3 z-50">
+                  <DayPicker
+                    mode="single"
+                    selected={dateSelected}
+                    onSelect={handleSelectDate}
+                    disabled={(day) => !availableDateKeys.has(toDateKey(day))}
+                  />
+
+                  <div className="flex justify-between mt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDateSelected(undefined)
+                        setDateMsg(null)
+                        setCalendarOpen(false)
+                      }}
+                      className="text-sm text-gray-600 hover:underline"
+                    >
+                      Limpar
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setCalendarOpen(false)}
+                      className="text-sm text-gray-900 font-medium"
+                    >
+                      Fechar
+                    </button>
+                  </div>
+
+                  {dateMsg && (
+                    <p className="text-xs text-gray-500 mt-2">{dateMsg}</p>
+                  )}
+
+                  {dateSelected && dateMatches.length > 1 && (
+                    <div className="mt-3 border-t pt-3">
+                      <p className="text-xs text-gray-500 mb-2">
+                        Selecione o evento:
+                      </p>
+                      <div className="space-y-2">
+                        {dateMatches.map(ev => (
+                          <button
+                            key={ev.id}
+                            type="button"
+                            onClick={() => goToEvent(ev.slug)}
+                            className="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5"
+                          >
+                            <div className="text-sm font-medium text-gray-900">{ev.name}</div>
+                            <div className="text-xs text-gray-600">
+                              {ev.location ? `📍 ${ev.location}` : ''}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {(qName.trim() || dateSelected) && (
+            <div className="mt-3 flex items-center justify-between">
+              <p className="text-xs text-gray-500">
+                Mostrando resultados filtrados
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setQName('')
+                  setDateSelected(undefined)
+                  setDateMsg(null)
+                }}
+                className="text-xs text-gray-900 font-medium hover:underline"
+              >
+                Limpar filtros
+              </button>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* ÚLTIMOS EVENTOS */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-10 text-gray-900">
-        {/* BUSCADORES (debajo del video) */}
-        <section className="mb-10">
-          <div className="bg-white rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.10)] p-4 sm:p-5 text-gray-900">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {/* Buscar por nome */}
-              <div ref={nameBoxRef} className="relative">
-                <label className="text-xs text-gray-500 block mb-1">
-                  Buscar por nome do evento
-                </label>
-
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 opacity-60">🔎</span>
-                  <input
-                    value={qName}
-                    onChange={(e) => {
-                      setQName(e.target.value)
-                      setNameOpen(true)
-                    }}
-                    onFocus={() => setNameOpen(true)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && nameMatches[0]) goToEvent(nameMatches[0].slug)
-                    }}
-                    placeholder="Buscar pelo nome do evento"
-                    className="w-full border rounded-xl pl-10 pr-4 py-3 text-gray-900"
-                  />
-                </div>
-
-                {nameOpen && qName.trim() && (
-                  <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-black/10">
-                    {nameMatches.length === 0 ? (
-                      <div className="px-4 py-3 text-sm text-gray-600">
-                        Nenhum evento encontrado.
-                      </div>
-                    ) : (
-                      <ul className="max-h-72 overflow-auto">
-                        {nameMatches.map((ev) => (
-                          <li key={ev.id}>
-                            <button
-                              type="button"
-                              onClick={() => goToEvent(ev.slug)}
-                              className="w-full text-left px-4 py-3 hover:bg-black/5"
-                            >
-                              <div className="text-sm font-medium text-gray-900">{ev.name}</div>
-                              <div className="text-xs text-gray-600">
-                                {ev.location ? `📍 ${ev.location} · ` : ''}{ev.event_date ?? ''}
-                              </div>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Buscar por data (calendário) */}
-              <div ref={dateBoxRef} className="relative">
-                <label className="text-xs text-gray-500 block mb-1">
-                  Buscar por data
-                </label>
-
-                <button
-                  type="button"
-                  onClick={() => setCalendarOpen(v => !v)}
-                  className="w-full border rounded-xl px-4 py-3 text-left bg-white text-gray-900"
-                >
-                  {dateSelected ? `📅 ${toDateKey(dateSelected)}` : '📅 Selecionar data'}
-                </button>
-
-                {calendarOpen && (
-                  <div className="absolute right-0 mt-2 w-[340px] max-w-full bg-white border rounded-2xl shadow-lg p-3 z-50">
-                    <DayPicker
-                      mode="single"
-                      selected={dateSelected}
-                      onSelect={handleSelectDate}
-                      disabled={(day) => !availableDateKeys.has(toDateKey(day))}
-                    />
-
-                    <div className="flex justify-between mt-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDateSelected(undefined)
-                          setDateMsg(null)
-                          setCalendarOpen(false)
-                        }}
-                        className="text-sm text-gray-600 hover:underline"
-                      >
-                        Limpar
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setCalendarOpen(false)}
-                        className="text-sm text-gray-900 font-medium"
-                      >
-                        Fechar
-                      </button>
-                    </div>
-
-                    {dateMsg && (
-                      <p className="text-xs text-gray-500 mt-2">{dateMsg}</p>
-                    )}
-
-                    {dateSelected && dateMatches.length > 1 && (
-                      <div className="mt-3 border-t pt-3">
-                        <p className="text-xs text-gray-500 mb-2">
-                          Selecione o evento:
-                        </p>
-                        <div className="space-y-2">
-                          {dateMatches.map(ev => (
-                            <button
-                              key={ev.id}
-                              type="button"
-                              onClick={() => goToEvent(ev.slug)}
-                              className="w-full text-left px-3 py-2 rounded-xl hover:bg-black/5"
-                            >
-                              <div className="text-sm font-medium text-gray-900">{ev.name}</div>
-                              <div className="text-xs text-gray-600">
-                                {ev.location ? `📍 ${ev.location}` : ''}
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {(qName.trim() || dateSelected) && (
-              <div className="mt-3 flex items-center justify-between">
-                <p className="text-xs text-gray-500">
-                  Mostrando resultados filtrados
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setQName('')
-                    setDateSelected(undefined)
-                    setDateMsg(null)
-                  }}
-                  className="text-xs text-gray-900 font-medium hover:underline"
-                >
-                  Limpar filtros
-                </button>
-              </div>
-            )}
-          </div>
-        </section>
         <h2 className="text-center text-2xl sm:text-3xl font-semibold mb-1 text-gray-900">
           Últimos eventos
         </h2>
@@ -456,7 +451,7 @@ export default function HomePage() {
         </p>
 
         {loadingEvents ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {Array.from({ length: 6 }).map((_, i) => (
               <EventCardSkeleton key={i} />
             ))}
@@ -466,7 +461,7 @@ export default function HomePage() {
             Ainda não há eventos publicados.
           </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {filteredEvents.slice(0, 6).map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
