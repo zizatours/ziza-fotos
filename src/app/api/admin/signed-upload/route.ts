@@ -1,38 +1,32 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from 'next/server'
+import { createAdminClient } from '@/lib/supabase-server'
 
-export const runtime = "nodejs";
+export const runtime = 'nodejs'
 
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-const BUCKET = "event-photos";
+const BUCKET = 'event-photos'
 
 export async function POST(req: Request) {
-  const { event_slug, file_name, content_type } = await req.json();
+  try {
+    const { path } = await req.json()
 
-  if (!event_slug || !file_name) {
-    return NextResponse.json({ error: "missing_fields" }, { status: 400 });
+    if (!path || typeof path !== 'string') {
+      return NextResponse.json({ error: 'missing_path' }, { status: 400 })
+    }
+
+    const supabase = createAdminClient()
+
+    const { data, error } = await supabase
+      .storage
+      .from(BUCKET)
+      .createSignedUploadUrl(path)
+
+    if (error || !data) {
+      return NextResponse.json({ error: 'signed_upload_failed', details: error?.message }, { status: 500 })
+    }
+
+    // data: { signedUrl, path, token }
+    return NextResponse.json({ signedUrl: data.signedUrl, token: data.token, path: data.path })
+  } catch (e: any) {
+    return NextResponse.json({ error: 'server_error', details: e?.message }, { status: 500 })
   }
-
-  // OJO: aquí usamos la key REAL que quieres guardar
-  const path = `${event_slug}/${file_name}`;
-
-  // Crea signed URL para subir (subida directa desde el browser)
-  const { data, error } = await supabaseAdmin.storage
-    .from(BUCKET)
-    .createSignedUploadUrl(path);
-
-  if (error) {
-    return NextResponse.json({ error: "signed_upload_error", details: error }, { status: 500 });
-  }
-
-  return NextResponse.json({
-    path,
-    signedUrl: data.signedUrl,
-    token: data.token,
-    contentType: content_type || "application/octet-stream",
-  });
 }

@@ -200,15 +200,25 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
         // 2) subir directo a Supabase (NO pasa por Vercel)
         const putRes = await fetch(urlData.signedUrl, {
           method: 'PUT',
-          headers: {
-            'Content-Type': file.type || 'image/jpeg',
-          },
+          headers: { 'Content-Type': file.type || 'image/jpeg' },
           body: file,
         })
 
         if (putRes.ok) {
           uploaded++
           setUploadUploaded(uploaded)
+
+          // 3) generar y GUARDAR thumbnail en Supabase (server-side)
+          await fetch('/api/admin/generate-thumb', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event_slug: selectedEventSlug,
+              file_name: safeName,
+              adminKey: password,
+            }),
+          }).catch(() => null)
+
         } else if (putRes.status === 409) {
           duplicated++
           setUploadDuplicated(duplicated)
@@ -218,6 +228,7 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
           setUploadErrors(errors)
           setUploadErrorFiles([...errorFiles])
         }
+
       } catch {
         errors++
         errorFiles.push(file.name)

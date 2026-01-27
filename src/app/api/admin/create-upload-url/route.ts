@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
     const supabase = createClient(supabaseUrl, serviceKey)
 
-    const path = `${event_slug}/${file_name}`
+    const path = `eventos/${event_slug}/original/${file_name}`
 
     const { data, error } = await supabase.storage
       .from(BUCKET)
