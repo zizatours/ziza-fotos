@@ -167,9 +167,9 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
       setUploadCurrent(safeName)
 
       const formData = new FormData()
-      const safeFile = new File([file], safeName, { type: file.type })
 
-      formData.append('file', safeFile)
+      // mismo nombre “sanitizado”, pero sin clonar el archivo
+      formData.append('file', file, safeName)
       formData.append('event_slug', selectedEventSlug)
 
       try {
@@ -177,6 +177,16 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
           method: 'POST',
           body: formData,
         })
+
+        if (res.status === 413) {
+          errors++
+          errorFiles.push(file.name)
+          setUploadErrors(errors)
+          setUploadErrorFiles([...errorFiles])
+          // opcional: mensaje más claro
+          setStatus('❌ Archivo demasiado pesado. El servidor rechazó la subida (413).')
+          continue
+        }
 
         // (tu API responde JSON, lo dejamos igual)
         await res.json().catch(() => null)
