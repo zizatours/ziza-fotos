@@ -57,29 +57,51 @@ export async function POST(req: Request) {
       controller.enqueue(encoder.encode(JSON.stringify(msg) + '\n'))
     }
 
-    // 1) listar originales en: eventos/<event_slug>/original
-    const prefix = `eventos/${event_slug}/original`
-
+    // 1) listar TODO (paginado). Soporta 2 layouts:
+    // A) legacy: <slug>/<file>
+    // B) nuevo:  eventos/<slug>/original/<file>
     const allFiles: any[] = []
-    let offset = 0
     const limit = 1000
 
-    while (true) {
-      const { data, error } = await supabase.storage
-        .from('event-photos')
-        .list(prefix, { limit, offset })
+    const tryListAll = async (prefix: string) => {
+      const acc: any[] = []
+      let offset = 0
 
-      if (error) {
-        console.error('STORAGE LIST ERROR:', error)
-        return NextResponse.json({ error: 'Failed to list photos' }, { status: 500 })
+      while (true) {
+        const { data, error } = await supabase.storage
+          .from('event-photos')
+          .list(prefix, { limit, offset })
+
+        if (error) throw error
+
+        const batch = data ?? []
+        acc.push(...batch)
+
+        if (batch.length < limit) break
+        offset += limit
       }
 
-      const batch = data ?? []
-      allFiles.push(...batch)
-
-      if (batch.length < limit) break
-      offset += limit
+      return acc
     }
+
+    let prefix = event_slug // legacy por defecto
+    let listed: any[] = []
+
+    try {
+      // 1) intenta legacy primero (porque tú dices que así está ahora)
+      listed = await tryListAll(event_slug)
+
+      // 2) si no hay nada, cae al formato nuevo
+      if ((listed?.length ?? 0) === 0) {
+        prefix = `eventos/${event_slug}/original`
+        listed = await tryListAll(prefix)
+      }
+    } catch (e) {
+      console.error('STORAGE LIST ERROR:', e)
+      return NextResponse.json({ error: 'Failed to list photos' }, { status: 500 })
+    }
+
+    allFiles.push(...listed)
 
     const candidates = allFiles
       .filter((f) => !!f?.name)
@@ -125,7 +147,7 @@ export async function POST(req: Request) {
         let facesIndexedTotal = 0
 
         for (const file of candidates) {
-          const objectPath = `eventos/${event_slug}/original/${file.name}`
+          const objectPath = `${prefix}/${file.name}`
 
           // ===== skip si ya está indexada =====
           if (alreadyIndexed.has(objectPath)) {
