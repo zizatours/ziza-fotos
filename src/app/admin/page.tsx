@@ -173,35 +173,52 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
       setUploadCurrent(safeName)
 
       try {
-        const path = `${selectedEventSlug}/${safeName}`
-
-        const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
-          upsert: false,
-          contentType: file.type || 'image/jpeg',
-          cacheControl: '31536000',
+        // 1) pedir signed url al server
+        const urlRes = await fetch('/api/admin/create-upload-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event_slug: selectedEventSlug,
+            file_name: safeName,
+            content_type: file.type || 'image/jpeg',
+            adminKey: password, // 👈 usamos la misma clave que ya tienes en state
+          }),
         })
 
-        if (!error) {
-          uploaded++
-          setUploadUploaded(uploaded)
-        } else if ((error as any)?.statusCode === 409) {
-          duplicated++
-          setUploadDuplicated(duplicated)
-        } else {
-          // 👇 IMPORTANTE: muestra el error real
-          console.log('SUPABASE UPLOAD ERROR', error)
+        const urlData = await urlRes.json().catch(() => ({} as any))
+
+        if (!urlRes.ok || !urlData?.signedUrl) {
           errors++
           errorFiles.push(file.name)
           setUploadErrors(errors)
           setUploadErrorFiles([...errorFiles])
-
-          // Mensaje claro si es 413
-          if ((error as any)?.statusCode === 413) {
-            setStatus('❌ Archivo demasiado pesado (413). Revisa el max-file-limit / max file size en Supabase Storage.')
-          }
+          setStatus(`❌ Error creando Signed URL (${urlRes.status}).`)
+          setUploadDone(i + 1)
+          continue
         }
-      } catch (e) {
-        console.log('UPLOAD EXCEPTION', e)
+
+        // 2) subir directo a Supabase (NO pasa por Vercel)
+        const putRes = await fetch(urlData.signedUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': file.type || 'image/jpeg',
+          },
+          body: file,
+        })
+
+        if (putRes.ok) {
+          uploaded++
+          setUploadUploaded(uploaded)
+        } else if (putRes.status === 409) {
+          duplicated++
+          setUploadDuplicated(duplicated)
+        } else {
+          errors++
+          errorFiles.push(file.name)
+          setUploadErrors(errors)
+          setUploadErrorFiles([...errorFiles])
+        }
+      } catch {
         errors++
         errorFiles.push(file.name)
         setUploadErrors(errors)
