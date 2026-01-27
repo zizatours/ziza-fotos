@@ -11,6 +11,14 @@ const ORIGINAL_BUCKET = 'event-photos'
 // Dónde guardamos el thumb con marca de agua (público)
 const THUMB_BUCKET = 'event-previews'
 
+// Cache simple del watermark (evita readFile en cada request)
+const watermarkPath = path.join(process.cwd(), 'public', 'watermark.png')
+let watermarkPromise: Promise<Buffer> | null = null
+const getWatermarkBuffer = () => {
+  if (!watermarkPromise) watermarkPromise = readFile(watermarkPath)
+  return watermarkPromise
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}))
@@ -62,9 +70,16 @@ export async function POST(req: Request) {
 
     const input = Buffer.from(await blob.arrayBuffer())
 
-    // Watermark desde /public
-    const watermarkPath = path.join(process.cwd(), 'public', 'watermark.png')
-    const watermarkBuffer = await readFile(watermarkPath)
+    // Watermark desde /public (cacheado)
+    let watermarkBuffer: Buffer
+    try {
+      watermarkBuffer = await getWatermarkBuffer()
+    } catch (e: any) {
+      return NextResponse.json(
+        { error: 'watermark_missing', details: 'No pude leer public/watermark.png' },
+        { status: 500 }
+      )
+    }
 
     // Generar thumb + watermark
     const thumbBytes = await sharp(input)
@@ -88,9 +103,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, thumbPath, bucket: THUMB_BUCKET })
   } catch (e: any) {
-    return NextResponse.json(
-      { error: 'server_error', details: String(e?.message || e) },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'server_error', details: String(e?.message || e) }, { status: 500 })
   }
 }

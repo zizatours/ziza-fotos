@@ -17,6 +17,26 @@ type EventRow = {
   created_at: string
 }
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const PREVIEWS_BUCKET = 'event-previews'
+
+// Cover público (SIN watermark). Ruta fija:
+// eventos/<slug>/cover/cover.webp
+const coverPublicUrl = (slug: string) => {
+  if (!SUPABASE_URL) return ''
+  const path = `eventos/${slug}/cover/cover.webp`
+  return `${SUPABASE_URL}/storage/v1/object/public/${PREVIEWS_BUCKET}/${path}`
+}
+
+const getEventCoverSrc = (event: EventRow) => {
+  // Siempre preferimos el cover público limpio
+  const cover = coverPublicUrl(event.slug)
+  if (cover) return cover
+
+  // Fallback: lo que venga en DB (por si estás en local sin env)
+  return event.image_url || '/hero.jpg'
+}
+
 function EventCard({ event }: { event: EventRow }) {
   return (
     <Link
@@ -26,7 +46,7 @@ function EventCard({ event }: { event: EventRow }) {
       {/* Imagen */}
       <div className="relative aspect-square w-full">
         <Image
-          src={event.image_url || "/hero.jpg"}
+          src={getEventCoverSrc(event)}
           alt={event.name}
           fill
           className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
