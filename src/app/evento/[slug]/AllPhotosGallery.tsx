@@ -111,11 +111,6 @@ export default function AllPhotosGallery({
               >
                 <img
                   src={toWatermarkedPreview(it.thumbPath ?? it.originalPath)}
-                  onError={(e) => {
-                    const img = e.currentTarget
-                    const fallback = toWatermarkedPreview(it.originalPath)
-                    if (img.src !== fallback) img.src = fallback
-                  }}
                   alt="Foto del evento"
                   className="w-full h-40 object-cover cursor-pointer"
                   onClick={() => toggle(it.originalPath)}

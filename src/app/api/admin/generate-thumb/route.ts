@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import sharp from 'sharp'
+import { readFile } from 'fs/promises'
+import path from 'path'
 
 export const runtime = 'nodejs'
 
@@ -57,9 +59,15 @@ export async function POST(req: Request) {
 
     const input = Buffer.from(await blob.arrayBuffer())
 
+    // Watermark local (igual que /api/preview)
+    const watermarkPath = path.join(process.cwd(), 'public', 'watermark.png')
+    const watermarkBuffer = await readFile(watermarkPath)
+
+    // Generar thumb + watermark (tile)
     const thumbBytes = await sharp(input)
       .rotate()
       .resize({ width: 900, withoutEnlargement: true })
+      .composite([{ input: watermarkBuffer, tile: true, blend: 'over' }])
       .webp({ quality: 70 })
       .toBuffer()
 
