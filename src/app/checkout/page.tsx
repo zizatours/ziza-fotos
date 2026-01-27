@@ -64,27 +64,60 @@ export default function CheckoutPage() {
     return `${supabaseUrl}/storage/v1/object/public/${previewsBucket}/${clean}`
   }
 
+  // Extrae el "path dentro del bucket" desde una URL de Supabase Storage.
+  // Ej: https://.../storage/v1/object/public/event-photos/eventos/slug/original/a.jpg
+  //  -> { bucket: "event-photos", path: "eventos/slug/original/a.jpg" }
+  const parseSupabaseStorageObjectUrl = (url: string) => {
+    try {
+      const u = new URL(url)
+      // match: /storage/v1/object/(public|sign|...)/<bucket>/<path>
+      const m = u.pathname.match(/\/storage\/v1\/object\/[^/]+\/([^/]+)\/(.+)$/)
+      if (!m) return null
+      return { bucket: decodeURIComponent(m[1]), path: decodeURIComponent(m[2]) }
+    } catch {
+      return null
+    }
+  }
+
+  // Si tenemos originalPath, armamos thumb esperado en event-previews
+  const thumbFromOriginalPath = (originalPath: string, slug: string | null) => {
+    if (!slug) return ''
+    const file = originalPath.split('/').pop() || ''
+    const base = file.replace(/\.[^.]+$/, '')
+    if (!base) return ''
+    return toPublicEventPreviewsUrl(`eventos/${slug}/thumb/${base}.webp`)
+  }
+
   const getCheckoutPreviewSrc = (value: string) => {
     if (!value) return ''
 
-    // Caso 1: URL completa
+    // 1) Si es URL completa:
     if (/^https?:\/\//i.test(value)) {
       // Si ya es de event-previews (público), úsala tal cual
       if (value.includes('/event-previews/')) return value
 
-      // Si es otra URL (legacy), intenta pasarla por /api/preview como src
-      // (Solo funcionará si esa URL realmente es accesible)
+      // Si es una URL de Supabase Storage (event-photos u otro), conviértela a path y usa ?path=
+      const parsed = parseSupabaseStorageObjectUrl(value)
+      if (parsed?.path) {
+        const thumb = parsed.path.includes('/original/')
+          ? thumbFromOriginalPath(parsed.path, eventSlug)
+          : ''
+        return thumb || `/api/preview?path=${encodeURIComponent(parsed.path)}&w=420&q=60&fmt=webp`
+      }
+
+      // Último recurso: src= (solo funciona si esa URL es accesible)
       return `/api/preview?src=${encodeURIComponent(value)}&w=420&q=60&fmt=webp`
     }
 
-    // Caso 2: path (NO URL). Si parece thumb webp, lo tratamos como event-previews
+    // 2) Si parece thumb webp (público)
     if (value.includes('/thumb/') || value.endsWith('.webp')) {
       return toPublicEventPreviewsUrl(value)
     }
 
-    // Caso 3: path de original (privado) => /api/preview debe leer por path con service role
+    // 3) Si es path de original (privado): intentar thumb esperado y si no, preview por path
     const clean = value.replace(/^\/+/, '')
-    return `/api/preview?path=${encodeURIComponent(clean)}&w=420&q=60&fmt=webp`
+    const thumb = clean.includes('/original/') ? thumbFromOriginalPath(clean, eventSlug) : ''
+    return thumb || `/api/preview?path=${encodeURIComponent(clean)}&w=420&q=60&fmt=webp`
   }
 
   useEffect(() => {
@@ -394,9 +427,29 @@ export default function CheckoutPage() {
                   <img
                     key={i}
                     src={getCheckoutPreviewSrc(url)}
+                    onError={(e) => {
+                      // Si el thumb público falló, cae al preview por path si podemos inferirlo
+                      const v = url
+                      if (!v) return
+                      const img = e.currentTarget
+
+                      // Si era URL completa de Supabase, usar path=
+                      if (/^https?:\/\//i.test(v)) {
+                        const parsed = parseSupabaseStorageObjectUrl(v)
+                        if (parsed?.path) img.src = `/api/preview?path=${encodeURIComponent(parsed.path)}&w=420&q=60&fmt=webp`
+                        return
+                      }
+
+                      // Si era path original, usar path=
+                      const clean = v.replace(/^\/+/, '')
+                      if (!img.src.includes('/api/preview?path=')) {
+                        img.src = `/api/preview?path=${encodeURIComponent(clean)}&w=420&q=60&fmt=webp`
+                      }
+                    }}
                     alt="Foto selecionada"
                     className="aspect-square object-cover rounded-md"
                   />
+
                 ))}
             </div>
 
