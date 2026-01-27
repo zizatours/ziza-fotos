@@ -90,8 +90,7 @@ export async function POST(req: Request) {
       const coverBytes = await sharp(input)
         .rotate()
         .resize({ width: 1400, withoutEnlargement: true })
-        .composite([{ input: watermarkBuffer, tile: true, blend: 'over' }])
-        .webp({ quality: 75 })
+        .webp({ quality: 80 })
         .toBuffer()
 
       // ✅ bucket público para previews/portadas/thumbs
