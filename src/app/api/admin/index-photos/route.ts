@@ -63,9 +63,11 @@ export async function POST(req: Request) {
     const limit = 1000
 
     while (true) {
+      const prefix = `eventos/${event_slug}/original`
+
       const { data, error } = await supabase.storage
         .from('event-photos')
-        .list(event_slug, { limit, offset })
+        .list(prefix, { limit, offset })
 
       if (error) {
         console.error('STORAGE LIST ERROR:', error)
@@ -122,7 +124,7 @@ export async function POST(req: Request) {
         let facesIndexedTotal = 0
 
         for (const file of candidates) {
-          const objectPath = `${event_slug}/${file.name}`
+          const objectPath = `eventos/${event_slug}/original/${file.name}`
 
           // ===== skip si ya está indexada =====
           if (alreadyIndexed.has(objectPath)) {
