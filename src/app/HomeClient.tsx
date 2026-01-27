@@ -260,12 +260,7 @@ export default function HomePage() {
           muted
           loop
           playsInline
-          preload="auto"
-          onEnded={(e) => {
-            const v = e.currentTarget
-            v.currentTime = 0
-            v.play().catch(() => {})
-          }}
+          preload="metadata"
         >
           <source src="/hero.mp4" type="video/mp4" />
         </video>
