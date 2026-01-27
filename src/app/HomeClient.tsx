@@ -267,7 +267,7 @@ export default function HomePage() {
             v.play().catch(() => {})
           }}
         >
-          <source src="/hero.mp4" type="video/mp4" />
+          <source src="/hero.mov" type="video/mov" />
         </video>
 
         {/* Overlay SIN blur (para que no se vea borroso) */}
