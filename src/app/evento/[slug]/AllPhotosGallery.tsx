@@ -24,7 +24,8 @@ export default function AllPhotosGallery({
   const [error, setError] = useState<string | null>(null)
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-  const BUCKET = 'event-photos'
+  const ORIGINAL_BUCKET = 'event-photos'
+  const THUMB_BUCKET = 'event-previews'
 
   // URL pública genérica por bucket
   const toPublicUrl = (bucket: string, pathOrUrl: string) => {
@@ -110,12 +111,17 @@ export default function AllPhotosGallery({
                 }`}
               >
                 <img
-                  src={toWatermarkedPreview(it.thumbPath ?? it.originalPath)}
+                  src={
+                    it.thumbPath
+                      ? toPublicUrl(THUMB_BUCKET, it.thumbPath)
+                      : toWatermarkedPreview(it.originalPath)
+                  }
                   alt="Foto del evento"
                   className="w-full h-40 object-cover cursor-pointer"
                   onClick={() => toggle(it.originalPath)}
                   loading="lazy"
                 />
+
               </div>
             )
           })}

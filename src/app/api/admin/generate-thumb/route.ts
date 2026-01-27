@@ -6,7 +6,10 @@ import path from 'path'
 
 export const runtime = 'nodejs'
 
-const BUCKET = 'event-photos'
+// De dónde leemos el original (privado)
+const ORIGINAL_BUCKET = 'event-photos'
+// Dónde guardamos el thumb con marca de agua (público)
+const THUMB_BUCKET = 'event-previews'
 
 export async function POST(req: Request) {
   try {
@@ -37,33 +40,33 @@ export async function POST(req: Request) {
     const safeName = file_name.replace(/[/\\]/g, '_')
     const baseName = safeName.replace(/\.[^.]+$/, '')
 
-    // 👇 original (nuevo esquema)
+    // Nuevo esquema y fallback viejo
     const originalPathNew = `eventos/${event_slug}/original/${safeName}`
-    // 👇 fallback (esquema viejo por si existe)
     const originalPathOld = `${event_slug}/${safeName}`
 
-    // Intentar bajar original (new -> old)
+    // Descargar original (new -> old)
     let blob: Blob | null = null
-    {
-      const r1 = await supabase.storage.from(BUCKET).download(originalPathNew)
-      if (!r1.error && r1.data) blob = r1.data
-      else {
-        const r2 = await supabase.storage.from(BUCKET).download(originalPathOld)
-        if (!r2.error && r2.data) blob = r2.data
-      }
+    const r1 = await supabase.storage.from(ORIGINAL_BUCKET).download(originalPathNew)
+    if (!r1.error && r1.data) blob = r1.data
+    else {
+      const r2 = await supabase.storage.from(ORIGINAL_BUCKET).download(originalPathOld)
+      if (!r2.error && r2.data) blob = r2.data
     }
 
     if (!blob) {
-      return NextResponse.json({ error: 'original_not_found' }, { status: 404 })
+      return NextResponse.json(
+        { error: 'original_not_found', tried: [originalPathNew, originalPathOld] },
+        { status: 404 }
+      )
     }
 
     const input = Buffer.from(await blob.arrayBuffer())
 
-    // Watermark local (igual que /api/preview)
+    // Watermark desde /public
     const watermarkPath = path.join(process.cwd(), 'public', 'watermark.png')
     const watermarkBuffer = await readFile(watermarkPath)
 
-    // Generar thumb + watermark (tile)
+    // Generar thumb + watermark
     const thumbBytes = await sharp(input)
       .rotate()
       .resize({ width: 900, withoutEnlargement: true })
@@ -73,7 +76,7 @@ export async function POST(req: Request) {
 
     const thumbPath = `eventos/${event_slug}/thumb/${baseName}.webp`
 
-    const { error: upErr } = await supabase.storage.from(BUCKET).upload(thumbPath, thumbBytes, {
+    const { error: upErr } = await supabase.storage.from(THUMB_BUCKET).upload(thumbPath, thumbBytes, {
       contentType: 'image/webp',
       upsert: true,
       cacheControl: '31536000',
@@ -83,7 +86,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'thumb_upload_failed', details: upErr.message }, { status: 500 })
     }
 
-    return NextResponse.json({ ok: true, thumbPath })
+    return NextResponse.json({ ok: true, thumbPath, bucket: THUMB_BUCKET })
   } catch (e: any) {
     return NextResponse.json(
       { error: 'server_error', details: String(e?.message || e) },
