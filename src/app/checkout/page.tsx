@@ -11,7 +11,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false)
 
   const quantity = images.length
-  const unitPrice = 10
+  const unitPrice = 1
 
   // Propina (input tipo texto para soportar coma o punto)
   const [tipInput, setTipInput] = useState('0')
