@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import ThemeToggle from '@/components/ThemeToggle'
 import ResendOrderEmail from '@/components/admin/ResendOrderEmail'
+import { createClient } from '@supabase/supabase-js'
 
 // ===== helper: sanear nombres de archivo =====
 const sanitizeFileName = (name: string) =>
@@ -56,6 +57,13 @@ const primaryBtnClass =
 
 const subtleText =
   "text-sm text-gray-600 dark:text-gray-600"
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+const BUCKET = 'event-photos'
 
 export default function AdminPage() {
   const [password, setPassword] = useState('')
@@ -166,35 +174,22 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
       const safeName = sanitizeFileName(file.name)
       setUploadCurrent(safeName)
 
-      const formData = new FormData()
-
-      // mismo nombre “sanitizado”, pero sin clonar el archivo
-      formData.append('file', file, safeName)
-      formData.append('event_slug', selectedEventSlug)
-
       try {
-        const res = await fetch('/api/admin/upload', {
-          method: 'POST',
-          body: formData,
-        })
+        const path = `${selectedEventSlug}/${safeName}`
 
-        if (res.status === 413) {
-          errors++
-          errorFiles.push(file.name)
-          setUploadErrors(errors)
-          setUploadErrorFiles([...errorFiles])
-          // opcional: mensaje más claro
-          setStatus('❌ Archivo demasiado pesado. El servidor rechazó la subida (413).')
-          continue
-        }
+        const { error } = await supabase
+          .storage
+          .from(BUCKET)
+          .upload(path, file, {
+            upsert: false,
+            contentType: file.type || 'image/jpeg',
+            cacheControl: '31536000',
+          })
 
-        // (tu API responde JSON, lo dejamos igual)
-        await res.json().catch(() => null)
-
-        if (res.ok) {
+        if (!error) {
           uploaded++
           setUploadUploaded(uploaded)
-        } else if (res.status === 409) {
+        } else if ((error as any)?.statusCode === 409) {
           duplicated++
           setUploadDuplicated(duplicated)
         } else {
