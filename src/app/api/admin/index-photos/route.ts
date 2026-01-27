@@ -57,14 +57,14 @@ export async function POST(req: Request) {
       controller.enqueue(encoder.encode(JSON.stringify(msg) + '\n'))
     }
 
-    // 1) listar TODO (paginado) desde storage/event-photos/<event_slug>/
+    // 1) listar originales en: eventos/<event_slug>/original
+    const prefix = `eventos/${event_slug}/original`
+
     const allFiles: any[] = []
     let offset = 0
     const limit = 1000
 
     while (true) {
-      const prefix = `eventos/${event_slug}/original`
-
       const { data, error } = await supabase.storage
         .from('event-photos')
         .list(prefix, { limit, offset })
@@ -83,7 +83,8 @@ export async function POST(req: Request) {
 
     const candidates = allFiles
       .filter((f) => !!f?.name)
-      .filter((f) => /\.(jpe?g|png|webp)$/i.test(f.name))
+      // ✅ indexamos solo originales (jpg/png). NO webp thumbs.
+      .filter((f) => /\.(jpe?g|png)$/i.test(f.name))
 
     const totalFiles = candidates.length
 
