@@ -3,6 +3,7 @@ export const runtime = 'nodejs'
 import { NextResponse } from 'next/server'
 import { RekognitionClient, IndexFacesCommand } from '@aws-sdk/client-rekognition'
 import { createClient } from '@supabase/supabase-js'
+import sharp from 'sharp'
 
 const rekognition = new RekognitionClient({
   region: process.env.AWS_REGION || 'us-east-1',
@@ -42,6 +43,34 @@ type StreamMsg =
       failedFiles: string[]
     }
 
+const MAX_REKOGNITION_BYTES = 4_500_000 // ~4.5MB para evitar UnknownError
+async function toRekognitionBytes(input: Buffer) {
+  // Normaliza orientación + baja tamaño, y fuerza JPEG (más estable para Rekognition)
+  // Intentamos varias combinaciones hasta quedar bajo el límite.
+  const attempts: Array<{ width: number; quality: number }> = [
+    { width: 2048, quality: 82 },
+    { width: 1920, quality: 80 },
+    { width: 1600, quality: 78 },
+    { width: 1400, quality: 76 },
+  ]
+
+  for (const a of attempts) {
+    const out = await sharp(input)
+      .rotate()
+      .resize({ width: a.width, withoutEnlargement: true })
+      .jpeg({ quality: a.quality, mozjpeg: true })
+      .toBuffer()
+
+    if (out.length <= MAX_REKOGNITION_BYTES) return out
+  }
+
+  // si aun queda grande, devolvemos el último intento (igual suele ser mucho menor que 15MB)
+  return sharp(input)
+    .rotate()
+    .resize({ width: 1400, withoutEnlargement: true })
+    .jpeg({ quality: 72, mozjpeg: true })
+    .toBuffer()
+}
 export async function POST(req: Request) {
   try {
     const { event_slug } = await req.json()
@@ -214,10 +243,34 @@ export async function POST(req: Request) {
               continue
             }
 
-            // rekognition
+            // ✅ reducir/normalizar imagen antes de Rekognition (evita UnknownError con 13–15MB)
+            let imgBytes: Buffer
+            try {
+              imgBytes = await toRekognitionBytes(buffer)
+            } catch (e: any) {
+              console.error('SHARP PREPROCESS ERROR:', objectPath, e)
+              done++
+              filesFailed++
+              failedFiles.push(objectPath)
+              write(controller, {
+                type: 'progress',
+                done,
+                totalFiles,
+                file: objectPath,
+                status: 'failed',
+                filesOk,
+                filesSkipped,
+                filesFailed,
+                facesIndexedTotal,
+                reason: 'preprocess_failed',
+              })
+              continue
+            }
+
+            // rekognition (usamos imgBytes, no el original gigante)
             const cmd = new IndexFacesCommand({
               CollectionId: process.env.AWS_REKOGNITION_COLLECTION_ID!,
-              Image: { Bytes: buffer },
+              Image: { Bytes: imgBytes },
               MaxFaces: 10,
               QualityFilter: 'AUTO',
               ExternalImageId: objectPath.replace(/[^\w.\-:]/g, '_'),
