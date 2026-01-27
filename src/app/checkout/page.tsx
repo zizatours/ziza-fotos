@@ -50,21 +50,41 @@ export default function CheckoutPage() {
   // ✅ PayPal Client ID (PUBLIC)
   const paypalClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || ''
 
-  // ✅ Para watermark: soporta images como "path" (evento/archivo.jpg) o como URL completa
+  // ✅ Checkout previews:
+  // - Si el string ya es una URL pública (ideal: event-previews), úsala directo
+  // - Si el string es un path (ej: eventos/<slug>/original/<file>), usar /api/preview?path=...
+  //   (porque event-photos es PRIVADO y /api/preview puede leer con service role)
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-  const bucket = 'event-photos'
+  const previewsBucket = 'event-previews'
 
-  const toPublicUrl = (pathOrUrl: string) => {
-    if (!pathOrUrl) return ''
-    if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl
-    if (!supabaseUrl) return pathOrUrl // fallback
-    const clean = pathOrUrl.replace(/^\/+/, '')
-    return `${supabaseUrl}/storage/v1/object/public/${bucket}/${clean}`
+  const toPublicEventPreviewsUrl = (path: string) => {
+    if (!path) return ''
+    if (!supabaseUrl) return path
+    const clean = path.replace(/^\/+/, '')
+    return `${supabaseUrl}/storage/v1/object/public/${previewsBucket}/${clean}`
   }
 
-  const getPreviewUrl = (pathOrUrl: string) => {
-    const publicUrl = toPublicUrl(pathOrUrl)
-    return `/api/preview?src=${encodeURIComponent(publicUrl)}&w=420&q=60&fmt=webp`
+  const getCheckoutPreviewSrc = (value: string) => {
+    if (!value) return ''
+
+    // Caso 1: URL completa
+    if (/^https?:\/\//i.test(value)) {
+      // Si ya es de event-previews (público), úsala tal cual
+      if (value.includes('/event-previews/')) return value
+
+      // Si es otra URL (legacy), intenta pasarla por /api/preview como src
+      // (Solo funcionará si esa URL realmente es accesible)
+      return `/api/preview?src=${encodeURIComponent(value)}&w=420&q=60&fmt=webp`
+    }
+
+    // Caso 2: path (NO URL). Si parece thumb webp, lo tratamos como event-previews
+    if (value.includes('/thumb/') || value.endsWith('.webp')) {
+      return toPublicEventPreviewsUrl(value)
+    }
+
+    // Caso 3: path de original (privado) => /api/preview debe leer por path con service role
+    const clean = value.replace(/^\/+/, '')
+    return `/api/preview?path=${encodeURIComponent(clean)}&w=420&q=60&fmt=webp`
   }
 
   useEffect(() => {
@@ -373,7 +393,7 @@ export default function CheckoutPage() {
                 .map((url, i) => (
                   <img
                     key={i}
-                    src={getPreviewUrl(url)}
+                    src={getCheckoutPreviewSrc(url)}
                     alt="Foto selecionada"
                     className="aspect-square object-cover rounded-md"
                   />
