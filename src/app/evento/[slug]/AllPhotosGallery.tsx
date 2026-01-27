@@ -24,17 +24,19 @@ export default function AllPhotosGallery({
   const [error, setError] = useState<string | null>(null)
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-  const bucket = 'event-photos'
+  const ORIGINAL_BUCKET = 'event-photos'
+  const THUMB_BUCKET = 'event-previews'
 
-  const toPublicUrl = (path: string) => {
-    if (!path) return ''
-    if (/^https?:\/\//i.test(path)) return path
-    if (!supabaseUrl) return path
-    const clean = path.replace(/^\/+/, '')
+  // URL pública genérica por bucket
+  const toPublicUrl = (bucket: string, pathOrUrl: string) => {
+    if (!pathOrUrl) return ''
+    if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl
+    if (!supabaseUrl) return pathOrUrl
+    const clean = pathOrUrl.replace(/^\/+/, '')
     return `${supabaseUrl}/storage/v1/object/public/${bucket}/${clean}`
   }
 
-  // Thumb rápido + watermark (igual que resultados)
+  // Fallback (solo si aún no existe thumb guardado)
   const toWatermarkedPreview = (path: string) =>
     `/api/preview?path=${encodeURIComponent(path)}&w=520&q=60&fmt=webp`
 
@@ -110,7 +112,11 @@ export default function AllPhotosGallery({
                 }`}
               >
                 <img
-                  src={toWatermarkedPreview(srcPath)}
+                  src={
+                    it.thumbPath
+                      ? toPublicUrl(THUMB_BUCKET, it.thumbPath)
+                      : toWatermarkedPreview(it.originalPath)
+                  }
                   alt="Foto del evento"
                   className="w-full h-40 object-cover cursor-pointer"
                   onClick={() => toggle(it.originalPath)}
