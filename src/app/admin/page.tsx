@@ -157,7 +157,6 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
     let errors = 0
     const errorFiles: string[] = []
 
-    // reset UI progreso
     setUploading(true)
     setUploadTotal(list.length)
     setUploadDone(0)
@@ -166,7 +165,6 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
     setUploadDuplicated(0)
     setUploadErrors(0)
     setUploadErrorFiles([])
-
     setStatus('Subiendo fotos...')
 
     for (let i = 0; i < list.length; i++) {
@@ -177,14 +175,11 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
       try {
         const path = `${selectedEventSlug}/${safeName}`
 
-        const { error } = await supabase
-          .storage
-          .from(BUCKET)
-          .upload(path, file, {
-            upsert: false,
-            contentType: file.type || 'image/jpeg',
-            cacheControl: '31536000',
-          })
+        const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
+          upsert: false,
+          contentType: file.type || 'image/jpeg',
+          cacheControl: '31536000',
+        })
 
         if (!error) {
           uploaded++
@@ -193,12 +188,20 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
           duplicated++
           setUploadDuplicated(duplicated)
         } else {
+          // 👇 IMPORTANTE: muestra el error real
+          console.log('SUPABASE UPLOAD ERROR', error)
           errors++
           errorFiles.push(file.name)
           setUploadErrors(errors)
           setUploadErrorFiles([...errorFiles])
+
+          // Mensaje claro si es 413
+          if ((error as any)?.statusCode === 413) {
+            setStatus('❌ Archivo demasiado pesado (413). Revisa el max-file-limit / max file size en Supabase Storage.')
+          }
         }
-      } catch {
+      } catch (e) {
+        console.log('UPLOAD EXCEPTION', e)
         errors++
         errorFiles.push(file.name)
         setUploadErrors(errors)
