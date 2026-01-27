@@ -55,7 +55,7 @@ const primaryBtnClass =
   "w-full py-3 rounded-full border shadow-sm transition bg-black text-white border-black hover:opacity-90"
 
 const subtleText =
-  "text-sm text-gray-600"
+  "text-sm text-gray-600 dark:text-gray-600"
 
 export default function AdminPage() {
   const [password, setPassword] = useState('')
@@ -355,7 +355,7 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
 return (
   <div
     id="admin-root"
-    className="min-h-screen w-full px-4 bg-white text-black [color-scheme:light]"
+    className="min-h-screen w-full px-4 bg-white text-black [color-scheme:light] dark:bg-white dark:text-black"
   >
     {/* ✅ Toggle SIEMPRE visible (login + admin) */}
     <div className="fixed top-20 right-4 z-50">
@@ -446,9 +446,9 @@ return (
                           file:mr-3 file:rounded-lg file:border file:border-gray-300 file:bg-white
                           file:px-4 file:py-2 file:text-sm file:font-medium file:text-gray-900
                           hover:file:bg-gray-50
-                          dark:text-zinc-200
-                          dark:file:border-zinc-700 dark:file:bg-zinc-900 dark:file:text-white
-                          dark:hover:file:bg-zinc-800"
+                          dark:text-gray-700
+                          dark:file:border-gray-300 dark:file:bg-white dark:file:text-gray-900
+                          dark:hover:file:bg-gray-50"
               />
 
               <button
@@ -496,7 +496,7 @@ return (
 
         {/* ===== Selector de evento ===== */}
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-2 text-gray-800 dark:text-zinc-200">
+          <label className="block text-sm font-medium mb-2 text-gray-800 dark:text-gray-800">
             Evento seleccionado
           </label>
 
