@@ -63,7 +63,41 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+const slugify = (title: string) =>
+  (title || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '')
+
 const BUCKET = 'event-photos'
+
+const fileToWebpBlob = (file: File, maxW = 1400, quality = 0.82) =>
+  new Promise<Blob>((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const scale = Math.min(1, maxW / img.width)
+      const w = Math.round(img.width * scale)
+      const h = Math.round(img.height * scale)
+
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return reject(new Error('canvas ctx null'))
+      ctx.drawImage(img, 0, 0, w, h)
+
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('toBlob failed'))),
+        'image/webp',
+        quality
+      )
+    }
+    img.onerror = () => reject(new Error('image load failed'))
+    img.src = URL.createObjectURL(file)
+  })
 
 export default function AdminPage() {
   const [password, setPassword] = useState('')
@@ -483,39 +517,106 @@ return (
 
                   setStatus('Creando evento...')
 
-                  const formData = new FormData()
-                  formData.append('title', eventTitle)
-                  formData.append('location', eventLocation)
-
                   const eventDateISO = normalizeEventDateToISO(eventDate)
                   if (!eventDateISO) {
                     setStatus('Fecha inválida. Usa DD/MM/YYYY (ej: 20/10/2025) o YYYY-MM-DD.')
                     return
                   }
-                  formData.append('event_date', eventDateISO)
 
-                  if (eventImage) formData.append('image', eventImage)
+                  const slug = slugify(eventTitle)
 
-                  const res = await fetch('/api/admin/create-event', {
-                    method: 'POST',
-                    body: formData,
-                  })
+                  try {
+                    // 1) subir cover (opcional) via Signed Upload a event-previews
+                    let image_url: string | null = null
 
-                  const data = await res.json()
+                    if (eventImage) {
+                      setStatus('Procesando portada...')
 
-                  if (res.ok) {
-                    setStatus(`Evento creado ✅ (${data.slug})`)
+                      // Convertimos a webp liviano (evita 413 y fuerza cover.webp)
+                      const webpBlob = await fileToWebpBlob(eventImage, 1400, 0.82)
+
+                      setStatus('Subiendo portada...')
+
+                      const urlRes = await fetch('/api/admin/create-cover-upload-url', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          event_slug: slug,
+                          adminKey: password,
+                          content_type: 'image/webp',
+                        }),
+                      })
+
+                      const urlData = await urlRes.json().catch(() => ({} as any))
+                      if (!urlRes.ok || !urlData?.signedUrl) {
+                        setStatus(urlData?.error || `Error creando Signed URL portada (${urlRes.status})`)
+                        return
+                      }
+
+                      const putRes = await fetch(urlData.signedUrl, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'image/webp' },
+                        body: webpBlob,
+                      })
+
+                      if (!putRes.ok) {
+                        setStatus(`Error subiendo portada (PUT ${putRes.status})`)
+                        return
+                      }
+
+                      image_url = urlData.publicUrl || null
+                    }
+
+                    // 2) crear evento (JSON pequeño, sin imagen)
+                    setStatus('Guardando evento...')
+
+                    const res = await fetch('/api/admin/create-event', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        title: eventTitle,
+                        location: eventLocation,
+                        event_date: eventDateISO,
+                        image_url,
+                        adminKey: password,
+                      }),
+                    })
+
+                    const data = await res.json().catch(() => ({} as any))
+
+                    if (!res.ok) {
+                      setStatus(data?.error || `Error creando evento (${res.status})`)
+                      return
+                    }
+
+                    setStatus(`Evento creado ✅ (${data.slug || slug})`)
                     setEventTitle('')
+                    setEventLocation('')
+                    setEventDate('')
+                    setEventImage(null)
                     setShowCreate(false)
-                    window.location.reload()
-                  } else {
-                    setStatus(data.error || 'Error creando evento')
+
+                    // 3) refrescar lista de eventos SIN reload
+                    try {
+                      const listRes = await fetch('/api/admin/list-events', { cache: 'no-store' })
+                      const listData = await listRes.json().catch(() => ({} as any))
+                      const list = Array.isArray(listData) ? listData : listData.events ?? []
+                      setEvents(list)
+                      if (list.length > 0) setSelectedEventSlug(list[0].slug)
+                    } catch {
+                      // fallback: si falla, puedes recargar manualmente
+                      // window.location.reload()
+                    }
+                  } catch (err: any) {
+                    console.error(err)
+                    setStatus('Error creando evento (excepción)')
                   }
                 }}
                 className={primaryBtnClass}
               >
                 Crear evento
               </button>
+
             </div>
           )}
         </div>

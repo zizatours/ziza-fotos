@@ -38,15 +38,23 @@ export async function POST(req: Request) {
   try {
     const supabase = createAdminClient()
 
-    const formData = await req.formData()
-    const title = formData.get('title') as string
-    const location = formData.get('location') as string
-    const eventDate = formData.get('event_date') as string
+    const body = await req.json().catch(() => ({} as any))
+
+    const expected = process.env.ADMIN_PASSWORD
+    if (expected && body?.adminKey !== expected) {
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+    }
+
+    const title = (body?.title || '').toString()
+    const location = (body?.location || '').toString()
+    const eventDate = (body?.event_date || '').toString()
+    const imageUrl =
+      typeof body?.image_url === 'string' && body.image_url.length > 0
+        ? body.image_url
+        : null
+
     if (!eventDate) {
-      return NextResponse.json(
-        { error: 'Falta fecha del evento' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Falta fecha del evento' }, { status: 400 })
     }
 
     const eventDateISO = normalizeEventDateToISO(eventDate)
@@ -57,13 +65,8 @@ export async function POST(req: Request) {
       )
     }
 
-    const image = formData.get('image') as File | null
-
     if (!title) {
-      return NextResponse.json(
-        { error: 'Falta título del evento' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Falta título del evento' }, { status: 400 })
     }
 
     const slug = title
@@ -73,52 +76,13 @@ export async function POST(req: Request) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)+/g, '')
 
-    let imageUrl: string | null = null
-
-    if (image) {
-      const sharp = (await import('sharp')).default
-      const { readFile } = await import('fs/promises')
-      const path = await import('path')
-
-      const input = Buffer.from(await image.arrayBuffer())
-
-      // ✅ watermark desde /public/watermark.png
-      const watermarkPath = path.join(process.cwd(), 'public', 'watermark.png')
-      const watermarkBuffer = await readFile(watermarkPath)
-
-      // ✅ guardamos la portada como webp liviano + watermark
-      const coverBytes = await sharp(input)
-        .rotate()
-        .resize({ width: 1400, withoutEnlargement: true })
-        .webp({ quality: 80 })
-        .toBuffer()
-
-      // ✅ bucket público para previews/portadas/thumbs
-      const PREVIEW_BUCKET = 'event-previews'
-      const coverPath = `eventos/${slug}/cover/cover.webp`
-
-      const { error } = await supabase.storage
-        .from(PREVIEW_BUCKET)
-        .upload(coverPath, coverBytes, {
-          contentType: 'image/webp',
-          upsert: true,
-          cacheControl: '31536000',
-        })
-
-      if (error) {
-        console.error(error)
-      } else {
-        imageUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${PREVIEW_BUCKET}/${coverPath}`
-      }
-    }
-
     const { error } = await supabase.from('events').insert({
       name: title,
-        slug,
-        location,
-        event_date: eventDateISO,
-        image_url: imageUrl,
-      })
+      slug,
+      location,
+      event_date: eventDateISO,
+      image_url: imageUrl,
+    })
 
     if (error) {
       return NextResponse.json(

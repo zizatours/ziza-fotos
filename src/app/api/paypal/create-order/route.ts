@@ -31,7 +31,7 @@ export async function POST(req: Request) {
   }
 
   const quantity = images.length;
-  const unitPriceCents = 1 * 100; // R$ 10 por foto
+  const unitPriceCents = 10 * 100; // R$ 10 por foto
 
   const tipRaw = tip ?? 0;
   const tipNumber =
