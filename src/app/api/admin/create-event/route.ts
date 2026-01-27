@@ -76,19 +76,40 @@ export async function POST(req: Request) {
     let imageUrl: string | null = null
 
     if (image) {
-      const buffer = Buffer.from(await image.arrayBuffer())
-      const fileName = `events/${Date.now()}-${image.name}`
+      const sharp = (await import('sharp')).default
+      const { readFile } = await import('fs/promises')
+      const path = await import('path')
+
+      const input = Buffer.from(await image.arrayBuffer())
+
+      // ✅ watermark desde /public/watermark.png
+      const watermarkPath = path.join(process.cwd(), 'public', 'watermark.png')
+      const watermarkBuffer = await readFile(watermarkPath)
+
+      // ✅ guardamos la portada como webp liviano + watermark
+      const coverBytes = await sharp(input)
+        .rotate()
+        .resize({ width: 1400, withoutEnlargement: true })
+        .composite([{ input: watermarkBuffer, tile: true, blend: 'over' }])
+        .webp({ quality: 75 })
+        .toBuffer()
+
+      // ✅ bucket público para previews/portadas/thumbs
+      const PREVIEW_BUCKET = 'event-previews'
+      const coverPath = `eventos/${slug}/cover/cover.webp`
 
       const { error } = await supabase.storage
-        .from('event-photos')
-        .upload(fileName, buffer, {
-          contentType: image.type,
+        .from(PREVIEW_BUCKET)
+        .upload(coverPath, coverBytes, {
+          contentType: 'image/webp',
+          upsert: true,
+          cacheControl: '31536000',
         })
 
       if (error) {
         console.error(error)
       } else {
-        imageUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/event-photos/${fileName}`
+        imageUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${PREVIEW_BUCKET}/${coverPath}`
       }
     }
 
