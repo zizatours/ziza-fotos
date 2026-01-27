@@ -268,18 +268,6 @@ export default function HomePage() {
         {/* Overlay SIN blur (para que no se vea borroso) */}
         <div className="absolute inset-0 bg-black/30" />
 
-        {/* LOGO sobre el video (abajo-izquierda) */}
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 flex items-center justify-center">
-          <Image
-            src="/logo.png"   // o el archivo que estés usando
-            alt="Ziza Photography"
-            width={180}
-            height={60}
-            priority
-            className="h-auto w-[160px] sm:w-[190px] md:w-[220px]"
-          />
-        </div>
-
         {/* (removido: título/subtítulo del hero) */}
 
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-b from-transparent to-[#f6f3ee]" />
