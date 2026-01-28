@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-const [brokenThumbs, setBrokenThumbs] = useState<Record<string, boolean>>({})
+import { useEffect, useState } from 'react'
 
 type Item = {
   originalPath: string
@@ -19,16 +18,17 @@ export default function AllPhotosGallery({
   setSelected: React.Dispatch<React.SetStateAction<string[]>>
   onCheckout: () => void
 }) {
+  // ✅ Hook SIEMPRE dentro del componente
+  const [brokenThumbs, setBrokenThumbs] = useState<Record<string, boolean>>({})
+
   const [items, setItems] = useState<Item[]>([])
   const [loading, setLoading] = useState(false)
   const [nextOffset, setNextOffset] = useState<number | null>(0)
   const [error, setError] = useState<string | null>(null)
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-  const ORIGINAL_BUCKET = 'event-photos'
   const THUMB_BUCKET = 'event-previews'
 
-  // URL pública genérica por bucket
   const toPublicUrl = (bucket: string, pathOrUrl: string) => {
     if (!pathOrUrl) return ''
     if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl
@@ -37,7 +37,6 @@ export default function AllPhotosGallery({
     return `${supabaseUrl}/storage/v1/object/public/${bucket}/${clean}`
   }
 
-  // Fallback (solo si aún no existe thumb guardado)
   const toWatermarkedPreview = (path: string) =>
     `/api/preview?path=${encodeURIComponent(path)}&w=520&q=60&fmt=webp`
 
@@ -59,14 +58,14 @@ export default function AllPhotosGallery({
         `/api/event/list-photos?event_slug=${encodeURIComponent(eventSlug)}&limit=24&offset=${nextOffset}`,
         { cache: 'no-store' }
       )
-      const json = await res.json()
+      const json = await res.json().catch(() => null)
 
       if (!res.ok) throw new Error(json?.error || 'list_failed')
 
       const newItems = Array.isArray(json?.items) ? (json.items as Item[]) : []
       setItems((prev) => [...prev, ...newItems])
       setNextOffset(typeof json?.nextOffset === 'number' ? json.nextOffset : null)
-    } catch (e: any) {
+    } catch {
       setError('Não foi possível carregar as fotos do evento.')
       setNextOffset(null)
     } finally {
@@ -75,9 +74,10 @@ export default function AllPhotosGallery({
   }
 
   useEffect(() => {
-    // carga inicial
+    // carga inicial al cambiar evento
     setItems([])
     setNextOffset(0)
+    setBrokenThumbs({})
   }, [eventSlug])
 
   useEffect(() => {
@@ -86,7 +86,6 @@ export default function AllPhotosGallery({
   }, [nextOffset])
 
   const hasMore = nextOffset !== null
-
   const selectedCount = selected.length
 
   return (
@@ -104,6 +103,11 @@ export default function AllPhotosGallery({
             const key = it.originalPath
             const isSelected = selected.includes(it.originalPath)
 
+            const thumbSrc = it.thumbPath ? toPublicUrl(THUMB_BUCKET, it.thumbPath) : ''
+            const fallbackSrc = toWatermarkedPreview(it.originalPath)
+
+            const src = brokenThumbs[key] ? fallbackSrc : thumbSrc || fallbackSrc
+
             return (
               <div
                 key={key}
@@ -111,40 +115,17 @@ export default function AllPhotosGallery({
                   isSelected ? 'ring-4 ring-black' : ''
                 }`}
               >
-                {items.map((it) => {
-                  const key = it.originalPath
-                  const isSelected = selected.includes(it.originalPath)
-
-                  const thumbSrc = it.thumbPath ? toPublicUrl(THUMB_BUCKET, it.thumbPath) : ''
-                  const fallbackSrc = toWatermarkedPreview(it.originalPath)
-
-                  const src = brokenThumbs[key]
-                    ? fallbackSrc
-                    : (thumbSrc || fallbackSrc)
-
-                  return (
-                    <div
-                      key={key}
-                      className={`relative border rounded-lg overflow-hidden shadow-sm ${
-                        isSelected ? 'ring-4 ring-black' : ''
-                      }`}
-                    >
-                      <img
-                        src={src}
-                        alt="Foto del evento"
-                        className="w-full h-40 object-cover cursor-pointer"
-                        onClick={() => toggle(it.originalPath)}
-                        loading="lazy"
-                        onError={() => {
-                          // si el thumb 404/falla, cae a /api/preview (1 sola vez, sin loop)
-                          if (!brokenThumbs[key]) {
-                            setBrokenThumbs((prev) => ({ ...prev, [key]: true }))
-                          }
-                        }}
-                      />
-                    </div>
-                  )
-                })}
+                <img
+                  src={src}
+                  alt="Foto del evento"
+                  className="w-full h-40 object-cover cursor-pointer"
+                  onClick={() => toggle(it.originalPath)}
+                  loading="lazy"
+                  onError={() => {
+                    // si el thumb falla, caemos a /api/preview una sola vez
+                    setBrokenThumbs((prev) => (prev[key] ? prev : { ...prev, [key]: true }))
+                  }}
+                />
               </div>
             )
           })}
