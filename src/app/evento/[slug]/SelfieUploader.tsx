@@ -239,13 +239,17 @@ export default function SelfieUploader({
                       selected.includes(m) ? 'ring-4 ring-black' : ''
                     }`}
                   >
-                    <img
-                      src={getResultImageSrc(m)}
-                      alt="Foto del evento"
-                      className="w-full h-40 object-cover cursor-pointer"
+                    <div
+                      className="w-full aspect-square bg-gray-100 flex items-center justify-center cursor-pointer"
                       onClick={() => toggleSelect(m)}
-                      loading="lazy"
-                    />
+                    >
+                      <img
+                        src={getResultImageSrc(m)}
+                        alt="Foto del evento"
+                        className="max-w-full max-h-full object-contain"
+                        loading="lazy"
+                      />
+                    </div>
                   </div>
                 ))}
               </div>

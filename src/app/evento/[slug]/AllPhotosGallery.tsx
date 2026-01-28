@@ -115,17 +115,21 @@ export default function AllPhotosGallery({
                   isSelected ? 'ring-4 ring-black' : ''
                 }`}
               >
-                <img
-                  src={src}
-                  alt="Foto del evento"
-                  className="w-full h-40 object-cover cursor-pointer"
+                <div
+                  className="w-full aspect-square bg-gray-100 flex items-center justify-center cursor-pointer"
                   onClick={() => toggle(it.originalPath)}
-                  loading="lazy"
-                  onError={() => {
-                    // si el thumb falla, caemos a /api/preview una sola vez
-                    setBrokenThumbs((prev) => (prev[key] ? prev : { ...prev, [key]: true }))
-                  }}
-                />
+                >
+                  <img
+                    src={src}
+                    alt="Foto del evento"
+                    className="max-w-full max-h-full object-contain"
+                    loading="lazy"
+                    onError={() => {
+                      // si el thumb 404/falla, cae a /api/preview (1 sola vez, sin loop)
+                      setBrokenThumbs((prev) => (prev[key] ? prev : { ...prev, [key]: true }))
+                    }}
+                  />
+                </div>
               </div>
             )
           })}
