@@ -534,11 +534,10 @@ return (
 
                       // Convertimos a webp liviano (fuerza cover.webp real)
                       const webpBlob = await fileToWebpBlob(eventImage, 1400, 0.82)
-                      const webpFile = new File([webpBlob], 'cover.webp', { type: 'image/webp' })
 
                       setStatus('Subiendo portada...')
 
-                      // Pedimos token + path al server (NO signedUrl)
+                      // Pedimos signedUrl al server
                       const urlRes = await fetch('/api/admin/create-cover-upload-url', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -551,22 +550,21 @@ return (
 
                       const urlData = await urlRes.json().catch(() => ({} as any))
 
-                      // ⚠️ aquí esperamos token + path (no signedUrl)
-                      if (!urlRes.ok || !urlData?.token || !urlData?.path) {
-                        setStatus(urlData?.error || `Error creando Signed Upload portada (${urlRes.status})`)
+                      // ✅ aquí esperamos signedUrl + publicUrl
+                      if (!urlRes.ok || !urlData?.signedUrl) {
+                        setStatus(urlData?.error || `Error creando Signed URL portada (${urlRes.status})`)
                         return
                       }
 
-                      // ✅ Subida correcta con token (esto es lo que crea el archivo en Storage)
-                      const { error: upErr } = await supabase.storage
-                        .from('event-previews')
-                        .uploadToSignedUrl(urlData.path, urlData.token, webpFile, {
-                          contentType: 'image/webp',
-                          upsert: true,
-                        })
+                      // ✅ Subida real (esto es lo que crea el archivo y la carpeta cover/)
+                      const putRes = await fetch(urlData.signedUrl, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'image/webp' },
+                        body: webpBlob,
+                      })
 
-                      if (upErr) {
-                        setStatus(`Error subiendo portada (uploadToSignedUrl): ${upErr.message}`)
+                      if (!putRes.ok) {
+                        setStatus(`Error subiendo portada (PUT ${putRes.status})`)
                         return
                       }
 
@@ -680,12 +678,16 @@ return (
                   formData.append('eventSlug', selectedEventSlug)
                   formData.append('image', imageToUpload)
 
-                  await fetch('/api/admin/update-event-image', {
+                  const r = await fetch('/api/admin/update-event-image', {
                     method: 'POST',
                     body: formData,
                   })
 
-                  window.location.reload()
+                  if (r.ok) setStatus('Imagen actualizada ✅')
+                  else {
+                    const j = await r.json().catch(() => null)
+                    setStatus(j?.error || `Error actualizando imagen (${r.status})`)
+                  }
                 }}
                 className="px-4 py-2 rounded
                           bg-black text-white
