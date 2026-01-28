@@ -29,12 +29,11 @@ const coverPublicUrl = (slug: string) => {
 }
 
 const getEventCoverSrc = (event: EventRow) => {
-  // Siempre preferimos el cover público limpio
-  const cover = coverPublicUrl(event.slug)
-  if (cover) return `${cover}?v=${encodeURIComponent(event.created_at)}`
+  // ✅ 1) Si el evento trae image_url, úsalo (ahí pondremos ?v=...)
+  if (event.image_url) return event.image_url
 
-  // Fallback: lo que venga en DB (por si estás en local sin env)
-  return event.image_url || '/hero.jpg'
+  // ✅ 2) fallback al cover fijo
+  return coverPublicUrl(event.slug) || '/hero.jpg'
 }
 
 function EventCard({ event }: { event: EventRow }) {
