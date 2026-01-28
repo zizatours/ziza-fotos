@@ -48,10 +48,15 @@ export async function POST(req: Request) {
     const title = (body?.title || '').toString()
     const location = (body?.location || '').toString()
     const eventDate = (body?.event_date || '').toString()
-    const imageUrl =
+    let imageUrl =
       typeof body?.image_url === 'string' && body.image_url.length > 0
         ? body.image_url
         : null
+
+    // 🚫 nunca guardar portada apuntando a event-photos (no es público)
+    if (imageUrl && imageUrl.includes('/storage/v1/object/public/event-photos/')) {
+      imageUrl = null
+    }
 
     if (!eventDate) {
       return NextResponse.json({ error: 'Falta fecha del evento' }, { status: 400 })

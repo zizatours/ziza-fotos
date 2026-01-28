@@ -683,11 +683,15 @@ return (
                     body: formData,
                   })
 
-                  if (r.ok) setStatus('Imagen actualizada ✅')
-                  else {
-                    const j = await r.json().catch(() => null)
-                    setStatus(j?.error || `Error actualizando imagen (${r.status})`)
+                  const j = await r.json().catch(() => null)
+
+                  if (!r.ok) {
+                    setStatus(j?.error || 'Error subiendo portada')
+                    return
                   }
+
+                  setStatus('Portada actualizada ✅')
+
                 }}
                 className="px-4 py-2 rounded
                           bg-black text-white
