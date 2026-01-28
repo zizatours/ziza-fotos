@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+const [brokenThumbs, setBrokenThumbs] = useState<Record<string, boolean>>({})
 
 type Item = {
   originalPath: string
@@ -110,18 +111,40 @@ export default function AllPhotosGallery({
                   isSelected ? 'ring-4 ring-black' : ''
                 }`}
               >
-                <img
-                  src={
-                    it.thumbPath
-                      ? toPublicUrl(THUMB_BUCKET, it.thumbPath)
-                      : toWatermarkedPreview(it.originalPath)
-                  }
-                  alt="Foto del evento"
-                  className="w-full h-40 object-cover cursor-pointer"
-                  onClick={() => toggle(it.originalPath)}
-                  loading="lazy"
-                />
+                {items.map((it) => {
+                  const key = it.originalPath
+                  const isSelected = selected.includes(it.originalPath)
 
+                  const thumbSrc = it.thumbPath ? toPublicUrl(THUMB_BUCKET, it.thumbPath) : ''
+                  const fallbackSrc = toWatermarkedPreview(it.originalPath)
+
+                  const src = brokenThumbs[key]
+                    ? fallbackSrc
+                    : (thumbSrc || fallbackSrc)
+
+                  return (
+                    <div
+                      key={key}
+                      className={`relative border rounded-lg overflow-hidden shadow-sm ${
+                        isSelected ? 'ring-4 ring-black' : ''
+                      }`}
+                    >
+                      <img
+                        src={src}
+                        alt="Foto del evento"
+                        className="w-full h-40 object-cover cursor-pointer"
+                        onClick={() => toggle(it.originalPath)}
+                        loading="lazy"
+                        onError={() => {
+                          // si el thumb 404/falla, cae a /api/preview (1 sola vez, sin loop)
+                          if (!brokenThumbs[key]) {
+                            setBrokenThumbs((prev) => ({ ...prev, [key]: true }))
+                          }
+                        }}
+                      />
+                    </div>
+                  )
+                })}
               </div>
             )
           })}

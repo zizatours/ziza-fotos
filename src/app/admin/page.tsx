@@ -137,6 +137,15 @@ const [indexIndexed, setIndexIndexed] = useState(0)
 const [indexSkipped, setIndexSkipped] = useState(0)
 const [indexFailed, setIndexFailed] = useState(0)
 const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
+// ===== progreso reparación thumbs =====
+const [repairingThumbs, setRepairingThumbs] = useState(false)
+const [repairTotal, setRepairTotal] = useState(0)
+const [repairDone, setRepairDone] = useState(0)
+const [repairCurrent, setRepairCurrent] = useState('')
+const [repairOk, setRepairOk] = useState(0)
+const [repairFailed, setRepairFailed] = useState(0)
+const [repairFailedFiles, setRepairFailedFiles] = useState<string[]>([])
+
 
   // ===== cargar eventos =====
   useEffect(() => {
@@ -173,6 +182,39 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
 
     if (data.ok) setAuthed(true)
     else alert('Clave incorrecta')
+  }
+
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+  const generateThumbWithRetries = async (eventSlug: string, safeName: string) => {
+    const maxAttempts = 5
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const r = await fetch('/api/admin/generate-thumb', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event_slug: eventSlug,
+            file_name: safeName,
+            adminKey: password,
+          }),
+        })
+
+        const j = await r.json().catch(() => null)
+
+        if (!r.ok) {
+          throw new Error(j?.details || j?.error || `HTTP ${r.status}`)
+        }
+
+        return true
+      } catch (e) {
+        // backoff suave
+        await sleep(350 * attempt)
+      }
+    }
+
+    return false
   }
 
   // ===== subir fotos (con progreso) =====
@@ -242,21 +284,20 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
           uploaded++
           setUploadUploaded(uploaded)
 
-          // 3) generar y GUARDAR thumbnail en Supabase (server-side)
-          await fetch('/api/admin/generate-thumb', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              event_slug: selectedEventSlug,
-              file_name: safeName,
-              adminKey: password,
-            }),
-          }).catch(() => null)
-
         } else if (putRes.status === 409) {
           duplicated++
           setUploadDuplicated(duplicated)
+
+          // Igual intentamos generar thumb por si faltaba
+          const thumbOk = await generateThumbWithRetries(selectedEventSlug, safeName)
+          if (!thumbOk) {
+            errors++
+            errorFiles.push(`${file.name} (thumb)`)
+            setUploadErrors(errors)
+            setUploadErrorFiles([...errorFiles])
+          }
         } else {
+
           errors++
           errorFiles.push(file.name)
           setUploadErrors(errors)
@@ -409,6 +450,125 @@ const [indexFailedFiles, setIndexFailedFiles] = useState<string[]>([])
       }
     }
     setIndexing(false)
+  }
+
+  // ===== reparar thumbs faltantes (con progreso) =====
+  const repairThumbs = async () => {
+    if (!selectedEventSlug) return
+    if (repairingThumbs) return
+
+    setRepairingThumbs(true)
+    setStatus('Buscando thumbnails faltantes...')
+
+    // reset UI progreso
+    setRepairTotal(0)
+    setRepairDone(0)
+    setRepairCurrent('')
+    setRepairOk(0)
+    setRepairFailed(0)
+    setRepairFailedFiles([])
+
+    const res = await fetch('/api/admin/regenerate-missing-thumbs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_slug: selectedEventSlug,
+        adminKey: password, // 👈 importante: tu route valida ADMIN_PASSWORD
+      }),
+    })
+
+    if (!res.ok || !res.body) {
+      const txt = await res.text().catch(() => '')
+      setStatus(`Error reparando thumbs (${res.status}) ${txt?.slice(0, 120) || ''}`)
+      setRepairingThumbs(false)
+      return
+    }
+
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    let buf = ''
+    let totalLocal = 0
+
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done) break
+
+      buf += decoder.decode(value, { stream: true })
+      const lines = buf.split('\n')
+      buf = lines.pop() || ''
+
+      for (const line of lines) {
+        if (!line.trim()) continue
+
+        let msg: any
+        try {
+          msg = JSON.parse(line)
+        } catch {
+          continue
+        }
+
+        if (msg.type === 'start') {
+          const total = msg.missing ?? msg.total ?? 0
+          totalLocal = total
+
+          setRepairTotal(total)
+          setRepairDone(0)
+          setRepairOk(0)
+          setRepairFailed(0)
+          setRepairCurrent('')
+
+          setStatus(`Thumbnails faltantes: 0/${total}`)
+        }
+
+        if (msg.type === 'file') {
+          setRepairCurrent(msg.file_name ?? msg.name ?? '')
+        }
+
+        if (msg.type === 'failed') {
+          const name = msg.file_name ?? msg.name ?? ''
+          if (name) setRepairFailedFiles((prev) => [...prev, name])
+        }
+
+        if (msg.type === 'progress') {
+          const done = msg.done ?? 0
+          const ok = msg.ok ?? 0
+          const failed = msg.failed ?? 0
+          const total = msg.total ?? totalLocal
+          if (typeof total === 'number') totalLocal = total
+
+          setRepairTotal(totalLocal)
+          setRepairDone(done)
+          setRepairOk(ok)
+          setRepairFailed(failed)
+
+          setStatus(`Reparando thumbnails ${done}/${totalLocal}`)
+        }
+
+        if (msg.type === 'done') {
+          const total = msg.total ?? totalLocal ?? 0
+          const ok = msg.ok ?? 0
+          const failed = msg.failed ?? 0
+
+          setRepairTotal(total)
+          setRepairDone(total)
+          setRepairOk(ok)
+          setRepairFailed(failed)
+          setRepairCurrent('')
+
+          setStatus(
+            failed > 0
+              ? `Reparación lista ⚠️ Thumbs ${total}/${total} (ok:${ok} fail:${failed})`
+              : `Reparación lista ✅ Thumbs ${total}/${total} (ok:${ok})`
+          )
+        }
+
+        if (msg.type === 'error') {
+          setStatus(`Error reparando thumbs: ${msg.error || 'unknown'}`)
+        }
+      }
+    }
+
+    setRepairingThumbs(false)
   }
 
 // ===== UI =====
@@ -826,6 +986,50 @@ return (
             >
               {indexing ? `Indexando ${indexDone}/${indexTotal || '…'}…` : 'Indexar fotos'}
             </button>
+
+            <div className="mt-4">
+              <button
+                onClick={repairThumbs}
+                disabled={repairingThumbs || !selectedEventSlug}
+                className={`w-full py-3 rounded-full border dark:border-zinc-700 ${
+                  repairingThumbs ? 'opacity-50' : ''
+                }`}
+              >
+                {repairingThumbs
+                  ? `Reparando thumbs ${repairDone}/${repairTotal || '…'}…`
+                  : 'Reparar thumbnails faltantes'}
+              </button>
+
+              {repairingThumbs && (
+                <div className="mt-4">
+                  <div className="text-sm text-gray-700 dark:text-zinc-300">
+                    Archivo: <span className="font-medium">{repairCurrent || '—'}</span>
+                  </div>
+
+                  <div className="w-full h-2 bg-gray-200 dark:bg-zinc-800 rounded mt-2 overflow-hidden">
+                    <div
+                      className="h-2 bg-black dark:bg-white"
+                      style={{
+                        width:
+                          repairTotal > 0
+                            ? `${Math.round((repairDone / repairTotal) * 100)}%`
+                            : '0%',
+                      }}
+                    />
+                  </div>
+
+                  <div className="text-xs text-gray-600 dark:text-zinc-400 mt-2">
+                    {repairOk} ok · {repairFailed} fallidas
+                  </div>
+
+                  {repairFailedFiles.length > 0 && (
+                    <div className="text-xs text-red-600 mt-2 break-words">
+                      Fallaron: {repairFailedFiles.join(', ')}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {indexing && (
               <div className="mt-4">
