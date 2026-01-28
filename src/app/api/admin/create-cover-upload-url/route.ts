@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase-server'
+import { createClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
 
@@ -30,7 +30,10 @@ export async function POST(req: Request) {
     const path = `eventos/${slug}/cover/cover.webp`
     const contentType = (content_type || 'image/webp').toString()
 
-    const supabase = createAdminClient()
+    const supabase = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
 
     // Supabase signed upload
     const { data, error } = await supabase.storage
@@ -38,6 +41,7 @@ export async function POST(req: Request) {
       .createSignedUploadUrl(path)
 
     if (error || !data?.signedUrl) {
+      console.error('createSignedUploadUrl error:', error)
       return NextResponse.json(
         { error: 'signed_url_failed', details: error?.message || 'no signedUrl' },
         { status: 500 }
