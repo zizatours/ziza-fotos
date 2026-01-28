@@ -46,6 +46,32 @@ function extractEventPhotoPath(imageUrlOrPath: string) {
   }
 }
 
+function toThumbPathFromOriginalPath(originalPath: string) {
+  // originalPath: eventos/<slug>/original/IMG_1261_jpg.jpeg
+  const clean = (originalPath || '').replace(/^\/+/, '')
+  const file = clean.split('/').pop() || ''
+  const base = file.replace(/\.[^.]+$/, '') // IMG_1261_jpg
+  if (!base) return null
+
+  // Reemplaza /original/ por /thumb/ y fuerza .webp
+  // thumb: eventos/<slug>/thumb/<base>.webp
+  const parts = clean.split('/')
+  const idx = parts.indexOf('original')
+  if (idx === -1) return null
+  parts[idx] = 'thumb'
+  parts[parts.length - 1] = `${base}.webp`
+  return parts.join('/')
+}
+
+function toPublicEventPreviewsUrl(path: string) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const bucket = 'event-previews'
+  if (!path) return ''
+  if (!supabaseUrl) return path
+  const clean = path.replace(/^\/+/, '')
+  return `${supabaseUrl}/storage/v1/object/public/${bucket}/${clean}`
+}
+
 export async function POST(req: Request) {
   try {
     const formData = await req.formData()
@@ -122,9 +148,14 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       results:
-        photos
-          ?.map(p => extractEventPhotoPath(p.image_url))
-          .filter(Boolean) ?? [],
+        (photos ?? [])
+          .map((p: any) => {
+            const original = extractEventPhotoPath(p.image_url) // eventos/<slug>/original/...
+            const thumbPath = toThumbPathFromOriginalPath(original)
+            // devolvemos URL pública del thumb si podemos
+            return thumbPath ? toPublicEventPreviewsUrl(thumbPath) : original
+          })
+          .filter(Boolean),
     })
 
   } catch (err) {
