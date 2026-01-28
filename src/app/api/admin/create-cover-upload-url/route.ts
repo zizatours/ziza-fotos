@@ -26,7 +26,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'missing_event_slug' }, { status: 400 })
     }
 
-    // Queremos cover.webp
     const path = `eventos/${slug}/cover/cover.webp`
     const contentType = (content_type || 'image/webp').toString()
 
@@ -35,11 +34,15 @@ export async function POST(req: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // ✅ crea signed upload url (con upsert)
+    // (opcional) borrar anterior para re-subir
+    await supabase.storage.from(BUCKET).remove([path]).catch(() => null)
+
+    // ✅ Signed Upload URL (lo que necesitamos en el front NO es signedUrl, es token+path)
     const { data, error } = await supabase.storage
       .from(BUCKET)
-      .createSignedUploadUrl(path, { upsert: true })
+      .createSignedUploadUrl(path)
 
+    // ✅ validamos token + path
     if (error || !data?.token || !data?.path) {
       console.error('createSignedUploadUrl error:', error)
       return NextResponse.json(
@@ -48,7 +51,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
     const publicUrl = baseUrl
       ? `${baseUrl}/storage/v1/object/public/${BUCKET}/${path}`
       : null
@@ -56,12 +59,11 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true,
       bucket: BUCKET,
-      path: data.path,     // <- importante
-      token: data.token,   // <- importante
+      path: data.path,
+      token: data.token,
       contentType,
       publicUrl,
     })
-
   } catch (e: any) {
     return NextResponse.json(
       { error: 'server_error', details: String(e?.message || e) },
