@@ -22,6 +22,64 @@ export default function SelfieUploader({
   const [statusText, setStatusText] = useState<string | null>(null)
   const [searched, setSearched] = useState(false)
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+  const THUMB_BUCKET = 'event-previews'
+
+  const toPublicUrl = (bucket: string, pathOrUrl: string) => {
+    if (!pathOrUrl) return ''
+    if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl
+    if (!supabaseUrl) return pathOrUrl
+    const clean = pathOrUrl.replace(/^\/+/, '')
+    return `${supabaseUrl}/storage/v1/object/public/${bucket}/${clean}`
+  }
+
+  // Convierte "eventos/<slug>/original/<file>.jpg" => "eventos/<slug>/thumb/<base>.webp"
+  // (y soporta legacy "<slug>/<file>.jpg" como fallback)
+  const toThumbPathFromMatch = (match: string) => {
+    if (!match) return null
+    if (/^https?:\/\//i.test(match)) return match // ya es URL, úsala tal cual
+    const clean = match.replace(/^\/+/, '')
+
+    // si ya viene como thumb path
+    if (clean.includes('/thumb/') && clean.endsWith('.webp')) return clean
+
+    const mNew = clean.match(/^eventos\/([^/]+)\/original\/(.+)$/)
+    if (mNew) {
+      const slug = mNew[1]
+      const file = mNew[2]
+      const base = file.replace(/\.[^.]+$/, '')
+      return `eventos/${slug}/thumb/${base}.webp`
+    }
+
+    // legacy: "<slug>/<file>"
+    const mOld = clean.match(/^([^/]+)\/(.+)$/)
+    if (mOld) {
+      const slug = mOld[1]
+      const file = mOld[2]
+      const base = file.replace(/\.[^.]+$/, '')
+      return `eventos/${slug}/thumb/${base}.webp`
+    }
+
+    return null
+  }
+
+  const getResultImageSrc = (m: string) => {
+    const thumbPathOrUrl = toThumbPathFromMatch(m)
+
+    // 1) Si podemos, usamos el thumb público (mismo que grilla del evento)
+    if (thumbPathOrUrl) {
+      // si ya es URL retorna igual; si es path lo convierte a public URL de event-previews
+      return toPublicUrl(THUMB_BUCKET, thumbPathOrUrl)
+    }
+
+    // 2) Último fallback: preview en vivo
+    // (si m es URL => src= , si no => path=)
+    const isUrl = /^https?:\/\//i.test(m)
+    return isUrl
+      ? `/api/preview?src=${encodeURIComponent(m)}&w=520&q=60&fmt=webp`
+      : `/api/preview?path=${encodeURIComponent(m)}&w=520&q=60&fmt=webp`
+  }
+
   const toggleSelect = (url: string) => {
     setSelected((prev) => (prev.includes(url) ? prev.filter((u) => u !== url) : [...prev, url]))
   }
@@ -161,10 +219,11 @@ export default function SelfieUploader({
                     }`}
                   >
                     <img
-                      src={`/api/preview?path=${encodeURIComponent(m)}`}
+                      src={getResultImageSrc(m)}
                       alt="Foto del evento"
                       className="w-full h-40 object-cover cursor-pointer"
                       onClick={() => toggleSelect(m)}
+                      loading="lazy"
                     />
                   </div>
                 ))}
