@@ -38,7 +38,8 @@ export async function POST(req: Request) {
     // Supabase signed upload
     const { data, error } = await supabase.storage
       .from(BUCKET)
-      .createSignedUploadUrl(path)
+      .createSignedUploadUrl(path, { upsert: true })
+
 
     if (error || !data?.signedUrl) {
       console.error('createSignedUploadUrl error:', error)
