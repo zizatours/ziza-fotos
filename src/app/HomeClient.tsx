@@ -478,6 +478,11 @@ export default function HomePage() {
         <GoogleReviews />
       </section>
 
+      {/* Copyright */}
+      <div className="mt-2 md:mt-10 border-t border-black/10 pt-2 md:pt-6 text-center text-[11px] md:text-sm text-gray-500">
+        © 2026 Ziza Photography. Todos os direitos reservados
+      </div>
+
       {/* FOOTER */}
       <footer className="fixed bottom-0 left-0 right-0 z-40 bg-[#f6f3ee] border-t md:static md:border-0">
         <div className="w-full px-6 md:px-12 py-2 md:py-12 text-gray-900">
