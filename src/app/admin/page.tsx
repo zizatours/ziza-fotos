@@ -532,11 +532,13 @@ return (
                     if (eventImage) {
                       setStatus('Procesando portada...')
 
-                      // Convertimos a webp liviano (evita 413 y fuerza cover.webp)
+                      // Convertimos a webp liviano (fuerza cover.webp real)
                       const webpBlob = await fileToWebpBlob(eventImage, 1400, 0.82)
+                      const webpFile = new File([webpBlob], 'cover.webp', { type: 'image/webp' })
 
                       setStatus('Subiendo portada...')
 
+                      // Pedimos token + path al server (NO signedUrl)
                       const urlRes = await fetch('/api/admin/create-cover-upload-url', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -548,19 +550,23 @@ return (
                       })
 
                       const urlData = await urlRes.json().catch(() => ({} as any))
-                      if (!urlRes.ok || !urlData?.signedUrl) {
-                        setStatus(urlData?.error || `Error creando Signed URL portada (${urlRes.status})`)
+
+                      // ⚠️ aquí esperamos token + path (no signedUrl)
+                      if (!urlRes.ok || !urlData?.token || !urlData?.path) {
+                        setStatus(urlData?.error || `Error creando Signed Upload portada (${urlRes.status})`)
                         return
                       }
 
-                      const putRes = await fetch(urlData.signedUrl, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'image/webp' },
-                        body: webpBlob,
-                      })
+                      // ✅ Subida correcta con token (esto es lo que crea el archivo en Storage)
+                      const { error: upErr } = await supabase.storage
+                        .from('event-previews')
+                        .uploadToSignedUrl(urlData.path, urlData.token, webpFile, {
+                          contentType: 'image/webp',
+                          upsert: true,
+                        })
 
-                      if (!putRes.ok) {
-                        setStatus(`Error subiendo portada (PUT ${putRes.status})`)
+                      if (upErr) {
+                        setStatus(`Error subiendo portada (uploadToSignedUrl): ${upErr.message}`)
                         return
                       }
 

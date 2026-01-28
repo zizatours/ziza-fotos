@@ -35,18 +35,15 @@ export async function POST(req: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // ✅ si ya existe cover.webp, lo borramos para poder re-subir
-    await supabase.storage.from(BUCKET).remove([path]).catch(() => null)
-
+    // ✅ crea signed upload url (con upsert)
     const { data, error } = await supabase.storage
       .from(BUCKET)
-      .createSignedUploadUrl(path)
+      .createSignedUploadUrl(path, { upsert: true })
 
-
-    if (error || !data?.signedUrl) {
+    if (error || !data?.token || !data?.path) {
       console.error('createSignedUploadUrl error:', error)
       return NextResponse.json(
-        { error: 'signed_url_failed', details: error?.message || 'no signedUrl' },
+        { error: 'signed_url_failed', details: error?.message || 'no token/path' },
         { status: 500 }
       )
     }
@@ -59,11 +56,12 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true,
       bucket: BUCKET,
-      path,
+      path: data.path,     // <- importante
+      token: data.token,   // <- importante
       contentType,
-      signedUrl: data.signedUrl,
       publicUrl,
     })
+
   } catch (e: any) {
     return NextResponse.json(
       { error: 'server_error', details: String(e?.message || e) },
