@@ -68,7 +68,6 @@ export default function SelfieUploader({
 
     // 1) Si podemos, usamos el thumb público (mismo que grilla del evento)
     if (thumbPathOrUrl) {
-      // si ya es URL retorna igual; si es path lo convierte a public URL de event-previews
       return toPublicUrl(THUMB_BUCKET, thumbPathOrUrl)
     }
 
@@ -140,39 +139,61 @@ export default function SelfieUploader({
 
           {fileName && !searching && (
             <button
-              onClick={async () => {
-                if (!fileRef.current) return
+                onClick={async () => {
+                  if (!fileRef.current) return
 
-                setSearching(true)
-                setStatusText('Analizando tu selfie…')
-                setErrorMsg(null)
-                setMatches([])
-                setSearched(false)
+                  setSearching(true)
+                  setResults(false)
+                  setStatusText('Analizando tu selfie…')
+                  setErrorMsg(null)
+                  setMatches([])
+                  setSearched(false)
 
-                const formData = new FormData()
-                formData.append('selfie', fileRef.current)
+                  // timeout para que no quede “infinito”
+                  const controller = new AbortController()
+                  const timeout = setTimeout(() => controller.abort(), 45_000) // 45s
 
-                try {
-                  formData.append('event_slug', eventSlug)
+                  try {
+                    const formData = new FormData()
+                    formData.append('event_slug', eventSlug)
+                    formData.append('selfie', fileRef.current)
 
-                  const res = await fetch('/api/event/search', {
-                    method: 'POST',
-                    body: formData,
-                  })
+                    setStatusText('Subiendo selfie…')
 
-                  const data = await res.json()
-                  setStatusText('Comparando con las fotos del evento…')
+                    const res = await fetch('/api/event/search', {
+                      method: 'POST',
+                      body: formData,
+                      signal: controller.signal,
+                    })
 
-                  setMatches(data.results || [])
-                  setResults(true)
-                  setSearched(true)
-                } catch (err) {
-                  setErrorMsg('Ocurrió un error al buscar tus fotos')
-                } finally {
-                  setSearching(false)
-                  setStatusText(null)
-                }
-              }}
+                    let data: any = null
+                    try {
+                      data = await res.json()
+                    } catch {
+                      data = null
+                    }
+
+                    if (!res.ok) {
+                      throw new Error(data?.error || `HTTP ${res.status}`)
+                    }
+
+                    setStatusText('Comparando con las fotos del evento…')
+
+                    setMatches(data?.results || [])
+                    setResults(true)
+                    setSearched(true)
+                  } catch (err: any) {
+                    if (err?.name === 'AbortError') {
+                      setErrorMsg('La conexión está lenta. Intenta con mejor señal o una selfie más liviana.')
+                    } else {
+                      setErrorMsg('Ocurrió un error al buscar tus fotos')
+                    }
+                  } finally {
+                    clearTimeout(timeout)
+                    setSearching(false)
+                    setStatusText(null)
+                  }
+                }}
               className="w-full bg-black text-white rounded-full py-3 mb-4"
             >
               Buscar mis fotos
