@@ -35,10 +35,12 @@ export async function POST(req: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // Supabase signed upload
+    // ✅ si ya existe cover.webp, lo borramos para poder re-subir
+    await supabase.storage.from(BUCKET).remove([path]).catch(() => null)
+
     const { data, error } = await supabase.storage
       .from(BUCKET)
-      .createSignedUploadUrl(path, { upsert: true })
+      .createSignedUploadUrl(path)
 
 
     if (error || !data?.signedUrl) {

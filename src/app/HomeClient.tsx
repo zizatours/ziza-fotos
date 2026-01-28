@@ -31,7 +31,7 @@ const coverPublicUrl = (slug: string) => {
 const getEventCoverSrc = (event: EventRow) => {
   // Siempre preferimos el cover público limpio
   const cover = coverPublicUrl(event.slug)
-  if (cover) return cover
+  if (cover) return `${cover}?v=${encodeURIComponent(event.created_at)}`
 
   // Fallback: lo que venga en DB (por si estás en local sin env)
   return event.image_url || '/hero.jpg'
