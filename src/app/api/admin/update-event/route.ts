@@ -40,15 +40,20 @@ export async function POST(req: Request) {
     const name = (body?.name || '').toString().trim()
     const location = (body?.location || '').toString().trim()
     const eventDateRaw = (body?.event_date || '').toString().trim()
+    const imageUrl =
+    typeof body?.image_url === 'string' && body.image_url.length > 0
+      ? body.image_url
+      : null
 
     if (!slug) return NextResponse.json({ error: 'missing_event_slug' }, { status: 400 })
-    if (!name && !location && !eventDateRaw) {
+    if (!name && !location && !eventDateRaw && !imageUrl) {
       return NextResponse.json({ error: 'nothing_to_update' }, { status: 400 })
     }
 
     const patch: any = {}
     if (name) patch.name = name
     if (location) patch.location = location
+    if (imageUrl) patch.image_url = imageUrl
 
     if (eventDateRaw) {
       const iso = normalizeEventDateToISO(eventDateRaw)

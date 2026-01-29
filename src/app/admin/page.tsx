@@ -922,28 +922,74 @@ return (
                 onClick={async () => {
                   if (!imageToUpload || !selectedEventSlug) return
 
-                  const formData = new FormData()
-                  formData.append('eventSlug', selectedEventSlug)
-                  formData.append('image', imageToUpload)
+                  try {
+                    setStatus('Procesando portada...')
 
-                  const r = await fetch('/api/admin/update-event-image', {
-                    method: 'POST',
-                    body: formData,
-                  })
+                    // 1) Convertimos a WEBP liviano (evita payload gigante)
+                    const webpBlob = await fileToWebpBlob(imageToUpload, 1400, 0.82)
+                    const webpFile = new File([webpBlob], 'cover.webp', { type: 'image/webp' })
 
-                  const j = await r.json().catch(() => null)
+                    setStatus('Subiendo portada...')
 
-                  if (!r.ok) {
-                    setStatus(j?.error || 'Error subiendo portada')
-                    return
+                    // 2) Pedimos token + path al server (signed upload)
+                    const urlRes = await fetch('/api/admin/create-cover-upload-url', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        event_slug: selectedEventSlug,
+                        adminKey: password,
+                        content_type: 'image/webp',
+                      }),
+                    })
+
+                    const urlData = await urlRes.json().catch(() => ({} as any))
+
+                    // esperamos token + path
+                    if (!urlRes.ok || !urlData?.token || !urlData?.path) {
+                      setStatus(urlData?.error || `Error creando Signed Upload (${urlRes.status})`)
+                      return
+                    }
+
+                    // 3) Subimos directo a Supabase (NO pasa el archivo por Vercel)
+                    const { error: upErr } = await supabase.storage
+                      .from('event-previews')
+                      .uploadToSignedUrl(urlData.path, urlData.token, webpFile, {
+                        contentType: 'image/webp',
+                        upsert: true,
+                      })
+
+                    if (upErr) {
+                      setStatus(`Error subiendo portada: ${upErr.message}`)
+                      return
+                    }
+
+                    // 4) Guardamos en DB el image_url (request chica JSON)
+                    setStatus('Guardando portada en el evento...')
+
+                    const r = await fetch('/api/admin/update-event', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        event_slug: selectedEventSlug,
+                        image_url: urlData.publicUrl,
+                        adminKey: password,
+                      }),
+                    })
+
+                    const j = await r.json().catch(() => null)
+                    if (!r.ok) {
+                      setStatus(j?.error || 'Error guardando portada')
+                      return
+                    }
+
+                    setStatus('Portada actualizada ✅')
+                    setImageToUpload(null)
+                  } catch (err: any) {
+                    // Si el archivo es HEIC/HEIF, a veces el browser no lo puede convertir en canvas
+                    setStatus('No pude procesar esa imagen. Si es HEIC/HEIF, conviértela a JPG/PNG y reintenta.')
                   }
-
-                  setStatus('Portada actualizada ✅')
-
                 }}
-                className="px-4 py-2 rounded
-                          bg-black text-white
-                          dark:bg-white dark:text-black"
+                className="px-4 py-2 rounded bg-black text-white dark:bg-white dark:text-black"
               >
                 Guardar imagen
               </button>
