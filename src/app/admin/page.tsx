@@ -116,6 +116,10 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false)
   const [eventLocation, setEventLocation] = useState('')
   const [eventDate, setEventDate] = useState('')
+  // ===== editar evento seleccionado =====
+  const [editName, setEditName] = useState('')
+  const [editDate, setEditDate] = useState('')
+  const [editLocation, setEditLocation] = useState('')
   const [activeTab, setActiveTab] = useState<'imagen' | 'fotos' | 'index' | 'peligro'>('fotos')
   const [showCreate, setShowCreate] = useState(false)
   // ===== progreso subida =====
@@ -766,6 +770,13 @@ return (
                       const listData = await listRes.json().catch(() => ({} as any))
                       const list = Array.isArray(listData) ? listData : listData.events ?? []
                       setEvents(list)
+                      // si ya hay un seleccionado, precarga sus datos en los inputs
+                      const current = list.find((e: any) => e.slug === selectedEventSlug) || list[0]
+                      if (current) {
+                        setEditName(current.name || '')
+                        // ideal: que list-events devuelva event_date; si no, lo dejamos vacío
+                        setEditDate((current as any).event_date || '')
+                      }
                       if (list.length > 0) setSelectedEventSlug(list[0].slug)
                     } catch {
                       // fallback: si falla, puedes recargar manualmente
@@ -792,11 +803,15 @@ return (
           </label>
 
           <select
-            className={`${inputClass} dark:[&>option]:bg-zinc-900 dark:[&>option]:text-white`}
-            value={selectedEventSlug}
             onChange={(e) => {
-              setSelectedEventSlug(e.target.value)
+              const newSlug = e.target.value
+              setSelectedEventSlug(newSlug)
               setActiveTab('fotos')
+
+              const ev = events.find((x: any) => x.slug === newSlug)
+              setEditName(ev?.name || '')
+              setEditDate((ev as any)?.event_date || '')
+              setEditLocation((ev as any)?.location || '')
             }}
           >
 
@@ -808,6 +823,79 @@ return (
               </option>
             ))}
           </select>
+
+          {/* ===== Editar evento (nombre + fecha) ===== */}
+          <div className="mt-4 border p-4 rounded-lg dark:border-zinc-800">
+            <p className="font-medium mb-3">Editar evento</p>
+
+            <input
+              type="text"
+              placeholder="Nombre del evento"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className={`${inputClass} mb-3`}
+            />
+
+            <input
+              type="date"
+              value={editDate}
+              onChange={(e) => setEditDate(e.target.value)}
+              className={`${inputClass} mb-3`}
+            />
+
+            <input
+              type="text"
+              placeholder="Ubicación (ej: Rio de Janeiro)"
+              value={editLocation}
+              onChange={(e) => setEditLocation(e.target.value)}
+              className={`${inputClass} mb-3`}
+            />
+
+            <button
+              onClick={async () => {
+                if (!selectedEventSlug) return
+                if (!editName && !editDate) return
+
+                setStatus('Guardando cambios del evento...')
+
+                const r = await fetch('/api/admin/update-event', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    event_slug: selectedEventSlug,
+                    name: editName,
+                    location: editLocation,
+                    event_date: editDate,
+                    adminKey: password,
+                  }),
+                })
+
+                const j = await r.json().catch(() => null)
+
+                if (!r.ok) {
+                  setStatus(j?.error || 'Error guardando cambios')
+                  return
+                }
+
+                setStatus('Evento actualizado ✅')
+
+                // refrescar lista sin reload
+                try {
+                  const listRes = await fetch('/api/admin/list-events', { cache: 'no-store' })
+                  const listData = await listRes.json().catch(() => ({} as any))
+                  const list = Array.isArray(listData) ? listData : listData.events ?? []
+                  setEvents(list)
+                } catch {}
+              }}
+              className="px-4 py-2 rounded bg-black text-white dark:bg-white dark:text-black"
+            >
+              Guardar cambios
+            </button>
+
+            <p className="mt-2 text-xs text-gray-500">
+              Nota: esto cambia nombre y fecha, pero mantiene el slug para no romper links/fotos.
+            </p>
+          </div>
 
           {activeTab === 'imagen' && (
             <div className="mt-4 border p-4 rounded-lg dark:border-zinc-800">
