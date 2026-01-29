@@ -971,7 +971,7 @@ return (
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
                         event_slug: selectedEventSlug,
-                        image_url: urlData.publicUrl,
+                        image_url: `${urlData.publicUrl}?v=${Date.now()}`,
                         adminKey: password,
                       }),
                     })
