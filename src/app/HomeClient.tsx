@@ -480,7 +480,7 @@ export default function HomePage() {
 
       {/* Copyright */}
       <div className="mt-0 border-t border-black/10 py-4 text-center text-[11px] md:text-sm text-gray-500">
-        © 2026 Ziza Photography. Todos os direitos reservados
+        © 2026 zizaphotography.com.br. Todos os direitos reservados
       </div>
 
       {/* FOOTER */}
