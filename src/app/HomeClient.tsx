@@ -479,7 +479,7 @@ export default function HomePage() {
       </section>
 
       {/* Copyright */}
-      <div className="mt-2 md:mt-10 border-t border-black/10 pt-2 md:pt-6 text-center text-[11px] md:text-sm text-gray-500">
+      <div className="mt-0 border-t border-black/10 py-4 text-center text-[11px] md:text-sm text-gray-500">
         © 2026 Ziza Photography. Todos os direitos reservados
       </div>
 
