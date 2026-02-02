@@ -20,7 +20,7 @@ export async function GET() {
       "X-Goog-FieldMask": "displayName,rating,userRatingCount,reviews",
     },
     // cachea un rato para no gastar cuota a cada visita
-    next: { revalidate: 60 * 60 * 12 }, // 12 horas
+    next: { revalidate: 0}, // 12 horas
   });
 
   const data = await res.json();
