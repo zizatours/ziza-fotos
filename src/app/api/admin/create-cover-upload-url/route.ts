@@ -26,7 +26,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'missing_event_slug' }, { status: 400 })
     }
 
-    const path = `eventos/${event_slug}/cover/cover-${Date.now()}.webp`
+    const path = `eventos/${slug}/cover/cover-${Date.now()}.webp`
+
     const contentType = (content_type || 'image/webp').toString()
 
     const supabase = createClient(

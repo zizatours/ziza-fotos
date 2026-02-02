@@ -705,6 +705,7 @@ return (
                       const urlRes = await fetch('/api/admin/create-cover-upload-url', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
+                        cache: 'no-store',
                         body: JSON.stringify({
                           event_slug: slug,
                           adminKey: password,
@@ -958,6 +959,7 @@ return (
                     const urlRes = await fetch('/api/admin/create-cover-upload-url', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
+                      cache: 'no-store',
                       body: JSON.stringify({
                         event_slug: selectedEventSlug,
                         adminKey: password,
