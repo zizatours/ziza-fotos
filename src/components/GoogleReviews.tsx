@@ -115,7 +115,7 @@ export default function GoogleReviews() {
 
         {/* Botão “Avaliar no Google” ao lado do título */}
         <a
-          href="https://www.google.com/maps/place/Ziza+Tours/@-22.0582336,-44.2428833,8z/data=!3m1!4b1!4m6!3m5!1s0x948854da284acb3:0x8137f5f1960b463!8m2!3d-22.0660686!4d-42.9236307!16s%2Fg%2F11ysbwn3vr"
+          href="https://google.com/maps/place/Ziza+Photography/@-13.378163,-73.0751796,4z/data=!4m6!3m5!1s0x22acc1fab5f69775:0xf7f4aa39ef9b1265!8m2!3d-14.4095262!4d-51.31668!16s%2Fg%2F11ywk2hqny?entry=ttu&g_ep=EgoyMDI2MDEyOC4wIKXMDSoASAFQAw%3D%3D"
           target="_blank"
           rel="noreferrer"
           className="shrink-0 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white px-4 py-2 text-xs font-medium text-gray-900 hover:bg-black/5"

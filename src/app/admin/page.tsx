@@ -698,10 +698,10 @@ return (
 
                       // Convertimos a webp liviano (fuerza cover.webp real)
                       const webpBlob = await fileToWebpBlob(eventImage, 1400, 0.82)
+                      const webpFile = new File([webpBlob], 'cover.webp', { type: 'image/webp' })
 
                       setStatus('Subiendo portada...')
 
-                      // Pedimos signedUrl al server
                       const urlRes = await fetch('/api/admin/create-cover-upload-url', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -714,25 +714,48 @@ return (
 
                       const urlData = await urlRes.json().catch(() => ({} as any))
 
-                      // ✅ aquí esperamos signedUrl + publicUrl
-                      if (!urlRes.ok || !urlData?.signedUrl) {
-                        setStatus(urlData?.error || `Error creando Signed URL portada (${urlRes.status})`)
+                      if (!urlRes.ok) {
+                        setStatus(urlData?.error || `Error creando upload (${urlRes.status})`)
                         return
                       }
 
-                      // ✅ Subida real (esto es lo que crea el archivo y la carpeta cover/)
-                      const putRes = await fetch(urlData.signedUrl, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'image/webp' },
-                        body: webpBlob,
-                      })
+                      // ✅ Caso A: la route devuelve token+path (Signed Upload)
+                      if (urlData?.token && urlData?.path) {
+                        const { error: upErr } = await supabase.storage
+                          .from('event-previews')
+                          .uploadToSignedUrl(urlData.path, urlData.token, webpFile, {
+                            contentType: 'image/webp',
+                            upsert: true,
+                          })
 
-                      if (!putRes.ok) {
-                        setStatus(`Error subiendo portada (PUT ${putRes.status})`)
+                        if (upErr) {
+                          setStatus(`Error subiendo portada: ${upErr.message}`)
+                          return
+                        }
+
+                        image_url = urlData.publicUrl || null
+
+                      // ✅ Caso B: la route devuelve signedUrl (PUT directo)
+                      } else if (urlData?.signedUrl) {
+                        const putRes = await fetch(urlData.signedUrl, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'image/webp' },
+                          body: webpBlob,
+                        })
+
+                        if (!putRes.ok) {
+                          setStatus(`Error subiendo portada (PUT ${putRes.status})`)
+                          return
+                        }
+
+                        image_url = urlData.publicUrl || null
+
+                      } else {
+                        // 🔥 Esto explica tu error actual: 200 pero sin campos esperados
+                        setStatus(`Upload URL inválida (200): falta token+path o signedUrl`)
+                        console.log('create-cover-upload-url respondió:', urlData)
                         return
                       }
-
-                      image_url = urlData.publicUrl || null
                     }
 
                     // 2) crear evento (JSON pequeño, sin imagen)
