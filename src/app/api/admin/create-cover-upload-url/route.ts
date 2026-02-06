@@ -35,9 +35,6 @@ export async function POST(req: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // (opcional) borrar anterior para re-subir
-    await supabase.storage.from(BUCKET).remove([path]).catch(() => null)
-
     // ✅ Signed Upload URL (lo que necesitamos en el front NO es signedUrl, es token+path)
     const { data, error } = await supabase.storage
       .from(BUCKET)

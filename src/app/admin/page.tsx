@@ -687,7 +687,8 @@ return (
                     return
                   }
 
-                  const slug = slugify(eventTitle)
+                  const base = slugify(eventTitle)
+                  const slug = `${base}-${Date.now()}`
 
                   try {
                     // 1) subir cover (opcional) via Signed Upload a event-previews
@@ -841,9 +842,10 @@ return (
 
             <option value="">Selecciona un evento</option>
 
-            {events.map((event) => (
+            {events.map((event: any) => (
               <option key={event.id} value={event.slug}>
                 {event.name}
+                {event.event_date ? ` (${event.event_date})` : ''}
               </option>
             ))}
           </select>
