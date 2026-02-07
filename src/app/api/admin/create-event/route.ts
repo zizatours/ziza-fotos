@@ -74,12 +74,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Falta título del evento' }, { status: 400 })
     }
 
-    const slug = title
+    const base = title
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)+/g, '')
+
+    // ✅ slug único (permite eventos con el mismo nombre)
+    const slug = `${base}-${Date.now().toString(36)}`
 
     const { error } = await supabase.from('events').insert({
       name: title,
