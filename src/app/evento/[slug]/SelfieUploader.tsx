@@ -16,7 +16,7 @@ export default function SelfieUploader({
   const [fileName, setFileName] = useState<string | null>(null)
   const fileRef = useRef<File | null>(null)
   const [searching, setSearching] = useState(false)
-  const [results, setResults] = useState(false)
+  const [results, setResults] = useState<boolean>(false)
   const [matches, setMatches] = useState<string[]>([])
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [statusText, setStatusText] = useState<string | null>(null)
@@ -246,8 +246,16 @@ export default function SelfieUploader({
                       <img
                         src={getResultImageSrc(m)}
                         alt="Foto del evento"
-                        className="max-w-full max-h-full object-contain"
+                        className="w-full h-full object-contain"
                         loading="lazy"
+                        onError={(e) => {
+                          const img = e.currentTarget
+                          img.onerror = null
+                          const isUrl = /^https?:\/\//i.test(m)
+                          img.src = isUrl
+                            ? `/api/preview?src=${encodeURIComponent(m)}&w=900&q=70&fmt=webp`
+                            : `/api/preview?path=${encodeURIComponent(m)}&w=900&q=70&fmt=webp`
+                        }}
                       />
                     </div>
                   </div>

@@ -288,6 +288,15 @@ const [repairFailedFiles, setRepairFailedFiles] = useState<string[]>([])
           uploaded++
           setUploadUploaded(uploaded)
 
+          // ✅ Generar thumbnail también para archivos NUEVOS
+          const thumbOk = await generateThumbWithRetries(selectedEventSlug, safeName)
+          if (!thumbOk) {
+            errors++
+            errorFiles.push(`${file.name} (thumb)`)
+            setUploadErrors(errors)
+            setUploadErrorFiles([...errorFiles])
+          }
+
         } else if (putRes.status === 409) {
           duplicated++
           setUploadDuplicated(duplicated)
@@ -300,8 +309,8 @@ const [repairFailedFiles, setRepairFailedFiles] = useState<string[]>([])
             setUploadErrors(errors)
             setUploadErrorFiles([...errorFiles])
           }
-        } else {
 
+        } else {
           errors++
           errorFiles.push(file.name)
           setUploadErrors(errors)
@@ -335,10 +344,13 @@ const [repairFailedFiles, setRepairFailedFiles] = useState<string[]>([])
     if (!selectedEventSlug) return
     if (indexing) return
 
+    const MAX_RETRIES = 6
+    const IDLE_TIMEOUT_MS = 25_000 // si pasan 25s sin recibir chunks, reintentamos
+
     setIndexing(true)
     setStatus('Indexando fotos...')
 
-    // reset UI progreso
+    // reset UI progreso (solo 1 vez)
     setIndexTotal(0)
     setIndexDone(0)
     setIndexCurrent('')
@@ -347,114 +359,160 @@ const [repairFailedFiles, setRepairFailedFiles] = useState<string[]>([])
     setIndexFailed(0)
     setIndexFailedFiles([])
 
-    const res = await fetch('/api/admin/index-photos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ event_slug: selectedEventSlug }),
-    })
-
-    if (!res.ok || !res.body) {
-      setStatus('Error indexando fotos (no stream)')
-      setIndexing(false)
-      return
-    }
-
-    const reader = res.body.getReader()
-    const decoder = new TextDecoder()
-    let buf = ''
     let totalLocal = 0
+    let attempt = 0
 
-    while (true) {
-      const { value, done } = await reader.read()
-      if (done) break
+    try {
+      while (attempt < MAX_RETRIES) {
+        attempt++
+        setStatus(`Indexando fotos... (intento ${attempt}/${MAX_RETRIES})`)
 
-      buf += decoder.decode(value, { stream: true })
-      const lines = buf.split('\n')
-      buf = lines.pop() || ''
+        const controller = new AbortController()
+        let idleTimer: any = null
 
-      for (const line of lines) {
-        if (!line.trim()) continue
+        const kickIdleTimer = () => {
+          if (idleTimer) clearTimeout(idleTimer)
+          idleTimer = setTimeout(() => {
+            try {
+              controller.abort()
+            } catch {}
+          }, IDLE_TIMEOUT_MS)
+        }
 
-        let msg: any
         try {
-          msg = JSON.parse(line)
-        } catch {
+          kickIdleTimer()
+
+          const res = await fetch('/api/admin/index-photos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ event_slug: selectedEventSlug }),
+            signal: controller.signal,
+          })
+
+          if (!res.ok || !res.body) {
+            setStatus('Error indexando fotos (no stream)')
+            return
+          }
+
+          const reader = res.body.getReader()
+          const decoder = new TextDecoder()
+          let buf = ''
+          let gotDone = false
+
+          while (true) {
+            const { value, done } = await reader.read()
+            if (done) break
+
+            kickIdleTimer()
+
+            buf += decoder.decode(value, { stream: true })
+            const lines = buf.split('\n')
+            buf = lines.pop() || ''
+
+            for (const line of lines) {
+              if (!line.trim()) continue
+
+              let msg: any
+              try {
+                msg = JSON.parse(line)
+              } catch {
+                continue
+              }
+
+              if (msg.type === 'start') {
+                const total = msg.total ?? msg.totalFiles ?? 0
+                totalLocal = total
+
+                setIndexTotal(total)
+                setIndexDone(0)
+                setIndexIndexed(0)
+                setIndexSkipped(0)
+                setIndexFailed(0)
+
+                setStatus(`Archivos indexados 0/${total}`)
+              }
+
+              if (msg.type === 'file') {
+                setIndexCurrent(msg.name ?? msg.file ?? '')
+              }
+
+              if (msg.type === 'failed') {
+                const name = msg.name ?? ''
+                if (name) setIndexFailedFiles((prev) => [...prev, name])
+              }
+
+              if (msg.type === 'progress') {
+                const doneCount = msg.done ?? 0
+                const skipped = msg.skipped ?? msg.filesSkipped ?? 0
+                const failed = msg.failed ?? msg.filesFailed ?? 0
+
+                const total = msg.total ?? msg.totalFiles ?? totalLocal
+                if (typeof total === 'number') totalLocal = total
+
+                const okFiles = msg.filesOk ?? Math.max(0, doneCount - skipped - failed)
+
+                if (msg.name || msg.file) setIndexCurrent(msg.name ?? msg.file ?? '')
+
+                setIndexTotal(totalLocal)
+                setIndexDone(doneCount)
+                setIndexSkipped(skipped)
+                setIndexFailed(failed)
+                setIndexIndexed(okFiles)
+
+                setStatus(`Archivos indexados ${doneCount}/${totalLocal}`)
+              }
+
+              if (msg.type === 'done') {
+                gotDone = true
+                setIndexCurrent('')
+
+                const total = msg.total ?? msg.totalFiles ?? totalLocal ?? 0
+                totalLocal = total
+
+                const skipped = msg.skipped ?? msg.filesSkipped ?? 0
+                const failed = msg.failed ?? msg.filesFailed ?? 0
+                const okFiles = msg.ok ?? msg.filesOk ?? Math.max(0, total - skipped - failed)
+
+                setIndexTotal(total)
+                setIndexDone(total)
+                setIndexSkipped(skipped)
+                setIndexFailed(failed)
+                setIndexIndexed(okFiles)
+
+                setStatus(
+                  failed > 0
+                    ? `Terminó con errores ⚠️ Archivos ${total}/${total} (ok:${okFiles} skip:${skipped} fail:${failed})`
+                    : `Indexación lista ✅ Archivos ${total}/${total} (ok:${okFiles} skip:${skipped})`
+                )
+              }
+            }
+          }
+
+          if (idleTimer) clearTimeout(idleTimer)
+
+          // ✅ Si llegó el "done" del backend, terminamos
+          if (gotDone) return
+
+          // 🟡 Si el stream terminó sin "done", reintentamos (backend seguirá desde donde quedó)
+          setStatus(`Se cortó el stream, reintentando... (${attempt}/${MAX_RETRIES})`)
+          await new Promise((r) => setTimeout(r, 600))
+          continue
+        } catch (e: any) {
+          if (idleTimer) clearTimeout(idleTimer)
+
+          // abort por timeout o red → reintento
+          setStatus(`Conexión inestable, reintentando... (${attempt}/${MAX_RETRIES})`)
+          await new Promise((r) => setTimeout(r, 800))
           continue
         }
-
-        if (msg.type === 'start') {
-          const total = msg.total ?? msg.totalFiles ?? 0
-          totalLocal = total
-
-          setIndexTotal(total)
-          setIndexDone(0)
-          setIndexIndexed(0)
-          setIndexSkipped(0)
-          setIndexFailed(0)
-
-          setStatus(`Archivos indexados 0/${total}`)
-        }
-
-        if (msg.type === 'file') {
-          setIndexCurrent(msg.name ?? msg.file ?? '')
-        }
-
-        if (msg.type === 'failed') {
-          const name = msg.name ?? ''
-          if (name) setIndexFailedFiles((prev) => [...prev, name])
-        }
-
-        if (msg.type === 'progress') {
-          // soporta ambos formatos:
-          // - viejo: done / skipped / failed / name
-          // - nuevo: done / filesOk / filesSkipped / filesFailed / file / totalFiles
-          const done = msg.done ?? 0
-          const skipped = msg.skipped ?? msg.filesSkipped ?? 0
-          const failed = msg.failed ?? msg.filesFailed ?? 0
-
-          const total = msg.total ?? msg.totalFiles ?? totalLocal
-          if (typeof total === 'number') totalLocal = total
-
-          const okFiles = msg.filesOk ?? Math.max(0, done - skipped - failed)
-
-          // si viene el nombre dentro de progress (formato nuevo), lo mostramos
-          if (msg.name || msg.file) setIndexCurrent(msg.name ?? msg.file ?? '')
-
-          setIndexTotal(totalLocal)
-          setIndexDone(done)
-          setIndexSkipped(skipped)
-          setIndexFailed(failed)
-          setIndexIndexed(okFiles)
-
-          setStatus(`Archivos indexados ${done}/${totalLocal}`)
-        }
-
-        if (msg.type === 'done') {
-          setIndexCurrent('')
-
-          const total = msg.total ?? msg.totalFiles ?? totalLocal ?? 0
-          totalLocal = total
-
-          const skipped = msg.skipped ?? msg.filesSkipped ?? 0
-          const failed = msg.failed ?? msg.filesFailed ?? 0
-          const okFiles = msg.ok ?? msg.filesOk ?? Math.max(0, total - skipped - failed)
-
-          setIndexTotal(total)
-          setIndexDone(total)
-          setIndexSkipped(skipped)
-          setIndexFailed(failed)
-          setIndexIndexed(okFiles)
-
-          setStatus(
-            failed > 0
-              ? `Terminó con errores ⚠️ Archivos ${total}/${total} (ok:${okFiles} skip:${skipped} fail:${failed})`
-              : `Indexación lista ✅ Archivos ${total}/${total} (ok:${okFiles} skip:${skipped})`
-          )
-        }
       }
+
+      setStatus('Indexación: demasiados reintentos. Intenta de nuevo.')
+    } finally {
+      setIndexing(false)
     }
-    setIndexing(false)
   }
+
 
   // ===== reparar thumbs faltantes (con progreso) =====
   const repairThumbs = async () => {
