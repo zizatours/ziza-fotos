@@ -192,6 +192,8 @@ export default function CheckoutPage() {
 
   const missingSelection = images.length === 0 || !eventSlug
 
+  const paypalFundingSource = (payMethod === 'card' ? 'card' : 'paypal') as 'paypal' | 'card'
+
   return (
     <main className="min-h-screen bg-white">
       <div className="max-w-6xl mx-auto px-6 py-12">
@@ -386,7 +388,7 @@ export default function CheckoutPage() {
             )}
             {/* CTA / PAYPAL / GETNET */}
 
-            // ====== GETNET CTA (no depende de PayPal) =====
+            {/* ====== GETNET CTA (no depende de PayPal) ===== */}
             {payMethod === 'getnet' ? (
               <>
                 {!canPay ? (
@@ -467,7 +469,7 @@ export default function CheckoutPage() {
                 )}
               </>
             ) : (
-              // ===== PayPal CTA (tu bloque original) =====
+              /*// ===== PayPal CTA (tu bloque original) =====*/
               !paypalClientId ? (
                 <button
                   disabled
@@ -509,7 +511,7 @@ export default function CheckoutPage() {
                   ) : (
                     <div translate="no" lang="zxx" className="notranslate">
                       <PayPalButtons
-                        fundingSource={payMethod}
+                        fundingSource={paypalFundingSource}
                         key={`${payMethod}-${paypalClientId}-${eventSlug || 'no-event'}-${paypalKey}`}
                         style={{ layout: 'vertical' }}
                         createOrder={async () => {
@@ -695,19 +697,25 @@ function GetnetLoader(props: {
 
     // Estos dataset keys dependen del loader.js de Getnet.
     // Si Getnet te dio nombres distintos, los ajustamos con su doc.
-    ;(s as any).dataset.getnetSellerid = props.sellerId
-    ;(s as any).dataset.getnetToken = props.accessToken
-    ;(s as any).dataset.getnetAmount = props.amount
-    ;(s as any).dataset.getnetCustomerid = props.customerId
-    ;(s as any).dataset.getnetOrderid = props.orderId
-    ;(s as any).dataset.getnetButtonClass = 'open-getnet-checkout'
+    const token = props.accessToken.startsWith('Bearer ')
+      ? props.accessToken
+      : `Bearer ${props.accessToken}`
 
-    // Datos BR típicos
-    ;(s as any).dataset.getnetCustomerFirstName = first
-    ;(s as any).dataset.getnetCustomerLastName = last
+    s.setAttribute('data-getnet-sellerid', props.sellerId)
+    s.setAttribute('data-getnet-token', token)
+    s.setAttribute('data-getnet-amount', props.amount)
+    s.setAttribute('data-getnet-customerid', props.customerId)
+    s.setAttribute('data-getnet-orderid', props.orderId)
+    s.setAttribute('data-getnet-button-class', 'open-getnet-checkout')
+    s.setAttribute('data-getnet-installments', '1')
+
+    // Datos BR mínimos
+    s.setAttribute('data-getnet-customer-first-name', first)
+    s.setAttribute('data-getnet-customer-last-name', last)
+
     if (cpfDigits.length === 11) {
-      ;(s as any).dataset.getnetCustomerDocumentType = 'CPF'
-      ;(s as any).dataset.getnetCustomerDocumentNumber = cpfDigits
+      s.setAttribute('data-getnet-customer-document-type', 'CPF')
+      s.setAttribute('data-getnet-customer-document-number', cpfDigits)
     }
 
     document.body.appendChild(s)
