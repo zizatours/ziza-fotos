@@ -24,7 +24,9 @@ async function getGetnetAccessToken() {
     return { ok: false as const, status: res.status, data };
   }
 
-  return { ok: true as const, token: data.access_token as string };
+  // ✅ La doc exige "Bearer <token>"
+  const tokenType = (data.token_type || 'Bearer') as string
+  return { ok: true as const, token: `${tokenType} ${data.access_token}` };
 }
 
 function money2(totalCents: number) {

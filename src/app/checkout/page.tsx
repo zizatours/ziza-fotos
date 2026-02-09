@@ -458,6 +458,10 @@ export default function CheckoutPage() {
                           orderId={getnetSession.order_id}
                           fullName={fullName}
                           cpf={cpf}
+                          email={email}
+                          callbackUrl={`${window.location.origin}/gracias?provider=getnet`}
+                          quantity={images.length}
+                          unitPriceCents={10 * 100}
                         />
 
                         <p className="text-xs text-gray-500 mt-3">
@@ -682,11 +686,16 @@ function GetnetLoader(props: {
   orderId: string
   fullName: string
   cpf: string
+  email: string
+  callbackUrl: string
+  quantity: number
+  unitPriceCents: number
 }) {
   const { first, last } = splitName(props.fullName)
   const cpfDigits = onlyDigits(props.cpf)
 
   useEffect(() => {
+    // Limpia scripts previos
     const existing = document.querySelectorAll('script[data-ziza-getnet="1"]')
     existing.forEach((el) => el.parentElement?.removeChild(el))
 
@@ -695,27 +704,75 @@ function GetnetLoader(props: {
     s.src = props.loaderUrl
     s.setAttribute('data-ziza-getnet', '1')
 
-    // Estos dataset keys dependen del loader.js de Getnet.
-    // Si Getnet te dio nombres distintos, los ajustamos con su doc.
+    // Token: el doc pide "token_type + space + access_token"
     const token = props.accessToken.startsWith('Bearer ')
       ? props.accessToken
       : `Bearer ${props.accessToken}`
 
+    // === Atributos base ===
     s.setAttribute('data-getnet-sellerid', props.sellerId)
     s.setAttribute('data-getnet-token', token)
-    s.setAttribute('data-getnet-amount', props.amount)
     s.setAttribute('data-getnet-customerid', props.customerId)
     s.setAttribute('data-getnet-orderid', props.orderId)
     s.setAttribute('data-getnet-button-class', 'open-getnet-checkout')
+
+    // (Opcional / si tu loader lo usa)
+    s.setAttribute('data-getnet-amount', props.amount)
     s.setAttribute('data-getnet-installments', '1')
 
-    // Datos BR mínimos
-    s.setAttribute('data-getnet-customer-first-name', first)
-    s.setAttribute('data-getnet-customer-last-name', last)
+    // === Customer (sin cifrado) ===
+    s.setAttribute('data-getnet-customer-first-name', first || '')
+    s.setAttribute('data-getnet-customer-last-name', last || '')
+    s.setAttribute('data-getnet-customer-email', props.email || '')
 
+    // CPF: NO es "Required" en el doc (solo si el cliente no está registrado),
+    // pero si lo tienes, envíalo.
     if (cpfDigits.length === 11) {
       s.setAttribute('data-getnet-customer-document-type', 'CPF')
       s.setAttribute('data-getnet-customer-document-number', cpfDigits)
+    }
+
+    // === REQUIRED: shipping-address ===
+    // El doc marca este atributo como Required.
+    // Si no tienes dirección, el ejemplo dice que puede ir vacío ("").
+    const shippingAddress = [
+      {
+        first_name: first || '',
+        last_name: last || '',
+        email: props.email || '',
+        phone_number: '',
+        shipping_amount: 0, // centavos (puede ser 0)
+        address: {
+          street: '',
+          complement: '',
+          number: '',
+          district: '',
+          city: '',
+          state: '',
+          country: 'Brasil',
+          postal_code: '',
+        },
+      },
+    ]
+    s.setAttribute('data-getnet-shipping-address', JSON.stringify(shippingAddress))
+
+    // === REQUIRED: items ===
+    // El doc marca items como Required (array).
+    // Para tu caso: 1 item "Fotos", quantity = N, value = unitPrice en centavos.
+    const items = [
+      {
+        name: 'Fotos',
+        description: 'Fotos do evento',
+        value: props.unitPriceCents, // centavos (ex: 1000 = R$10,00)
+        quantity: props.quantity,
+        sku: `photos-${props.orderId}`,
+      },
+    ]
+    s.setAttribute('data-getnet-items', JSON.stringify(items))
+
+    // Callback (recomendado)
+    if (props.callbackUrl) {
+      s.setAttribute('data-getnet-url-callback', props.callbackUrl)
     }
 
     document.body.appendChild(s)
@@ -723,7 +780,20 @@ function GetnetLoader(props: {
     return () => {
       try { s.parentElement?.removeChild(s) } catch {}
     }
-  }, [props.loaderUrl, props.sellerId, props.accessToken, props.amount, props.customerId, props.orderId, first, last, cpfDigits])
+  }, [
+    props.loaderUrl,
+    props.sellerId,
+    props.accessToken,
+    props.amount,
+    props.customerId,
+    props.orderId,
+    props.fullName,
+    props.cpf,
+    props.email,
+    props.callbackUrl,
+    props.quantity,
+    props.unitPriceCents,
+  ])
 
   return null
 }
