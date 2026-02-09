@@ -57,7 +57,15 @@ export async function POST(req: Request) {
   const tok = await getGetnetAccessToken();
   if (!tok.ok) {
     return NextResponse.json(
-      { error: "getnet_token_failed", detail: tok.data },
+      {
+        error: "getnet_token_failed",
+        detail: tok.data,
+        debug: {
+          api_base: process.env.GETNET_API_BASE || "https://api-sandbox.getnet.com.br",
+          has_client_id: !!process.env.GETNET_CLIENT_ID,
+          has_client_secret: !!process.env.GETNET_CLIENT_SECRET,
+        },
+      },
       { status: 400 }
     );
   }
