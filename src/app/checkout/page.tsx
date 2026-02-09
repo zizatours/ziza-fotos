@@ -20,13 +20,31 @@ export default function CheckoutPage() {
   const [paymentOpen, setPaymentOpen] = useState(false)
 
   // Método de pago (PayPal o Tarjeta vía PayPal)
-  const [payMethod, setPayMethod] = useState<'paypal' | 'card'>('paypal')
+  const [payMethod, setPayMethod] = useState<'paypal' | 'card' | 'getnet'>('paypal')
 
   // Propina “congelada” usada para crear/capturar la orden (la real del pago)
   const [tipApplied, setTipApplied] = useState(0)
 
   // Key para forzar “reset” del UI de PayPal al editar
   const [paypalKey, setPaypalKey] = useState(0)
+
+  // ===== GETNET (BR) =====
+  const getnetSellerId = process.env.NEXT_PUBLIC_GETNET_SELLER_ID || ''
+  const getnetLoaderUrl = process.env.NEXT_PUBLIC_GETNET_LOADER_URL || ''
+
+  const [getnetSession, setGetnetSession] = useState<null | {
+    access_token: string
+    order_id: string
+    customer_id: string
+    amount: string
+  }>(null)
+
+  // Datos mínimos BR
+  const [fullName, setFullName] = useState('')
+  const [cpf, setCpf] = useState('')
+
+  // Para forzar re-montaje del loader
+  const [getnetMountKey, setGetnetMountKey] = useState(0)
 
   const tip = useMemo(() => {
     const raw = (tipInput || '').replace(',', '.').trim()
@@ -150,14 +168,25 @@ export default function CheckoutPage() {
   }, [])
 
   const canPay = useMemo(() => {
-    return (
+    const baseOk =
       !loading &&
       !!email &&
       email === emailConfirm &&
-      images.length > 0 &&
-      !!paypalClientId
-    )
-  }, [loading, email, emailConfirm, images.length, paypalClientId])
+      images.length > 0
+
+    if (!baseOk) return false
+
+    if (payMethod === 'getnet') {
+      return (
+        !!getnetSellerId &&
+        !!getnetLoaderUrl &&
+        fullName.trim().length > 3 &&
+        cpf.replace(/\D/g, '').length === 11
+      )
+    }
+
+    return !!paypalClientId
+  }, [loading, email, emailConfirm, images.length, paypalClientId, payMethod, getnetSellerId, getnetLoaderUrl, fullName, cpf])
 
   const missingSelection = images.length === 0 || !eventSlug
 
@@ -247,11 +276,54 @@ export default function CheckoutPage() {
                     Cartão de crédito/débito
                   </span>
                 </label>
+
+                <label className="border rounded-lg p-4 flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="payMethod"
+                    checked={payMethod === 'getnet'}
+                    onChange={() => setPayMethod('getnet')}
+                  />
+                  <span className="text-sm text-gray-600">
+                    Cartão / Pix (Getnet)
+                  </span>
+                </label>
+
               </div>
 
               <p className="text-xs text-gray-500 mt-2">
                 Você pode pagar com sua conta PayPal ou com cartão via PayPal.
               </p>
+
+              {payMethod === 'getnet' && (
+                <div className="mt-4 grid grid-cols-1 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Nome completo</label>
+                    <input
+                      className="w-full border rounded-lg px-3 py-3 text-sm"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="Ex: Maria Silva"
+                      autoComplete="name"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">CPF</label>
+                    <input
+                      className="w-full border rounded-lg px-3 py-3 text-sm"
+                      value={cpf}
+                      onChange={(e) => setCpf(e.target.value)}
+                      placeholder="000.000.000-00"
+                      inputMode="numeric"
+                      autoComplete="off"
+                    />
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      Usado para emissão/validação do pagamento no Brasil (se exigido pela Getnet).
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* PROPINA */}
@@ -288,26 +360,11 @@ export default function CheckoutPage() {
                 paypalClientId: {paypalClientId ? `OK (${paypalClientId.slice(0, 6)}...)` : 'Vazio'}
               </div>
             )}
-            {/* CTA / PAYPAL */}
-            {!paypalClientId ? (
-              <button
-                disabled
-                className="w-full bg-black text-white rounded-full py-4 text-sm disabled:opacity-40"
-              >
-                PayPal ainda não foi configurado
-              </button>
-            ) : (
-              <PayPalScriptProvider
-                key={paypalKey}
-                options={{
-                  clientId: paypalClientId,
-                  currency: 'BRL',
-                  intent: 'capture',
-                  components: 'buttons',
-                  'enable-funding': 'card',
-                }}
-                deferLoading={!canPay || !paymentOpen}
-              >
+            {/* CTA / PAYPAL / GETNET */}
+
+            // ===== GETNET CTA (no depende de PayPal) =====
+            {payMethod === 'getnet' ? (
+              <>
                 {!canPay ? (
                   <button
                     disabled
@@ -318,10 +375,35 @@ export default function CheckoutPage() {
                 ) : !paymentOpen ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      // Congelamos la propina para ESTA sesión de pago
+                    onClick={async () => {
                       setTipApplied(tip)
                       setPaymentOpen(true)
+
+                      setLoading(true)
+                      try {
+                        const res = await fetch('/api/getnet/session', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            images,
+                            tip,
+                          }),
+                        })
+
+                        const data = await res.json().catch(() => ({} as any))
+
+                        if (!res.ok || !data?.access_token || !data?.order_id || !data?.customer_id || !data?.amount) {
+                          console.log('GETNET session error', res.status, data)
+                          alert('Não foi possível iniciar o pagamento com Getnet.')
+                          setPaymentOpen(false)
+                          return
+                        }
+
+                        setGetnetSession(data)
+                        setGetnetMountKey((k) => k + 1)
+                      } finally {
+                        setLoading(false)
+                      }
                     }}
                     className="w-full bg-black text-white rounded-full py-4 text-sm"
                   >
@@ -329,80 +411,154 @@ export default function CheckoutPage() {
                   </button>
                 ) : (
                   <div translate="no" lang="zxx" className="notranslate">
-                    <PayPalButtons
-                      fundingSource={payMethod}
-                      key={`${payMethod}-${paypalClientId}-${eventSlug || 'no-event'}-${paypalKey}`}
-                      style={{ layout: 'vertical' }}
-                      createOrder={async () => {
-                        console.log('PAYPAL createOrder start', { total, eventSlug, imagesCount: images.length, email, tipApplied })
+                    {!getnetSession ? (
+                      <p className="text-sm text-gray-600">Preparando pagamento Getnet...</p>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="open-getnet-checkout w-full bg-black text-white rounded-full py-4 text-sm"
+                        >
+                          Pagar com Getnet
+                        </button>
 
-                        const res = await fetch('/api/paypal/create-order', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            currency: 'BRL',
-                            event_slug: eventSlug,
-                            images,
-                            email,
-                            tip: tipApplied,
-                          }),
-                        })
+                        <GetnetLoader
+                          key={`${getnetMountKey}-${getnetSession.order_id}`}
+                          loaderUrl={getnetLoaderUrl}
+                          sellerId={getnetSellerId}
+                          accessToken={getnetSession.access_token}
+                          amount={getnetSession.amount}
+                          customerId={getnetSession.customer_id}
+                          orderId={getnetSession.order_id}
+                          fullName={fullName}
+                          cpf={cpf}
+                        />
 
-                        const data = await res.json().catch(() => ({} as any))
-                        console.log('PAYPAL createOrder response', res.status, data)
-
-                        if (!res.ok || !data?.id) {
-                          alert('Não foi possível criar o pedido no PayPal.')
-                          throw new Error('create-order failed')
-                        }
-
-                        return data.id
-                      }}
-                      onApprove={async (data: { orderID?: string }) => {
-                        const orderID = data?.orderID
-                        if (!orderID) return
-
-                        const res = await fetch('/api/paypal/capture-order', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            orderID,
-                            event_slug: eventSlug,
-                            images,
-                            email,
-                            tip: tipApplied,
-                            currency: 'BRL',
-                          }),
-                        })
-
-                        const out = await res.json().catch(() => ({} as any))
-
-                        if (!res.ok) {
-                          console.log('CAPTURE ERROR:', out)
-                          alert('Houve um problema ao confirmar o pagamento.')
-                          return
-                        }
-
-                        alert('Pagamento confirmado!')
-                        try { localStorage.removeItem('ziza_checkout_selection') } catch {}
-                        window.location.href = `/gracias?order=${encodeURIComponent(out.order_id)}`
-                      }}
-                      onError={(err) => {
-                        console.log('PAYPAL BUTTONS ERROR:', err)
-                        alert('O PayPal apresentou um erro.')
-                      }}
-                      onCancel={() => {
-                        console.log('PAYPAL cancel (popup closed by user or blocked)')
-                        alert('O PayPal foi fechado/cancelado. Verifique se o navegador está bloqueando pop-ups.')
-                        // opcional: permitir editar al cancelar
-                        setPaymentOpen(false)
-                        setPaypalKey((k) => k + 1)
-                      }}
-                    />
+                        <p className="text-xs text-gray-500 mt-3">
+                          Se o checkout não abrir, verifique bloqueadores de pop-up/terceiros.
+                        </p>
+                      </>
+                    )}
                   </div>
                 )}
-              </PayPalScriptProvider>
+              </>
+            ) : (
+              // ===== PayPal CTA (tu bloque original) =====
+              !paypalClientId ? (
+                <button
+                  disabled
+                  className="w-full bg-black text-white rounded-full py-4 text-sm disabled:opacity-40"
+                >
+                  PayPal ainda não foi configurado
+                </button>
+              ) : (
+                <PayPalScriptProvider
+                  key={paypalKey}
+                  options={{
+                    clientId: paypalClientId,
+                    currency: 'BRL',
+                    intent: 'capture',
+                    components: 'buttons',
+                    'enable-funding': 'card',
+                  }}
+                  deferLoading={!canPay || !paymentOpen}
+                >
+                  {!canPay ? (
+                    <button
+                      disabled
+                      className="w-full bg-black text-white rounded-full py-4 text-sm disabled:opacity-40"
+                    >
+                      Continuar para o pagamento
+                    </button>
+                  ) : !paymentOpen ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Congelamos la propina para ESTA sesión de pago
+                        setTipApplied(tip)
+                        setPaymentOpen(true)
+                      }}
+                      className="w-full bg-black text-white rounded-full py-4 text-sm"
+                    >
+                      Continuar para o pagamento
+                    </button>
+                  ) : (
+                    <div translate="no" lang="zxx" className="notranslate">
+                      <PayPalButtons
+                        fundingSource={payMethod}
+                        key={`${payMethod}-${paypalClientId}-${eventSlug || 'no-event'}-${paypalKey}`}
+                        style={{ layout: 'vertical' }}
+                        createOrder={async () => {
+                          console.log('PAYPAL createOrder start', { total, eventSlug, imagesCount: images.length, email, tipApplied })
+
+                          const res = await fetch('/api/paypal/create-order', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              currency: 'BRL',
+                              event_slug: eventSlug,
+                              images,
+                              email,
+                              tip: tipApplied,
+                            }),
+                          })
+
+                          const data = await res.json().catch(() => ({} as any))
+                          console.log('PAYPAL createOrder response', res.status, data)
+
+                          if (!res.ok || !data?.id) {
+                            alert('Não foi possível criar o pedido no PayPal.')
+                            throw new Error('create-order failed')
+                          }
+
+                          return data.id
+                        }}
+                        onApprove={async (data: { orderID?: string }) => {
+                          const orderID = data?.orderID
+                          if (!orderID) return
+
+                          const res = await fetch('/api/paypal/capture-order', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              orderID,
+                              event_slug: eventSlug,
+                              images,
+                              email,
+                              tip: tipApplied,
+                              currency: 'BRL',
+                            }),
+                          })
+
+                          const out = await res.json().catch(() => ({} as any))
+
+                          if (!res.ok) {
+                            console.log('CAPTURE ERROR:', out)
+                            alert('Houve um problema ao confirmar o pagamento.')
+                            return
+                          }
+
+                          alert('Pagamento confirmado!')
+                          try { localStorage.removeItem('ziza_checkout_selection') } catch {}
+                          window.location.href = `/gracias?order=${encodeURIComponent(out.order_id)}`
+                        }}
+                        onError={(err) => {
+                          console.log('PAYPAL BUTTONS ERROR:', err)
+                          alert('O PayPal apresentou um erro.')
+                        }}
+                        onCancel={() => {
+                          console.log('PAYPAL cancel (popup closed by user or blocked)')
+                          alert('O PayPal foi fechado/cancelado. Verifique se o navegador está bloqueando pop-ups.')
+                          setPaymentOpen(false)
+                          setPaypalKey((k) => k + 1)
+                        }}
+                      />
+                    </div>
+                  )}
+                </PayPalScriptProvider>
+              )
             )}
+
 
             <p className="text-xs text-gray-400 mt-3 text-center">
               Nenhuma cobrança será realizada sem a sua confirmação
@@ -479,4 +635,61 @@ export default function CheckoutPage() {
       </div>
     </main>
   )
+}
+function splitName(full: string) {
+  const parts = (full || '').trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return { first: '', last: '' }
+  if (parts.length === 1) return { first: parts[0], last: '' }
+  return { first: parts[0], last: parts.slice(1).join(' ') }
+}
+
+function onlyDigits(s: string) {
+  return (s || '').replace(/\D/g, '')
+}
+
+function GetnetLoader(props: {
+  loaderUrl: string
+  sellerId: string
+  accessToken: string
+  amount: string
+  customerId: string
+  orderId: string
+  fullName: string
+  cpf: string
+}) {
+  const { first, last } = splitName(props.fullName)
+  const cpfDigits = onlyDigits(props.cpf)
+
+  useEffect(() => {
+    const existing = document.querySelectorAll('script[data-ziza-getnet="1"]')
+    existing.forEach((el) => el.parentElement?.removeChild(el))
+
+    const s = document.createElement('script')
+    s.async = true
+    s.src = props.loaderUrl
+    s.setAttribute('data-ziza-getnet', '1')
+
+    // Estos dataset keys dependen del loader.js de Getnet.
+    // Si Getnet te dio nombres distintos, los ajustamos con su doc.
+    ;(s as any).dataset.getnetSellerid = props.sellerId
+    ;(s as any).dataset.getnetToken = props.accessToken
+    ;(s as any).dataset.getnetAmount = props.amount
+    ;(s as any).dataset.getnetCustomerid = props.customerId
+    ;(s as any).dataset.getnetOrderid = props.orderId
+    ;(s as any).dataset.getnetButtonClass = 'open-getnet-checkout'
+
+    // Datos BR típicos
+    ;(s as any).dataset.getnetCustomerFirstName = first
+    ;(s as any).dataset.getnetCustomerLastName = last
+    ;(s as any).dataset.getnetCustomerDocumentType = 'CPF'
+    ;(s as any).dataset.getnetCustomerDocumentNumber = cpfDigits
+
+    document.body.appendChild(s)
+
+    return () => {
+      try { s.parentElement?.removeChild(s) } catch {}
+    }
+  }, [props.loaderUrl, props.sellerId, props.accessToken, props.amount, props.customerId, props.orderId, first, last, cpfDigits])
+
+  return null
 }
