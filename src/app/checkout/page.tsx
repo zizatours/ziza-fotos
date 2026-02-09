@@ -42,6 +42,7 @@ export default function CheckoutPage() {
   // Datos mínimos BR
   const [fullName, setFullName] = useState('')
   const [cpf, setCpf] = useState('')
+  const [showCpf, setShowCpf] = useState(false) // CPF opcional (solo si Getnet lo pide)
 
   // Para forzar re-montaje del loader
   const [getnetMountKey, setGetnetMountKey] = useState(0)
@@ -177,16 +178,17 @@ export default function CheckoutPage() {
     if (!baseOk) return false
 
     if (payMethod === 'getnet') {
+      const cpfOk = cpf.replace(/\D/g, '').length === 11
       return (
         !!getnetSellerId &&
         !!getnetLoaderUrl &&
         fullName.trim().length > 3 &&
-        cpf.replace(/\D/g, '').length === 11
+        (!showCpf || cpfOk) // 👈 solo exige CPF si showCpf está activo
       )
     }
 
     return !!paypalClientId
-  }, [loading, email, emailConfirm, images.length, paypalClientId, payMethod, getnetSellerId, getnetLoaderUrl, fullName, cpf])
+  }, [loading, email, emailConfirm, images.length, paypalClientId, payMethod, getnetSellerId, getnetLoaderUrl, fullName, cpf, showCpf])
 
   const missingSelection = images.length === 0 || !eventSlug
 
@@ -309,18 +311,40 @@ export default function CheckoutPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">CPF</label>
-                    <input
-                      className="w-full border rounded-lg px-3 py-3 text-sm"
-                      value={cpf}
-                      onChange={(e) => setCpf(e.target.value)}
-                      placeholder="000.000.000-00"
-                      inputMode="numeric"
-                      autoComplete="off"
-                    />
-                    <p className="text-[11px] text-gray-400 mt-1">
-                      Usado para emissão/validação do pagamento no Brasil (se exigido pela Getnet).
-                    </p>
+                    {!showCpf ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowCpf(true)}
+                        className="text-sm underline text-gray-700"
+                      >
+                        Adicionar CPF (somente se o checkout pedir)
+                      </button>
+                    ) : (
+                      <>
+                        <label className="block text-xs text-gray-500 mb-1">CPF</label>
+                        <input
+                          className="w-full border rounded-lg px-3 py-3 text-sm"
+                          value={cpf}
+                          onChange={(e) => setCpf(e.target.value)}
+                          placeholder="000.000.000-00"
+                          inputMode="numeric"
+                          autoComplete="off"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCpf('')
+                            setShowCpf(false)
+                          }}
+                          className="mt-2 text-sm underline text-gray-700"
+                        >
+                          Remover CPF
+                        </button>
+                        <p className="text-[11px] text-gray-400 mt-1">
+                          Use apenas se o checkout solicitar.
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -681,8 +705,10 @@ function GetnetLoader(props: {
     // Datos BR típicos
     ;(s as any).dataset.getnetCustomerFirstName = first
     ;(s as any).dataset.getnetCustomerLastName = last
-    ;(s as any).dataset.getnetCustomerDocumentType = 'CPF'
-    ;(s as any).dataset.getnetCustomerDocumentNumber = cpfDigits
+    if (cpfDigits.length === 11) {
+      ;(s as any).dataset.getnetCustomerDocumentType = 'CPF'
+      ;(s as any).dataset.getnetCustomerDocumentNumber = cpfDigits
+    }
 
     document.body.appendChild(s)
 
