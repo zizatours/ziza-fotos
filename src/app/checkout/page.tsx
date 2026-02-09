@@ -386,7 +386,7 @@ export default function CheckoutPage() {
             )}
             {/* CTA / PAYPAL / GETNET */}
 
-            // ===== GETNET CTA (no depende de PayPal) =====
+            // ====== GETNET CTA (no depende de PayPal) =====
             {payMethod === 'getnet' ? (
               <>
                 {!canPay ? (
