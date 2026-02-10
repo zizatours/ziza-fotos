@@ -353,6 +353,7 @@ export default function CheckoutPage() {
 
               {payMethod === 'getnet' && (
                 <div className="mt-4 grid grid-cols-1 gap-3">
+                  {/* Nome completo */}
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Nome completo</label>
                     <input
@@ -361,9 +362,11 @@ export default function CheckoutPage() {
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="Ex: Maria Silva"
                       autoComplete="name"
+                      disabled={paymentOpen}
                     />
                   </div>
 
+                  {/* CPF */}
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">CPF</label>
                     <input
@@ -373,13 +376,107 @@ export default function CheckoutPage() {
                       placeholder="000.000.000-00"
                       inputMode="numeric"
                       autoComplete="off"
+                      disabled={paymentOpen}
                     />
                     <p className="text-[11px] text-gray-400 mt-1">
                       Obrigatório para pagamento com Getnet.
                     </p>
                   </div>
+
+                  {/* CEP */}
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">CEP</label>
+                    <input
+                      className="w-full border rounded-lg px-3 py-3 text-sm"
+                      value={cep}
+                      onChange={(e) => setCep(e.target.value)}
+                      placeholder="00000-000"
+                      inputMode="numeric"
+                      autoComplete="postal-code"
+                      disabled={paymentOpen}
+                    />
+                  </div>
+
+                  {/* Rua + Número */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="md:col-span-2">
+                      <label className="block text-xs text-gray-500 mb-1">Rua</label>
+                      <input
+                        className="w-full border rounded-lg px-3 py-3 text-sm"
+                        value={street}
+                        onChange={(e) => setStreet(e.target.value)}
+                        placeholder="Av. Paulista"
+                        autoComplete="address-line1"
+                        disabled={paymentOpen}
+                      />
+                    </div>
+                    <div className="md:col-span-1">
+                      <label className="block text-xs text-gray-500 mb-1">Número</label>
+                      <input
+                        className="w-full border rounded-lg px-3 py-3 text-sm"
+                        value={addressNumber}
+                        onChange={(e) => setAddressNumber(e.target.value)}
+                        placeholder="123"
+                        autoComplete="address-line2"
+                        disabled={paymentOpen}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Bairro */}
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Bairro</label>
+                    <input
+                      className="w-full border rounded-lg px-3 py-3 text-sm"
+                      value={district}
+                      onChange={(e) => setDistrict(e.target.value)}
+                      placeholder="Centro"
+                      autoComplete="address-level3"
+                      disabled={paymentOpen}
+                    />
+                  </div>
+
+                  {/* Cidade + UF */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="md:col-span-2">
+                      <label className="block text-xs text-gray-500 mb-1">Cidade</label>
+                      <input
+                        className="w-full border rounded-lg px-3 py-3 text-sm"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        placeholder="São Paulo"
+                        autoComplete="address-level2"
+                        disabled={paymentOpen}
+                      />
+                    </div>
+                    <div className="md:col-span-1">
+                      <label className="block text-xs text-gray-500 mb-1">UF</label>
+                      <input
+                        className="w-full border rounded-lg px-3 py-3 text-sm uppercase"
+                        value={stateUF}
+                        onChange={(e) => setStateUF(e.target.value.toUpperCase().slice(0, 2))}
+                        placeholder="SP"
+                        autoComplete="address-level1"
+                        disabled={paymentOpen}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Complemento (opcional) */}
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Complemento (opcional)</label>
+                    <input
+                      className="w-full border rounded-lg px-3 py-3 text-sm"
+                      value={complement}
+                      onChange={(e) => setComplement(e.target.value)}
+                      placeholder="Apto 12"
+                      autoComplete="off"
+                      disabled={paymentOpen}
+                    />
+                  </div>
                 </div>
               )}
+
             </div>
 
             {/* PROPINA */}
@@ -422,12 +519,18 @@ export default function CheckoutPage() {
             {payMethod === 'getnet' ? (
               <>
                 {!canPay ? (
-                  <button
-                    disabled
-                    className="w-full bg-black text-white rounded-full py-4 text-sm disabled:opacity-40"
-                  >
-                    Continuar para o pagamento
-                  </button>
+                  <>
+                    <button
+                      disabled
+                      className="w-full bg-black text-white rounded-full py-4 text-sm disabled:opacity-40"
+                    >
+                      Continuar para o pagamento
+                    </button>
+
+                    <p className="mt-2 text-xs text-gray-500">
+                      Complete e-mail, nome, CPF e endereço (CEP, rua, número, bairro, cidade e UF) para continuar.
+                    </p>
+                  </>
                 ) : !paymentOpen ? (
                   <button
                     type="button"
@@ -809,6 +912,5 @@ function GetnetLoader(props: {
     props.callbackUrl,
     props.itemsJson,
   ])
-
   return null
 }
