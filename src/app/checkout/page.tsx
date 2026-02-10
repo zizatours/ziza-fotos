@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { PayPalButtons, PayPalScriptProvider } from '@paypal/react-paypal-js'
 
 export default function CheckoutPage() {
@@ -11,7 +11,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false)
 
   const quantity = images.length
-  const unitPrice = 10
+  const unitPrice = 1
 
   // Propina (input tipo texto para soportar coma o punto)
   const [tipInput, setTipInput] = useState('0')
@@ -53,6 +53,25 @@ export default function CheckoutPage() {
 
   // Para forzar re-montaje del loader
   const [getnetMountKey, setGetnetMountKey] = useState(0)
+
+  // Re-abrir Getnet si el usuario cerró el modal (sin recargar la página)
+  const getnetReopenPendingRef = useRef(false)
+  const ignoreNextGetnetClickRef = useRef(false)
+
+  const onGetnetLoaderLoaded = useCallback(() => {
+    // Solo auto-click si estamos rearmando el loader para re-abrir
+    if (!getnetReopenPendingRef.current) return
+    getnetReopenPendingRef.current = false
+
+    // Evita que nuestro onClick vuelva a reiniciar (loop)
+    ignoreNextGetnetClickRef.current = true
+
+    // Deja que el loader termine de bindear el botón y luego dispara el click real
+    setTimeout(() => {
+      const btn = document.querySelector<HTMLButtonElement>('.open-getnet-checkout')
+      btn?.click()
+    }, 0)
+  }, [])
 
   const tip = useMemo(() => {
     const raw = (tipInput || '').replace(',', '.').trim()
@@ -576,6 +595,10 @@ export default function CheckoutPage() {
                       <>
                         <button
                           type="button"
+                          onClick={() => {
+                            // fuerza reinit del loader para que el botón vuelva a enganchar después de cerrar
+                            setGetnetMountKey((k) => k + 1)
+                          }}
                           className="open-getnet-checkout w-full bg-black text-white rounded-full py-4 text-sm"
                         >
                           Pagar com Getnet
@@ -585,7 +608,7 @@ export default function CheckoutPage() {
                           key={`${getnetMountKey}-${getnetSession.order_id}`}
                           loaderUrl={getnetLoaderUrl}
                           sellerId={getnetSellerId}
-                          token={getnetSession.access_token} // ahora ya viene "Bearer ..."
+                          token={getnetSession.access_token}
                           amount={getnetSession.amount}
                           customerId={getnetSession.customer_id}
                           orderId={getnetSession.order_id}
@@ -601,6 +624,9 @@ export default function CheckoutPage() {
                           complement={complement}
                           itemsJson={itemsJson}
                           callbackUrl={callbackUrl}
+                            onLoaded={() => {
+                            console.log('[GETNET] loader loaded')
+                          }}
                         />
 
                         <p className="text-xs text-gray-500 mt-3">
@@ -841,7 +867,11 @@ function GetnetLoader(props: {
 
   // callback
   callbackUrl: string
+
+  // hook opcional: avisa cuando el script cargó
+  onLoaded?: () => void
 }) {
+
   const { first, last } = splitName(props.fullName)
   const cpfDigits = onlyDigits(props.cpf)
 
@@ -854,6 +884,15 @@ function GetnetLoader(props: {
     s.async = true
     s.src = props.loaderUrl
     s.setAttribute('data-ziza-getnet', '1')
+
+    // Si el script ya estaba cacheado / o se necesita “reinit”, esto ayuda a detectar carga
+    s.onload = () => {
+      props.onLoaded?.()
+    }
+
+    s.onerror = () => {
+      console.log('[GETNET] loader script failed to load:', props.loaderUrl)
+    }
 
     // Token: el doc pide "token_type + space + access_token"
     const token = props.token.startsWith('Bearer ')
