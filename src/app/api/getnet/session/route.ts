@@ -5,7 +5,11 @@ export const runtime = "nodejs";
 async function getGetnetAccessToken() {
   const clientId = process.env.GETNET_CLIENT_ID!;
   const secret = process.env.GETNET_CLIENT_SECRET!;
-  const base = process.env.GETNET_API_BASE || "https://api-sandbox.getnet.com.br";
+  const base =
+    process.env.GETNET_API_BASE ||
+    (process.env.NODE_ENV === "production"
+      ? "https://api.getnet.com.br"
+      : "https://api-homologacao.getnet.com.br");
 
   const basic = Buffer.from(`${clientId}:${secret}`).toString("base64");
 
@@ -41,7 +45,7 @@ export async function POST(req: Request) {
   }
 
   const quantity = images.length;
-  const unitPriceCents = 10 * 100; // igual que PayPal
+  const unitPriceCents = 1 * 100; // igual que PayPal
 
   const tipRaw = tip ?? 0;
   const tipNumber =
