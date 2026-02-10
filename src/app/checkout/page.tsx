@@ -41,8 +41,15 @@ export default function CheckoutPage() {
 
   // Datos mínimos BR
   const [fullName, setFullName] = useState('')
-  const [cpf, setCpf] = useState('')
-  const [showCpf, setShowCpf] = useState(false) // CPF opcional (solo si Getnet lo pide)
+  const [cpf, setCpf] = useState('') // CPF requerido por Getnet Checkout Iframe
+  // Address (para Getnet Checkout)
+  const [cep, setCep] = useState('')
+  const [street, setStreet] = useState('')
+  const [addressNumber, setAddressNumber] = useState('')
+  const [district, setDistrict] = useState('')
+  const [city, setCity] = useState('')
+  const [stateUF, setStateUF] = useState('') // "SP", "RJ", etc (2 letras)
+  const [complement, setComplement] = useState('')
 
   // Para forzar re-montaje del loader
   const [getnetMountKey, setGetnetMountKey] = useState(0)
@@ -179,18 +186,63 @@ export default function CheckoutPage() {
 
     if (payMethod === 'getnet') {
       const cpfOk = cpf.replace(/\D/g, '').length === 11
+      const zipOk = cep.replace(/\D/g, '').length === 8
+      const stateOk = (stateUF || '').trim().length === 2
+
       return (
         !!getnetSellerId &&
         !!getnetLoaderUrl &&
         fullName.trim().length > 3 &&
-        (!showCpf || cpfOk) // 👈 solo exige CPF si showCpf está activo
+        cpfOk &&
+        !!email &&
+
+        street.trim().length > 1 &&
+        addressNumber.trim().length > 0 &&
+        district.trim().length > 1 &&
+        city.trim().length > 1 &&
+        stateOk &&
+        zipOk
       )
     }
 
     return !!paypalClientId
-  }, [loading, email, emailConfirm, images.length, paypalClientId, payMethod, getnetSellerId, getnetLoaderUrl, fullName, cpf, showCpf])
+  }, [
+  loading,
+  email,
+  emailConfirm,
+  images.length,
+  paypalClientId,
+  payMethod,
+  getnetSellerId,
+  getnetLoaderUrl,
+  fullName,
+  cpf,
+  cep,
+  street,
+  addressNumber,
+  district,
+  city,
+  stateUF,
+  ])
 
   const missingSelection = images.length === 0 || !eventSlug
+
+  const callbackUrl = useMemo(() => {
+    if (typeof window === 'undefined') return ''
+    return `${window.location.origin}/gracias?getnet=1`
+  }, [])
+
+  const itemsJson = useMemo(() => {
+    return JSON.stringify([
+      {
+        name: 'Fotos digitais',
+        description: eventSlug ? `Evento ${eventSlug}` : 'Fotos do evento',
+        value: 10 * 100, // centavos
+        quantity: images.length,
+        sku: eventSlug || 'ziza',
+      },
+    ])
+  }, [eventSlug, images.length])
 
   const paypalFundingSource = (payMethod === 'card' ? 'card' : 'paypal') as 'paypal' | 'card'
 
@@ -313,40 +365,18 @@ export default function CheckoutPage() {
                   </div>
 
                   <div>
-                    {!showCpf ? (
-                      <button
-                        type="button"
-                        onClick={() => setShowCpf(true)}
-                        className="text-sm underline text-gray-700"
-                      >
-                        Adicionar CPF (somente se o checkout pedir)
-                      </button>
-                    ) : (
-                      <>
-                        <label className="block text-xs text-gray-500 mb-1">CPF</label>
-                        <input
-                          className="w-full border rounded-lg px-3 py-3 text-sm"
-                          value={cpf}
-                          onChange={(e) => setCpf(e.target.value)}
-                          placeholder="000.000.000-00"
-                          inputMode="numeric"
-                          autoComplete="off"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCpf('')
-                            setShowCpf(false)
-                          }}
-                          className="mt-2 text-sm underline text-gray-700"
-                        >
-                          Remover CPF
-                        </button>
-                        <p className="text-[11px] text-gray-400 mt-1">
-                          Use apenas se o checkout solicitar.
-                        </p>
-                      </>
-                    )}
+                    <label className="block text-xs text-gray-500 mb-1">CPF</label>
+                    <input
+                      className="w-full border rounded-lg px-3 py-3 text-sm"
+                      value={cpf}
+                      onChange={(e) => setCpf(e.target.value)}
+                      placeholder="000.000.000-00"
+                      inputMode="numeric"
+                      autoComplete="off"
+                    />
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      Obrigatório para pagamento com Getnet.
+                    </p>
                   </div>
                 </div>
               )}
@@ -452,16 +482,22 @@ export default function CheckoutPage() {
                           key={`${getnetMountKey}-${getnetSession.order_id}`}
                           loaderUrl={getnetLoaderUrl}
                           sellerId={getnetSellerId}
-                          accessToken={getnetSession.access_token}
+                          token={getnetSession.access_token} // ahora ya viene "Bearer ..."
                           amount={getnetSession.amount}
                           customerId={getnetSession.customer_id}
                           orderId={getnetSession.order_id}
                           fullName={fullName}
                           cpf={cpf}
                           email={email}
-                          callbackUrl={`${window.location.origin}/gracias?provider=getnet`}
-                          quantity={images.length}
-                          unitPriceCents={10 * 100}
+                          cep={cep}
+                          street={street}
+                          number={addressNumber}
+                          district={district}
+                          city={city}
+                          state={stateUF}
+                          complement={complement}
+                          itemsJson={itemsJson}
+                          callbackUrl={callbackUrl}
                         />
 
                         <p className="text-xs text-gray-500 mt-3">
@@ -680,16 +716,28 @@ function onlyDigits(s: string) {
 function GetnetLoader(props: {
   loaderUrl: string
   sellerId: string
-  accessToken: string
+  token: string
   amount: string
   customerId: string
   orderId: string
   fullName: string
   cpf: string
   email: string
+
+  // address
+  cep: string
+  street: string
+  number: string
+  district: string
+  city: string
+  state: string
+  complement?: string
+
+  // items
+  itemsJson: string
+
+  // callback
   callbackUrl: string
-  quantity: number
-  unitPriceCents: number
 }) {
   const { first, last } = splitName(props.fullName)
   const cpfDigits = onlyDigits(props.cpf)
@@ -705,9 +753,9 @@ function GetnetLoader(props: {
     s.setAttribute('data-ziza-getnet', '1')
 
     // Token: el doc pide "token_type + space + access_token"
-    const token = props.accessToken.startsWith('Bearer ')
-      ? props.accessToken
-      : `Bearer ${props.accessToken}`
+    const token = props.token.startsWith('Bearer ')
+      ? props.token
+      : `Bearer ${props.token}`
 
     // === Atributos base ===
     s.setAttribute('data-getnet-sellerid', props.sellerId)
@@ -715,6 +763,7 @@ function GetnetLoader(props: {
     s.setAttribute('data-getnet-customerid', props.customerId)
     s.setAttribute('data-getnet-orderid', props.orderId)
     s.setAttribute('data-getnet-button-class', 'open-getnet-checkout')
+    
 
     // (Opcional / si tu loader lo usa)
     s.setAttribute('data-getnet-amount', props.amount)
@@ -732,43 +781,10 @@ function GetnetLoader(props: {
       s.setAttribute('data-getnet-customer-document-number', cpfDigits)
     }
 
-    // === REQUIRED: shipping-address ===
-    // El doc marca este atributo como Required.
-    // Si no tienes dirección, el ejemplo dice que puede ir vacío ("").
-    const shippingAddress = [
-      {
-        first_name: first || '',
-        last_name: last || '',
-        email: props.email || '',
-        phone_number: '',
-        shipping_amount: 0, // centavos (puede ser 0)
-        address: {
-          street: '',
-          complement: '',
-          number: '',
-          district: '',
-          city: '',
-          state: '',
-          country: 'Brasil',
-          postal_code: '',
-        },
-      },
-    ]
-    s.setAttribute('data-getnet-shipping-address', JSON.stringify(shippingAddress))
-
-    // === REQUIRED: items ===
-    // El doc marca items como Required (array).
-    // Para tu caso: 1 item "Fotos", quantity = N, value = unitPrice en centavos.
-    const items = [
-      {
-        name: 'Fotos',
-        description: 'Fotos do evento',
-        value: props.unitPriceCents, // centavos (ex: 1000 = R$10,00)
-        quantity: props.quantity,
-        sku: `photos-${props.orderId}`,
-      },
-    ]
-    s.setAttribute('data-getnet-items', JSON.stringify(items))
+    // === items ===
+    // En tu CheckoutPage ya calculas itemsJson con quantity/value.
+    // Aquí solo lo usamos tal cual para evitar props inexistentes.
+    s.setAttribute('data-getnet-items', props.itemsJson || '[]')
 
     // Callback (recomendado)
     if (props.callbackUrl) {
@@ -783,7 +799,7 @@ function GetnetLoader(props: {
   }, [
     props.loaderUrl,
     props.sellerId,
-    props.accessToken,
+    props.token,
     props.amount,
     props.customerId,
     props.orderId,
@@ -791,8 +807,7 @@ function GetnetLoader(props: {
     props.cpf,
     props.email,
     props.callbackUrl,
-    props.quantity,
-    props.unitPriceCents,
+    props.itemsJson,
   ])
 
   return null
