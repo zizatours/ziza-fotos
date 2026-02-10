@@ -877,16 +877,50 @@ function GetnetLoader(props: {
     s.setAttribute('data-getnet-customer-last-name', last || '')
     s.setAttribute('data-getnet-customer-email', props.email || '')
 
-    // CPF: NO es "Required" en el doc (solo si el cliente no está registrado),
-    // pero si lo tienes, envíalo.
+    // CPF (si viene)
     if (cpfDigits.length === 11) {
       s.setAttribute('data-getnet-customer-document-type', 'CPF')
       s.setAttribute('data-getnet-customer-document-number', cpfDigits)
     }
 
+    // === Customer Address (MUY importante) ===
+    // En la doc aparecen como customer-address-* y country (alpha2). :contentReference[oaicite:2]{index=2}
+    const cepDigits = (props.cep || '').replace(/\D/g, '').slice(0, 8)
+
+    s.setAttribute('data-getnet-customer-address-street', props.street || '')
+    s.setAttribute('data-getnet-customer-address-street-number', props.number || '')
+    s.setAttribute('data-getnet-customer-address-neighborhood', props.district || '')
+    s.setAttribute('data-getnet-customer-address-city', props.city || '')
+    s.setAttribute('data-getnet-customer-address-state', props.state || '')
+    s.setAttribute('data-getnet-customer-address-zipcode', cepDigits)
+    s.setAttribute('data-getnet-customer-country', 'BR') // alpha-2
+
+    // === Shipping Address (en tu consola te sale null porque NO lo estabas seteando) ===
+    // OJO: el ejemplo de la doc usa un ARRAY. :contentReference[oaicite:3]{index=3}
+    const shippingAddressJson = JSON.stringify([
+      {
+        first_name: first || '',
+        name: `${first || ''} ${last || ''}`.trim(),
+        email: props.email || '',
+        phone_number: '',
+        shipping_amount: 0,
+        address: {
+          street: props.street || '',
+          number: props.number || '',
+          complement: props.complement || '',
+          district: props.district || '',
+          city: props.city || '',
+          state: props.state || '',
+          country: 'Brasil',
+          postal_code: cepDigits,
+        },
+      },
+    ])
+
+    s.setAttribute('data-getnet-shipping-address', shippingAddressJson)
+
     // === items ===
-    // En tu CheckoutPage ya calculas itemsJson con quantity/value.
-    // Aquí solo lo usamos tal cual para evitar props inexistentes.
+    // En tu CheckoutPage ya armas itemsJson correcto (array JSON en string).
     s.setAttribute('data-getnet-items', props.itemsJson || '[]')
 
     // Callback (recomendado)
