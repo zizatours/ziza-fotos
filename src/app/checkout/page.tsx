@@ -256,12 +256,12 @@ export default function CheckoutPage() {
       {
         name: 'Fotos digitais',
         description: eventSlug ? `Evento ${eventSlug}` : 'Fotos do evento',
-        value: 10 * 100, // centavos
+        value: Math.round(unitPrice * 100), // centavos (usa el precio real)
         quantity: images.length,
         sku: eventSlug || 'ziza',
       },
     ])
-  }, [eventSlug, images.length])
+  }, [eventSlug, images.length, unitPrice])
 
   const paypalFundingSource = (payMethod === 'card' ? 'card' : 'paypal') as 'paypal' | 'card'
 
@@ -565,6 +565,7 @@ export default function CheckoutPage() {
                           body: JSON.stringify({
                             images,
                             tip,
+                            unit_price: unitPrice,
                           }),
                         })
 
