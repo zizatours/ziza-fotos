@@ -33,6 +33,70 @@ export default function SelfieUploader({
     return `${supabaseUrl}/storage/v1/object/public/${bucket}/${clean}`
   }
 
+  const parseSupabaseStorageObjectUrl = (url: string) => {
+    try {
+      const u = new URL(url)
+      // /storage/v1/object/<scope>/<bucket>/<path>
+      const m = u.pathname.match(/\/storage\/v1\/object\/[^/]+\/([^/]+)\/(.+)$/)
+      if (!m) return null
+      return {
+        bucket: decodeURIComponent(m[1]),
+        path: decodeURIComponent(m[2]),
+      }
+    } catch {
+      return null
+    }
+  }
+
+  // Convierte un match a valor seguro para selección/checkout:
+  // - permite original path (eventos/.../original/...)
+  // - permite URL de storage si se puede convertir a path
+  // - bloquea previews/thumbs/covers/webp (watermark)
+  const normalizeMatchForSelection = (value: string): string | null => {
+    const v = (value || '').trim()
+    if (!v) return null
+
+    // URL completa
+    if (/^https?:\/\//i.test(v)) {
+      // Preview público => NO usar como seleccionable
+      if (v.includes('/event-previews/')) return null
+
+      const parsed = parseSupabaseStorageObjectUrl(v)
+
+      // Si no es URL parseable de Supabase Storage, compatibilidad: dejar pasar
+      if (!parsed) return v
+
+      if (parsed.bucket === 'event-previews') return null
+
+      const cleanPath = (parsed.path || '').replace(/^\/+/, '')
+      if (!cleanPath) return null
+
+      if (
+        cleanPath.includes('/thumb/') ||
+        cleanPath.includes('/cover/') ||
+        cleanPath.toLowerCase().endsWith('.webp')
+      ) {
+        return null
+      }
+
+      return cleanPath
+    }
+
+    // Path interno
+    const clean = v.replace(/^\/+/, '')
+    if (!clean) return null
+
+    if (
+      clean.includes('/thumb/') ||
+      clean.includes('/cover/') ||
+      clean.toLowerCase().endsWith('.webp')
+    ) {
+      return null
+    }
+
+    return clean
+  }
+
   // Convierte "eventos/<slug>/original/<file>.jpg" => "eventos/<slug>/thumb/<base>.webp"
   // (y soporta legacy "<slug>/<file>.jpg" como fallback)
   const toThumbPathFromMatch = (match: string) => {
@@ -79,8 +143,19 @@ export default function SelfieUploader({
       : `/api/preview?path=${encodeURIComponent(m)}&w=520&q=60&fmt=webp`
   }
 
-  const toggleSelect = (url: string) => {
-    setSelected((prev) => (prev.includes(url) ? prev.filter((u) => u !== url) : [...prev, url]))
+  const toggleSelect = (rawValue: string) => {
+    const normalized = normalizeMatchForSelection(rawValue)
+
+    if (!normalized) {
+      alert('Esta imagem é uma pré-visualização e não pode ser adicionada à compra. Tente selecionar a foto original novamente.')
+      return
+    }
+
+    setSelected((prev) =>
+      prev.includes(normalized)
+        ? prev.filter((u) => u !== normalized)
+        : [...prev, normalized]
+    )
   }
 
   return (
@@ -179,7 +254,17 @@ export default function SelfieUploader({
 
                     setStatusText('Comparando con las fotos del evento…')
 
-                    setMatches(data?.results || [])
+                    const normalizedResults: string[] = []
+
+                    if (Array.isArray(data?.results)) {
+                      for (const x of data.results) {
+                        if (typeof x !== 'string' || x.length === 0) continue
+                        const normalized = normalizeMatchForSelection(x)
+                        if (normalized) normalizedResults.push(normalized)
+                      }
+                    }
+
+                    setMatches(normalizedResults)
                     setResults(true)
                     setSearched(true)
                   } catch (err: any) {

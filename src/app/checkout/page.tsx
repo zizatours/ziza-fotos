@@ -124,6 +124,55 @@ export default function CheckoutPage() {
     }
   }
 
+  // Normaliza valores de la selección del checkout a "path original" cuando es posible.
+  // Rechaza previews/thumbs/covers (watermark) para evitar compras rotas.
+  const normalizeCheckoutSelectionImage = (value: string): string | null => {
+    const v = (value || '').trim()
+    if (!v) return null
+
+    // Caso URL completa
+    if (/^https?:\/\//i.test(v)) {
+      // Preview público con watermark -> inválido para checkout
+      if (v.includes('/event-previews/')) return null
+
+      const parsed = parseSupabaseStorageObjectUrl(v)
+
+      // Si no es una URL de Supabase Storage, la dejamos pasar (compatibilidad legacy)
+      if (!parsed) return v
+
+      // Si viene del bucket público de previews -> inválido
+      if (parsed.bucket === 'event-previews') return null
+
+      const cleanPath = (parsed.path || '').replace(/^\/+/, '')
+      if (!cleanPath) return null
+
+      // Si el path interno parece thumb/cover/webp -> inválido
+      if (
+        cleanPath.includes('/thumb/') ||
+        cleanPath.includes('/cover/') ||
+        cleanPath.toLowerCase().endsWith('.webp')
+      ) {
+        return null
+      }
+
+      return cleanPath
+    }
+
+    // Caso path dentro del bucket
+    const clean = v.replace(/^\/+/, '')
+    if (!clean) return null
+
+    if (
+      clean.includes('/thumb/') ||
+      clean.includes('/cover/') ||
+      clean.toLowerCase().endsWith('.webp')
+    ) {
+      return null
+    }
+
+    return clean
+  }
+
   // Si tenemos originalPath, armamos thumb esperado en event-previews
   const thumbFromOriginalPath = (originalPath: string, slug: string | null) => {
     if (!slug) return ''
@@ -172,7 +221,7 @@ export default function CheckoutPage() {
 
       const data = JSON.parse(raw)
 
-      const imgs = Array.isArray(data?.images)
+      const rawImgs = Array.isArray(data?.images)
         ? data.images.filter((x: any) => typeof x === 'string' && x.length > 0)
         : []
 
@@ -180,8 +229,21 @@ export default function CheckoutPage() {
         ? data.event_slug
         : null
 
-      // Si está incompleto o corrupto, limpiamos para evitar “total 0”
-      if (!slug || imgs.length === 0) {
+      let hasInvalidPreviewSelection = false
+      const imgs: string[] = []
+
+      for (const raw of rawImgs) {
+        const normalized = normalizeCheckoutSelectionImage(raw)
+        if (!normalized) {
+          hasInvalidPreviewSelection = true
+          break
+        }
+        imgs.push(normalized)
+      }
+
+      // Si está incompleto, corrupto o contiene previews/thumbs con watermark, limpiamos.
+      if (!slug || imgs.length === 0 || hasInvalidPreviewSelection) {
+        console.warn('[checkout] ziza_checkout_selection inválido: contiene previews/thumbs o datos incompletos')
         localStorage.removeItem('ziza_checkout_selection')
         return
       }

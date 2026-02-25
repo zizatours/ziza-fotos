@@ -146,17 +146,21 @@ export async function POST(req: Request) {
       )
     }
 
-    return NextResponse.json({
-      results:
-        (photos ?? [])
-          .map((p: any) => {
-            const original = extractEventPhotoPath(p.image_url) // eventos/<slug>/original/...
-            const thumbPath = toThumbPathFromOriginalPath(original)
-            // devolvemos URL pública del thumb si podemos
-            return thumbPath ? toPublicEventPreviewsUrl(thumbPath) : original
-          })
-          .filter(Boolean),
-    })
+    const results: string[] = []
+    const seen = new Set<string>()
+
+    for (const row of photos ?? []) {
+      const imageUrl = (row as { image_url?: string | null })?.image_url || ''
+      const original = extractEventPhotoPath(imageUrl) // eventos/<slug>/original/...
+
+      if (!original) continue
+      if (seen.has(original)) continue
+
+      seen.add(original)
+      results.push(original)
+    }
+
+    return NextResponse.json({ results })
 
   } catch (err) {
     console.error('SEARCH ERROR:', err)
