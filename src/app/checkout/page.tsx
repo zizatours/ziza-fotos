@@ -29,6 +29,9 @@ export default function CheckoutPage() {
   const [paypalKey, setPaypalKey] = useState(0)
 
   // ===== GETNET (BR) =====
+  // TEMP: deshabilitado hasta implementar webhook/confirmación server-to-server
+  const GETNET_TEMP_DISABLED = true
+
   const getnetSellerId = process.env.NEXT_PUBLIC_GETNET_SELLER_ID || ''
   const getnetLoaderUrl = process.env.NEXT_PUBLIC_GETNET_LOADER_URL || ''
 
@@ -392,15 +395,19 @@ export default function CheckoutPage() {
               </h2>
 
               <div className="space-y-2">
-                <label className="border rounded-lg p-4 flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="payMethod"
-                    checked={payMethod === 'paypal'}
-                    onChange={() => setPayMethod('paypal')}
-                  />
-                  <span className="text-sm text-gray-600">PayPal</span>
-                </label>
+                {!GETNET_TEMP_DISABLED && (
+                  <label className="border rounded-lg p-4 flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="payMethod"
+                      checked={payMethod === 'getnet'}
+                      onChange={() => setPayMethod('getnet')}
+                    />
+                    <span className="text-sm text-gray-600">
+                      Cartão / Pix (Getnet)
+                    </span>
+                  </label>
+                )}
 
                 <label className="border rounded-lg p-4 flex items-center gap-3 cursor-pointer">
                   <input
@@ -428,9 +435,11 @@ export default function CheckoutPage() {
 
               </div>
 
-              <p className="text-xs text-gray-500 mt-2">
-                Você pode pagar com sua conta PayPal ou com cartão via PayPal.
-              </p>
+              {GETNET_TEMP_DISABLED && (
+                <p className="text-xs text-amber-700 mt-2">
+                  Pix e Getnet estão temporariamente indisponíveis. Use PayPal ou cartão via PayPal.
+                </p>
+              )}
 
               {payMethod === 'getnet' && (
                 <div className="mt-4 grid grid-cols-1 gap-3">
@@ -597,7 +606,7 @@ export default function CheckoutPage() {
             {/* CTA / PAYPAL / GETNET */}
 
             {/* ====== GETNET CTA (no depende de PayPal) ===== */}
-            {payMethod === 'getnet' ? (
+            {payMethod === 'getnet' && !GETNET_TEMP_DISABLED ? (
               <>
                 {!canPay ? (
                   <>
