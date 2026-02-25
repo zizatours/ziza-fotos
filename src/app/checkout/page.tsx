@@ -395,19 +395,15 @@ export default function CheckoutPage() {
               </h2>
 
               <div className="space-y-2">
-                {!GETNET_TEMP_DISABLED && (
-                  <label className="border rounded-lg p-4 flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="payMethod"
-                      checked={payMethod === 'getnet'}
-                      onChange={() => setPayMethod('getnet')}
-                    />
-                    <span className="text-sm text-gray-600">
-                      Cartão / Pix (Getnet)
-                    </span>
-                  </label>
-                )}
+                <label className="border rounded-lg p-4 flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="payMethod"
+                    checked={payMethod === 'paypal'}
+                    onChange={() => setPayMethod('paypal')}
+                  />
+                  <span className="text-sm text-gray-600">PayPal</span>
+                </label>
 
                 <label className="border rounded-lg p-4 flex items-center gap-3 cursor-pointer">
                   <input
@@ -421,18 +417,19 @@ export default function CheckoutPage() {
                   </span>
                 </label>
 
-                <label className="border rounded-lg p-4 flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="payMethod"
-                    checked={payMethod === 'getnet'}
-                    onChange={() => setPayMethod('getnet')}
-                  />
-                  <span className="text-sm text-gray-600">
-                    Cartão / Pix (Getnet)
-                  </span>
-                </label>
-
+                {!GETNET_TEMP_DISABLED && (
+                  <label className="border rounded-lg p-4 flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="payMethod"
+                      checked={payMethod === 'getnet'}
+                      onChange={() => setPayMethod('getnet')}
+                    />
+                    <span className="text-sm text-gray-600">
+                      Cartão / Pix (Getnet)
+                    </span>
+                  </label>
+                )}
               </div>
 
               {GETNET_TEMP_DISABLED && (
