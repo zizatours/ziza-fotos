@@ -313,8 +313,13 @@ export default function CheckoutPage() {
 
   const callbackUrl = useMemo(() => {
     if (typeof window === 'undefined') return ''
-    return `${window.location.origin}/gracias?getnet=1`
-  }, [])
+
+    const base = `${window.location.origin}/gracias?getnet=1`
+
+    if (!getnetSession?.order_id) return base
+
+    return `${base}&getnet_order=${encodeURIComponent(getnetSession.order_id)}`
+  }, [getnetSession?.order_id])
 
   const itemsJson = useMemo(() => {
     return JSON.stringify([

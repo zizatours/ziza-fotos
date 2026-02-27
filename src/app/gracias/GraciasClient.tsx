@@ -23,6 +23,8 @@ export default function GraciasClient() {
 
   const searchParams = useSearchParams()
   const orderId = searchParams.get('order') || ''
+  const isGetnetReturn = searchParams.get('getnet') === '1'
+  const getnetOrderId = searchParams.get('getnet_order') || ''
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
   const bucket = 'event-photos'
@@ -41,23 +43,91 @@ export default function GraciasClient() {
   }
 
   useEffect(() => {
-    if (!orderId) {
-      setError('Falta o parâmetro "order')
-      return
-    }
+    let cancelled = false
+    let timer: ReturnType<typeof setTimeout> | null = null
 
-    ;(async () => {
-      const res = await fetch(`/api/orders/get?order=${encodeURIComponent(orderId)}`)
+    const loadPaypalOrKnownOrder = async (id: string) => {
+      const res = await fetch(`/api/orders/get?order=${encodeURIComponent(id)}`)
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data?.error || 'Não foi possível carregar o pedido.')
+        if (!cancelled) setError(data?.error || 'Não foi possível carregar o pedido.')
         return
       }
 
-      setOrder(data.order)
-    })()
-  }, [orderId])
+      if (!cancelled) setOrder(data.order)
+    }
+
+    const pollGetnetOrder = async () => {
+      // Si volvió Getnet pero no tenemos getnet_order, no rompemos la UX
+      if (!getnetOrderId) {
+        if (!cancelled) setError(null)
+        return
+      }
+
+      const startedAt = Date.now()
+      const timeoutMs = 60_000 // 60s de espera
+      const intervalMs = 2_000 // cada 2s
+
+      const loop = async () => {
+        if (cancelled) return
+
+        try {
+          const res = await fetch(
+            `/api/getnet/resolve-order?order_id=${encodeURIComponent(getnetOrderId)}`,
+            { cache: 'no-store' }
+          )
+
+          const data = await res.json().catch(() => ({} as any))
+
+          if (cancelled) return
+
+          // Cuando el webhook ya creó la orden real, redirigimos al flujo normal de /gracias?order=...
+          if (res.ok && data?.app_order_id) {
+            window.location.replace(`/gracias?order=${encodeURIComponent(String(data.app_order_id))}`)
+            return
+          }
+
+          // seguimos esperando mientras no pase timeout
+          if (Date.now() - startedAt < timeoutMs) {
+            timer = setTimeout(loop, intervalMs)
+            return
+          }
+
+          // timeout: dejamos pantalla informativa (sin error feo)
+          setError(null)
+        } catch {
+          if (cancelled) return
+
+          if (Date.now() - startedAt < timeoutMs) {
+            timer = setTimeout(loop, intervalMs)
+            return
+          }
+
+          setError(null)
+        }
+      }
+
+      await loop()
+    }
+
+    // Flujo normal (PayPal o si ya tenemos ?order=...)
+    if (orderId) {
+      setError(null)
+      loadPaypalOrKnownOrder(orderId)
+    } else if (isGetnetReturn) {
+      // Flujo Getnet/Pix
+      setError(null)
+      pollGetnetOrder()
+    } else {
+      setError('Falta o parâmetro "order"')
+    }
+
+    return () => {
+      cancelled = true
+      if (timer) clearTimeout(timer)
+    }
+  }, [orderId, isGetnetReturn, getnetOrderId])
 
   if (error) {
     return (
@@ -68,6 +138,30 @@ export default function GraciasClient() {
           <a href="/" className="inline-block bg-black text-white rounded-full px-6 py-3 text-sm">
             Voltar ao início
           </a>
+        </div>
+      </main>
+    )
+  }
+
+  if (!order && isGetnetReturn) {
+    return (
+      <main className="min-h-screen bg-white">
+        <div className="max-w-2xl mx-auto px-6 py-16 text-center">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-3">Confirmando pagamento…</h1>
+          <p className="text-gray-600 mb-4">
+            Recebemos o retorno do checkout e estamos finalizando a confirmação do seu pagamento.
+          </p>
+          <p className="text-sm text-gray-500 mb-8">
+            Se o Pix já foi pago, esta página será atualizada automaticamente em instantes.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="inline-block bg-black text-white rounded-full px-6 py-3 text-sm"
+          >
+            Atualizar agora
+          </button>
         </div>
       </main>
     )
