@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
+
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 async function getGetnetAccessToken() {
   const clientId = process.env.GETNET_CLIENT_ID!;
@@ -37,15 +43,40 @@ function money2(totalCents: number) {
   return (totalCents / 100).toFixed(2);
 }
 
+function isInvalidCheckoutImage(value: unknown) {
+  if (typeof value !== "string") return true;
+  const v = value.trim().toLowerCase();
+  if (!v) return true;
+
+  return (
+    v.includes("/event-previews/") ||
+    v.includes("/thumb/") ||
+    v.includes("/cover/") ||
+    v.endsWith(".webp")
+  );
+}
+
 export async function POST(req: Request) {
-  const { images, tip } = await req.json();
+  const { images, tip, event_slug, email } = await req.json();
 
   if (!Array.isArray(images) || images.length === 0) {
     return NextResponse.json({ error: "missing_images" }, { status: 400 });
   }
 
+  if (typeof event_slug !== "string" || !event_slug.trim()) {
+    return NextResponse.json({ error: "missing_event_slug" }, { status: 400 });
+  }
+
+  if (typeof email !== "string" || !email.trim()) {
+    return NextResponse.json({ error: "missing_email" }, { status: 400 });
+  }
+
+  if (images.some(isInvalidCheckoutImage)) {
+    return NextResponse.json({ error: "invalid_images_preview_not_allowed" }, { status: 400 });
+  }
+
   const quantity = images.length;
-  const unitPriceCents = 10 * 100; // igual que PayPal
+  const unitPriceCents = 1 * 100; // igual que PayPal
 
   const tipRaw = tip ?? 0;
   const tipNumber =
@@ -79,6 +110,27 @@ export async function POST(req: Request) {
   // IDs locales para amarrar la sesión del checkout
   const order_id = crypto.randomUUID();
   const customer_id = crypto.randomUUID();
+
+  const pendingInsert = await supabase.from("getnet_pending_orders").insert({
+    order_id,
+    customer_id,
+    event_slug: event_slug.trim(),
+    email: email.trim().toLowerCase(),
+    images,
+    quantity,
+    unit_price_cents: unitPriceCents,
+    tip_cents: tipCents,
+    total_cents: totalCents,
+    status: "pending",
+  });
+
+  if (pendingInsert.error) {
+    console.error("[GETNET SESSION] pending order insert error:", pendingInsert.error);
+    return NextResponse.json(
+      { error: "getnet_pending_order_insert_failed" },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json({
     access_token: tok.token,
