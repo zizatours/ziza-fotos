@@ -82,9 +82,10 @@ export async function GET(req: Request) {
     if (callbackStatus === "APPROVED") {
       basePatch.status = "approved";
       basePatch.approved_at = new Date().toISOString();
-    } else if (callbackStatus) {
-      basePatch.status = "failed";
     }
+
+    // ⚠️ No marcar como failed cualquier otro estado.
+    // Getnet está enviando callbacks intermedios (ej. QR generado / aguardando pagamento).
 
     const { error: callbackUpdateError } = await supabase
       .from("getnet_pending_orders")
