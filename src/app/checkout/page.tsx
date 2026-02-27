@@ -30,7 +30,7 @@ export default function CheckoutPage() {
 
   // ===== GETNET (BR) =====
   // TEMP: deshabilitado hasta implementar webhook/confirmación server-to-server
-  const GETNET_TEMP_DISABLED = true
+  const GETNET_TEMP_DISABLED = false
 
   const getnetSellerId = process.env.NEXT_PUBLIC_GETNET_SELLER_ID || ''
   const getnetLoaderUrl = process.env.NEXT_PUBLIC_GETNET_LOADER_URL || ''
@@ -438,7 +438,7 @@ export default function CheckoutPage() {
                 </p>
               )}
 
-              {payMethod === 'getnet' && (
+              {payMethod === 'getnet' && !GETNET_TEMP_DISABLED && (
                 <div className="mt-4 grid grid-cols-1 gap-3">
                   {/* Nome completo */}
                   <div>
