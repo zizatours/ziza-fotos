@@ -408,7 +408,7 @@ export default function CheckoutPage() {
                     onChange={() => setPayMethod('paypal')}
                   />
                   <span className="text-sm text-gray-600">
-                    PayPal / Cartão de crédito/débito
+                    PayPal
                   </span>
                 </label>
 
@@ -421,7 +421,7 @@ export default function CheckoutPage() {
                       onChange={() => setPayMethod('getnet')}
                     />
                     <span className="text-sm text-gray-600">
-                      Cartão / Pix (Getnet)
+                      Cartão / Pix
                     </span>
                   </label>
                 )}
