@@ -11,7 +11,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false)
 
   const quantity = images.length
-  const unitPrice = 1
+  const unitPrice = 10
 
   // Propina (input tipo texto para soportar coma o punto)
   const [tipInput, setTipInput] = useState('0')
@@ -30,7 +30,7 @@ export default function CheckoutPage() {
 
   // ===== GETNET (BR) =====
   // TEMP: deshabilitado hasta implementar webhook/confirmación server-to-server
-  const GETNET_TEMP_DISABLED = false
+  const GETNET_TEMP_DISABLED = true
 
   const getnetSellerId = process.env.NEXT_PUBLIC_GETNET_SELLER_ID || ''
   const getnetLoaderUrl = process.env.NEXT_PUBLIC_GETNET_LOADER_URL || ''
