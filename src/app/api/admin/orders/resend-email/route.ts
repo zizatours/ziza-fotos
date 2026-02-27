@@ -29,24 +29,88 @@ export async function POST(req: Request) {
   const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
 
   // Buscar orden
-  const { data: order, error: orderErr } = await supabase
-    .from('orders')
-    .select('id, email')
-    .eq('id', orderId)
-    .single()
+  // Buscar orden (soporta order.id normal o getnet_pending_orders.order_id)
+  let resolvedOrderId = orderId
+  let order: { id: string; email: string | null } | null = null
+  let pendingGetnetOrder: { order_id: string; app_order_id: string | null; email: string | null } | null = null
 
-  if (orderErr || !order) {
-    return NextResponse.json({ error: 'order_not_found' }, { status: 404 })
+  // 1) Intentar como order.id normal
+  {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('id, email')
+      .eq('id', orderId)
+      .maybeSingle()
+
+    if (error) {
+      return NextResponse.json({ error: 'order_lookup_failed' }, { status: 500 })
+    }
+
+    if (data) {
+      order = data
+    }
   }
 
-  const finalEmail = (newEmailRaw || order.email || '').trim()
+  // 2) Si no existe, intentar resolver como getnet_pending_orders.order_id
+  if (!order) {
+    const { data: pending, error: pendingErr } = await supabase
+      .from('getnet_pending_orders')
+      .select('order_id, app_order_id, email')
+      .eq('order_id', orderId)
+      .maybeSingle()
+
+    if (pendingErr) {
+      return NextResponse.json({ error: 'getnet_pending_lookup_failed' }, { status: 500 })
+    }
+
+    if (!pending) {
+      return NextResponse.json({ error: 'order_not_found' }, { status: 404 })
+    }
+
+    pendingGetnetOrder = pending
+
+    if (!pending.app_order_id) {
+      return NextResponse.json(
+        { error: 'getnet_order_not_fulfilled_yet' },
+        { status: 409 }
+      )
+    }
+
+    resolvedOrderId = String(pending.app_order_id)
+
+    const { data: resolvedOrder, error: resolvedOrderErr } = await supabase
+      .from('orders')
+      .select('id, email')
+      .eq('id', resolvedOrderId)
+      .maybeSingle()
+
+    if (resolvedOrderErr) {
+      return NextResponse.json({ error: 'resolved_order_lookup_failed' }, { status: 500 })
+    }
+
+    if (!resolvedOrder) {
+      return NextResponse.json({ error: 'resolved_order_not_found' }, { status: 404 })
+    }
+
+    order = resolvedOrder
+  }
+
+  const finalEmail = (newEmailRaw || order.email || pendingGetnetOrder?.email || '').trim()
   if (!finalEmail) {
     return NextResponse.json({ error: 'missing_email' }, { status: 400 })
   }
 
   // Si viene email nuevo, lo guardamos en la orden
   if (newEmailRaw && newEmailRaw.trim() !== order.email) {
-    await supabase.from('orders').update({ email: finalEmail }).eq('id', orderId)
+    await supabase.from('orders').update({ email: finalEmail }).eq('id', resolvedOrderId)
+
+    // Si el admin pegó un order_id de Getnet, mantenemos también la pre-orden consistente
+    if (pendingGetnetOrder) {
+      await supabase
+        .from('getnet_pending_orders')
+        .update({ email: finalEmail })
+        .eq('order_id', pendingGetnetOrder.order_id)
+    }
   }
 
   // Enviar correo
@@ -58,11 +122,16 @@ export async function POST(req: Request) {
     from,
     to: finalEmail,
     subject: 'Pagamento confirmado — Suas fotos estão prontas',
-    html: renderOrderEmail({ siteUrl, orderId }),
+    html: renderOrderEmail({ siteUrl, orderId: resolvedOrderId }),
   })
 
   // Deja registro consistente
-  await supabase.from('orders').update({ email_sent: true }).eq('id', orderId)
+  await supabase.from('orders').update({ email_sent: true }).eq('id', resolvedOrderId)
 
-  return NextResponse.json({ ok: true, orderId, email: finalEmail })
+  return NextResponse.json({
+    ok: true,
+    orderId: resolvedOrderId,
+    inputOrderId: orderId,
+    email: finalEmail,
+  })
 }

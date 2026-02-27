@@ -333,7 +333,7 @@ export default function CheckoutPage() {
     ])
   }, [eventSlug, images.length, unitPrice])
 
-  const paypalFundingSource = (payMethod === 'card' ? 'card' : 'paypal') as 'paypal' | 'card'
+  //const paypalFundingSource = (payMethod === 'card' ? 'card' : 'paypal') as 'paypal' | 'card'
 
   return (
     <main className="min-h-screen bg-white">
@@ -404,21 +404,11 @@ export default function CheckoutPage() {
                   <input
                     type="radio"
                     name="payMethod"
-                    checked={payMethod === 'paypal'}
+                    checked={payMethod === 'paypal' || payMethod === 'card'}
                     onChange={() => setPayMethod('paypal')}
                   />
-                  <span className="text-sm text-gray-600">PayPal</span>
-                </label>
-
-                <label className="border rounded-lg p-4 flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="payMethod"
-                    checked={payMethod === 'card'}
-                    onChange={() => setPayMethod('card')}
-                  />
                   <span className="text-sm text-gray-600">
-                    Cartão de crédito/débito
+                    PayPal / Cartão de crédito/débito
                   </span>
                 </label>
 
@@ -756,7 +746,6 @@ export default function CheckoutPage() {
                   ) : (
                     <div translate="no" lang="zxx" className="notranslate">
                       <PayPalButtons
-                        fundingSource={paypalFundingSource}
                         key={`${payMethod}-${paypalClientId}-${eventSlug || 'no-event'}-${paypalKey}`}
                         style={{ layout: 'vertical' }}
                         createOrder={async () => {
