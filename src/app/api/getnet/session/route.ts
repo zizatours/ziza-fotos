@@ -45,7 +45,7 @@ export async function POST(req: Request) {
   }
 
   const quantity = images.length;
-  const unitPriceCents = 10 * 100; // igual que PayPal
+  const unitPriceCents = 1 * 100; // igual que PayPal
 
   const tipRaw = tip ?? 0;
   const tipNumber =
