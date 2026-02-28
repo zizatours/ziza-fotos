@@ -1288,6 +1288,19 @@ return (
             <ResendOrderEmail adminKey={password} />
 
             <button
+              type="button"
+              onClick={() => {
+                const qs = selectedEventSlug
+                  ? `?event=${encodeURIComponent(selectedEventSlug)}`
+                  : ''
+                window.location.href = `/admin/delete-photos${qs}`
+              }}
+              className="w-full border border-black text-black py-3 rounded-full hover:bg-gray-50"
+            >
+              Borrar fotos unitariamente
+            </button>
+
+            <button
               onClick={async () => {
                 if (!selectedEventSlug) return
 
