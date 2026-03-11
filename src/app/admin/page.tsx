@@ -420,16 +420,18 @@ const [repairFailedFiles, setRepairFailedFiles] = useState<string[]>([])
               }
 
               if (msg.type === 'start') {
-                const total = msg.total ?? msg.totalFiles ?? 0
+                const total = msg.missing ?? msg.total ?? 0
                 totalLocal = total
 
-                setIndexTotal(total)
-                setIndexDone(0)
-                setIndexIndexed(0)
-                setIndexSkipped(0)
-                setIndexFailed(0)
+                setRepairTotal(total)
+                setRepairDone(0)
+                setRepairOk(0)
+                setRepairFailed(0)
+                setRepairCurrent('')
 
-                setStatus(`Archivos indexados 0/${total}`)
+                setStatus(
+                  `Originales: ${msg.originals ?? 0} · Thumbs existentes: ${msg.thumbsExisting ?? 0} · Faltantes: 0/${total}`
+                )
               }
 
               if (msg.type === 'file') {
