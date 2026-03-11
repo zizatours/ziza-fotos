@@ -421,17 +421,14 @@ const [repairFailedFiles, setRepairFailedFiles] = useState<string[]>([])
 
               if (msg.type === 'start') {
                 const total = msg.missing ?? msg.total ?? 0
-                totalLocal = total
 
+                totalLocal = total
                 setRepairTotal(total)
                 setRepairDone(0)
                 setRepairOk(0)
                 setRepairFailed(0)
                 setRepairCurrent('')
-
-                setStatus(
-                  `Originales: ${msg.originals ?? 0} · Thumbs existentes: ${msg.thumbsExisting ?? 0} · Faltantes: 0/${total}`
-                )
+                setStatus(`Thumbnails faltantes: 0/${total}`)
               }
 
               if (msg.type === 'file') {
@@ -581,7 +578,9 @@ const [repairFailedFiles, setRepairFailedFiles] = useState<string[]>([])
           setRepairFailed(0)
           setRepairCurrent('')
 
-          setStatus(`Thumbnails faltantes: 0/${total}`)
+          setStatus(
+            `Originales: ${msg.originals ?? 0} · Thumbs existentes: ${msg.thumbsExisting ?? 0} · Faltantes: 0/${total}`
+          )
         }
 
         if (msg.type === 'file') {
