@@ -838,7 +838,7 @@ export default function CheckoutPage() {
             <div className="grid grid-cols-3 gap-2 mb-6">
               {images
                 .filter(Boolean)
-                .slice(0, 6)
+                .slice(0, 18)
                 .map((url, i) => (
                   <img
                     key={i}

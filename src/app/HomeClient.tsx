@@ -465,7 +465,7 @@ export default function HomePage() {
           </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {filteredEvents.slice(0, 6).map((event) => (
+            {filteredEvents.slice(0, 60).map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
           </div>

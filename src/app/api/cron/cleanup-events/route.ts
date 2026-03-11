@@ -98,7 +98,7 @@ async function deleteFacesFromCollection(faceIds: string[]) {
 
 export async function GET(req: NextRequest) {
   if (!isCronAuthorized(req)) {
-    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+    return NextResponse.json({ ok: false, error: "disabled" }, { status: 410 });
   }
 
   const nowIso = new Date().toISOString();
