@@ -359,7 +359,6 @@ const [repairFailedFiles, setRepairFailedFiles] = useState<string[]>([])
     setIndexFailed(0)
     setIndexFailedFiles([])
 
-    let totalLocal = 0
     let attempt = 0
 
     try {
@@ -398,6 +397,7 @@ const [repairFailedFiles, setRepairFailedFiles] = useState<string[]>([])
           const decoder = new TextDecoder()
           let buf = ''
           let gotDone = false
+          let totalLocal = 0
 
           while (true) {
             const { value, done } = await reader.read()
@@ -420,15 +420,16 @@ const [repairFailedFiles, setRepairFailedFiles] = useState<string[]>([])
               }
 
               if (msg.type === 'start') {
-                const total = msg.missing ?? msg.total ?? 0
+                const total = msg.totalFiles ?? msg.total ?? 0
+                totalLocal = typeof total === 'number' ? total : 0
 
-                totalLocal = total
-                setRepairTotal(total)
-                setRepairDone(0)
-                setRepairOk(0)
-                setRepairFailed(0)
-                setRepairCurrent('')
-                setStatus(`Thumbnails faltantes: 0/${total}`)
+                setIndexTotal(totalLocal)
+                setIndexDone(0)
+                setIndexIndexed(0)
+                setIndexSkipped(0)
+                setIndexFailed(0)
+
+                setStatus(`Archivos indexados 0/${totalLocal}`)
               }
 
               if (msg.type === 'file') {
@@ -548,7 +549,9 @@ const [repairFailedFiles, setRepairFailedFiles] = useState<string[]>([])
     const reader = res.body.getReader()
     const decoder = new TextDecoder()
     let buf = ''
-    let totalLocal = 0
+    let originalsTotalLocal = 0
+    let missingTotalLocal = 0
+    let thumbsOkBaseLocal = 0
 
     while (true) {
       const { value, done } = await reader.read()
@@ -569,18 +572,21 @@ const [repairFailedFiles, setRepairFailedFiles] = useState<string[]>([])
         }
 
         if (msg.type === 'start') {
-          const total = msg.missing ?? msg.total ?? 0
-          totalLocal = total
+          const totalOriginals = msg.total_originals ?? msg.originals ?? 0
+          const thumbsOkStart = msg.thumbs_ok ?? msg.thumbsExisting ?? 0
+          const missingTotal = msg.missing_total ?? msg.missing ?? msg.total ?? 0
 
-          setRepairTotal(total)
-          setRepairDone(0)
-          setRepairOk(0)
+          originalsTotalLocal = totalOriginals
+          missingTotalLocal = missingTotal
+          thumbsOkBaseLocal = thumbsOkStart
+
+          setRepairTotal(totalOriginals)
+          setRepairDone(thumbsOkStart)
+          setRepairOk(thumbsOkStart)
           setRepairFailed(0)
           setRepairCurrent('')
 
-          setStatus(
-            `Originales: ${msg.originals ?? 0} · Thumbs existentes: ${msg.thumbsExisting ?? 0} · Faltantes: 0/${total}`
-          )
+          setStatus(`Thumbnails OK ${thumbsOkStart}/${totalOriginals} · Faltantes: ${missingTotal}`)
         }
 
         if (msg.type === 'file') {
@@ -593,35 +599,46 @@ const [repairFailedFiles, setRepairFailedFiles] = useState<string[]>([])
         }
 
         if (msg.type === 'progress') {
-          const done = msg.done ?? 0
-          const ok = msg.ok ?? 0
           const failed = msg.failed ?? 0
-          const total = msg.total ?? totalLocal
-          if (typeof total === 'number') totalLocal = total
+          const okNew = msg.ok_new ?? msg.ok ?? 0
 
-          setRepairTotal(totalLocal)
-          setRepairDone(done)
-          setRepairOk(ok)
+          const missingDone = msg.missing_done ?? msg.done ?? 0
+          const missingTotal = msg.missing_total ?? msg.total ?? missingTotalLocal
+          if (typeof missingTotal === 'number') missingTotalLocal = missingTotal
+
+          const totalOriginals = msg.total_originals ?? originalsTotalLocal
+          if (typeof totalOriginals === 'number') originalsTotalLocal = totalOriginals
+
+          // thumbs_ok preferido; si no viene, sumamos lo nuevo sobre los que ya estaban OK
+          const thumbsOk = msg.thumbs_ok ?? (thumbsOkBaseLocal + okNew)
+
+          setRepairTotal(originalsTotalLocal)
+          setRepairDone(thumbsOk)
+          setRepairOk(thumbsOk)
           setRepairFailed(failed)
 
-          setStatus(`Reparando thumbnails ${done}/${totalLocal}`)
+          setStatus(
+            `Thumbnails OK ${thumbsOk}/${originalsTotalLocal} · Reparando ${missingDone}/${missingTotalLocal}`
+          )
         }
 
         if (msg.type === 'done') {
-          const total = msg.total ?? totalLocal ?? 0
-          const ok = msg.ok ?? 0
+          const totalOriginals = msg.total_originals ?? originalsTotalLocal
+          const okNew = msg.ok_new ?? msg.ok ?? 0
           const failed = msg.failed ?? 0
 
-          setRepairTotal(total)
-          setRepairDone(total)
-          setRepairOk(ok)
+          const thumbsOk = msg.thumbs_ok ?? (thumbsOkBaseLocal + okNew)
+
+          setRepairTotal(totalOriginals)
+          setRepairDone(thumbsOk)
+          setRepairOk(thumbsOk)
           setRepairFailed(failed)
           setRepairCurrent('')
 
           setStatus(
             failed > 0
-              ? `Reparación lista ⚠️ Thumbs ${total}/${total} (ok:${ok} fail:${failed})`
-              : `Reparación lista ✅ Thumbs ${total}/${total} (ok:${ok})`
+              ? `Reparación lista ⚠️ Thumbnails OK ${thumbsOk}/${totalOriginals} (reparados ok:${okNew} fail:${failed})`
+              : `Reparación lista ✅ Thumbnails OK ${thumbsOk}/${totalOriginals}`
           )
         }
 

@@ -97,19 +97,23 @@ export async function POST(req: Request) {
             .map((x: any) => x.name)
         )
 
-        // 3) Calcular faltantes
+        // 3) Calcular thumbs OK vs faltantes
+        let thumbsOkAlready = 0
         const missing: string[] = []
+
         for (const origName of originals) {
           const thumbName = `${baseName(origName)}.webp`
-          if (!thumbsSet.has(thumbName)) missing.push(origName)
+          if (thumbsSet.has(thumbName)) thumbsOkAlready++
+          else missing.push(origName)
         }
 
         send({
           type: 'start',
           event_slug,
-          originals: originals.length,
-          thumbsExisting: thumbsSet.size,
-          missing: missing.length,
+          total_originals: originals.length,
+          thumbs_existing_total: thumbsSet.size,
+          thumbs_ok: thumbsOkAlready,
+          missing_total: missing.length,
         })
 
         // 4) Regenerar SOLO faltantes llamando a generate-thumb
@@ -152,10 +156,25 @@ export async function POST(req: Request) {
             })
           }
 
-          send({ type: 'progress', done: i + 1, total: missing.length, ok, failed })
+          send({
+            type: 'progress',
+            missing_done: i + 1,
+            missing_total: missing.length,
+            ok_new: ok,
+            failed,
+            thumbs_ok: thumbsOkAlready + ok,
+            total_originals: originals.length,
+          })
         }
 
-        send({ type: 'done', total: missing.length, ok, failed })
+        send({
+          type: 'done',
+          missing_total: missing.length,
+          ok_new: ok,
+          failed,
+          thumbs_ok: thumbsOkAlready + ok,
+          total_originals: originals.length,
+        })
         controller.close()
       } catch (e: any) {
         send({ type: 'error', error: String(e?.message || e) })
