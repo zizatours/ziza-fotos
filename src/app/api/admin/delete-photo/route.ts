@@ -44,6 +44,14 @@ export async function POST(req: Request) {
     const eventSlug = String(body?.event_slug || '').trim()
     const originalPath = cleanPath(String(body?.original_path || body?.originalPath || ''))
 
+    const expected = process.env.ADMIN_PASSWORD || process.env.ADMIN_API_KEY
+    if (expected) {
+      const got = req.headers.get('x-admin-key') || body?.adminKey
+      if (!got || got !== expected) {
+        return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+      }
+    }
+
     if (!eventSlug) {
       return NextResponse.json({ error: 'missing_event_slug' }, { status: 400 })
     }
@@ -53,6 +61,21 @@ export async function POST(req: Request) {
     }
 
     const supabase = createAdminClient()
+
+    const ip =
+      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      req.headers.get('x-real-ip') ||
+      null
+
+    const ua = req.headers.get('user-agent') || null
+
+    await supabase.from('admin_audit_log').insert({
+      action: 'delete_photo',
+      event_slug: eventSlug,
+      target_path: originalPath,
+      ip,
+      user_agent: ua,
+    })
 
     // Seguridad básica: el path debe corresponder al evento (nuevo o legacy)
     const validForEvent =

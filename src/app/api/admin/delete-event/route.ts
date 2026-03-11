@@ -4,7 +4,14 @@ import { createAdminClient } from '@/lib/supabase-server'
 const supabase = createAdminClient()
 
 export async function POST(req: Request) {
-  const { event_slug } = await req.json()
+  const body = await req.json().catch(() => ({} as any))
+  const event_slug = body?.event_slug
+  const gotKey = req.headers.get('x-admin-key') || body?.adminKey
+
+  const expected = process.env.ADMIN_PASSWORD || process.env.ADMIN_API_KEY
+  if (expected && (!gotKey || gotKey !== expected)) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  }
 
   if (!event_slug) {
     return NextResponse.json(
@@ -12,6 +19,21 @@ export async function POST(req: Request) {
       { status: 400 }
     )
   }
+
+  const ip =
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip') ||
+    null
+
+  const ua = req.headers.get('user-agent') || null
+
+  await supabase.from('admin_audit_log').insert({
+    action: 'delete_event',
+    event_slug,
+    target_path: null,
+    ip,
+    user_agent: ua,
+  })
 
   // 1️⃣ borrar caras del evento
   const { error: facesError } = await supabase

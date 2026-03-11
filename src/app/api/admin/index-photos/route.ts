@@ -76,11 +76,35 @@ async function toRekognitionBytes(input: Buffer) {
 
 export async function POST(req: Request) {
   try {
-    const { event_slug } = await req.json()
+    const body = await req.json().catch(() => ({} as any))
+    const event_slug = body?.event_slug
+    const expected = process.env.ADMIN_PASSWORD || process.env.ADMIN_API_KEY
+
+    if (expected) {
+      const got = req.headers.get('x-admin-key') || body?.adminKey
+      if (!got || got !== expected) {
+        return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+      }
+    }
 
     if (!event_slug) {
       return NextResponse.json({ error: 'Missing event_slug' }, { status: 400 })
     }
+
+    const ip =
+      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      req.headers.get('x-real-ip') ||
+      null
+
+    const ua = req.headers.get('user-agent') || null
+
+    await supabase.from('admin_audit_log').insert({
+      action: 'index_photos',
+      event_slug,
+      target_path: null,
+      ip,
+      user_agent: ua,
+    })
 
     const encoder = new TextEncoder()
     const failedFiles: string[] = []

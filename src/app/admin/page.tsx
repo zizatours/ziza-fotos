@@ -384,8 +384,8 @@ const [repairFailedFiles, setRepairFailedFiles] = useState<string[]>([])
 
           const res = await fetch('/api/admin/index-photos', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ event_slug: selectedEventSlug }),
+            headers: { 'Content-Type': 'application/json', 'x-admin-key': password },
+            body: JSON.stringify({ event_slug: selectedEventSlug, adminKey: password }),
             signal: controller.signal,
           })
 
