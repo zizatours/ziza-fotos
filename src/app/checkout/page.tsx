@@ -30,7 +30,7 @@ export default function CheckoutPage() {
 
   // ===== GETNET (BR) =====
   // TEMP: deshabilitado hasta implementar webhook/confirmación server-to-server
-  const GETNET_TEMP_DISABLED = false
+  const GETNET_TEMP_DISABLED = true
 
   const getnetSellerId = process.env.NEXT_PUBLIC_GETNET_SELLER_ID || ''
   const getnetLoaderUrl = process.env.NEXT_PUBLIC_GETNET_LOADER_URL || ''
