@@ -79,7 +79,11 @@ export async function GET(req: Request) {
       updated_at: new Date().toISOString(),
     };
 
-    if (callbackStatus === "APPROVED") {
+    const isApproved =
+      callbackStatus === "APPROVED" ||
+      callbackStatus === "APROVADO";
+
+    if (isApproved) {
       basePatch.status = "approved";
       basePatch.approved_at = new Date().toISOString();
     }
@@ -98,7 +102,7 @@ export async function GET(req: Request) {
     }
 
     // 3) Si no está aprobado, no creamos orden
-    if (callbackStatus !== "APPROVED") {
+    if (!isApproved) {
       return NextResponse.json({ ok: true, updated: true, status: callbackStatus || "UNKNOWN" });
     }
 
