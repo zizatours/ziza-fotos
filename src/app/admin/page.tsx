@@ -1332,7 +1332,10 @@ return (
                 const res = await fetch('/api/admin/delete-event', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ event_slug: selectedEventSlug }),
+                  body: JSON.stringify({
+                    event_slug: selectedEventSlug,
+                    adminKey: password,
+                  }),
                 })
 
                 const data = await res.json()
