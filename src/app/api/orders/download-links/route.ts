@@ -35,15 +35,19 @@ export async function GET(req: Request) {
     }
 
     const bucket = 'event-photos'
-    const { data, error: signErr } = await supabase.storage
-      .from(bucket)
-      .createSignedUrls(paths, 60 * 30) // 30 min
+    const urls: string[] = []
 
-    if (signErr || !data) {
-      return NextResponse.json({ error: 'sign_failed', detail: signErr?.message }, { status: 500 })
+    for (const p of paths) {
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .createSignedUrl(p, 60 * 30, {
+          download: true,
+        })
+
+      if (!error && data?.signedUrl) {
+        urls.push(data.signedUrl)
+      }
     }
-
-    const urls = data.map((x) => x.signedUrl).filter(Boolean)
     return NextResponse.json({ urls })
   } catch (e: any) {
     return NextResponse.json({ error: 'unexpected', detail: String(e?.message || e) }, { status: 500 })
